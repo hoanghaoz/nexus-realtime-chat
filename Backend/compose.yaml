@@ -1,0 +1,7 @@
+﻿services:
+  nexuschat.api:
+    image: nexuschat.api
+    build:
+      context: .
+      dockerfile: src/NexusChat.Api/Dockerfile
+
