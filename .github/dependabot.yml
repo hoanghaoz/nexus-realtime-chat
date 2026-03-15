@@ -1,0 +1,30 @@
+version: 2
+updates:
+  - package-ecosystem: "nuget"
+    directory: "/Backend"
+    schedule:
+      interval: "daily"
+    commit-message:
+      prefix: "build(deps)"
+      prefix-development: "build(deps-dev)"
+      include: "scope"
+
+  - package-ecosystem: "docker"
+    # Look for a `Dockerfile` in the `root` directory
+    directory: "/Backend/src/NexusChat.Api"
+    # Check for updates once a week
+    schedule:
+      interval: "daily"
+
+  - package-ecosystem: "npm"
+    directory: "/Frontend"
+    schedule:
+      interval: "daily"
+    groups:
+      frontend-deps:
+        patterns:
+          - "*"
+    commit-message:
+      prefix: "build(deps)"
+      prefix-development: "build(deps-dev)"
+      include: "scope"
