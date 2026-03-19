@@ -5,11 +5,16 @@ on:
     branches:
       - "main"
       - "develop"
+  pull_request:
+    branches:
+      - "main"
 
 jobs:
   detect-change:
     name: Scan File Changes
     runs-on: ubuntu-latest
+    env:
+      FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
     outputs:
       is_Dockerfile_changed: ${{ steps.filter.outputs.backend_code }}
       
@@ -29,6 +34,8 @@ jobs:
     needs: detect-change
     if: needs.detect-change.outputs.is_Dockerfile_changed == 'true'
     runs-on: ubuntu-latest
+    env:
+      FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
     name: Docker Build and Push
     steps:
       - name: Checkout code
@@ -62,7 +69,7 @@ jobs:
         with:
           context: ./Backend
           file: ./Backend/src/NexusChat.Api/Dockerfile # Đường dẫn file Dockerfile
-          push: true
+          push: ${{ github.event_name != 'pull_request' }}
           tags: ${{ steps.meta.outputs.tags }} # Lấy kết quả của Docker Meta
           # Bật Cache để lần sau build nhanh hơn
           cache-from: type=gha
