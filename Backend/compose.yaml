@@ -4,6 +4,19 @@
     build:
       context: .
       dockerfile: src/NexusChat.Api/Dockerfile
+      
+    ports:
+      - "8080:8080"
+    networks:
+      - backend
+      - frontend
+    
+networks:
+  backend:
+    driver: bridge
+  frontend:
+    driver: bridge
+      
 
 
 
