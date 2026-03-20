@@ -1,4 +1,4 @@
-namespace NexusChat.Domain;
+namespace NexusChat.Domain.Enum;
 
 public enum UserRole
 {

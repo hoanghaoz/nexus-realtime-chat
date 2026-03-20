@@ -1,6 +1,7 @@
 using Microsoft.Extensions.Configuration;
 using NexusChat.Application.Interfaces.Authentication;
 using NexusChat.Domain;
+using NexusChat.Domain.Enum;
 
 namespace NexusChat.Infrastructure.Authentication;
 

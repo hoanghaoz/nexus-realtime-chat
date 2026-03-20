@@ -1,4 +1,5 @@
 using NexusChat.Domain;
+using NexusChat.Domain.Enum;
 
 namespace NexusChat.Application.Interfaces.Authentication;
 

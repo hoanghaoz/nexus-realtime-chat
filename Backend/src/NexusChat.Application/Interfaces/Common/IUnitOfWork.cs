@@ -1,4 +1,4 @@
-namespace NexusChat.Application.Interfaces;
+namespace NexusChat.Application.Interfaces.Common;
 
 public interface IUnitOfWork
 {

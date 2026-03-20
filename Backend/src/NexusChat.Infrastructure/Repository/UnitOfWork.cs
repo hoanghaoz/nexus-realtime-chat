@@ -1,4 +1,4 @@
-using NexusChat.Application.Interfaces;
+using NexusChat.Application.Interfaces.Common;
 using NexusChat.Infrastructure.Data;
 
 namespace NexusChat.Infrastructure.Repository;

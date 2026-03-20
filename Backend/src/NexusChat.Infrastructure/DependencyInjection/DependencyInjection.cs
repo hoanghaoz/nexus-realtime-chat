@@ -2,6 +2,7 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using NexusChat.Application.Interfaces;
 using NexusChat.Application.Interfaces.Authentication;
+using NexusChat.Application.Interfaces.Common;
 using NexusChat.Infrastructure.Authentication;
 using NexusChat.Infrastructure.Repository;
 

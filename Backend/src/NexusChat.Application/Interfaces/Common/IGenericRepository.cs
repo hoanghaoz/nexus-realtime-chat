@@ -1,6 +1,6 @@
 using NexusChat.Domain.Common;
 
-namespace NexusChat.Application.Interfaces;
+namespace NexusChat.Application.Interfaces.Common;
 
 public interface IGenericRepository<TEntity,TEntityId> where TEntity : Entity<TEntityId>
 {

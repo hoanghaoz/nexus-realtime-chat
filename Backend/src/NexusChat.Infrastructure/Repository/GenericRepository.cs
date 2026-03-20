@@ -1,5 +1,5 @@
 using Microsoft.EntityFrameworkCore;
-using NexusChat.Application.Interfaces;
+using NexusChat.Application.Interfaces.Common;
 using NexusChat.Domain.Common;
 using NexusChat.Infrastructure.Data;
 
