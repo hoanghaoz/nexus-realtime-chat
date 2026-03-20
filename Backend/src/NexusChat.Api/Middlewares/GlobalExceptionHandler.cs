@@ -20,7 +20,7 @@ public class GlobalExceptionHandler(
             {
                 Title = "An unexpected error occurred.",
                 Status = StatusCodes.Status500InternalServerError,
-                Detail = webHostEnvironment.IsDevelopment() ? exception.ToString() : null
+                Detail = webHostEnvironment.IsDevelopment() ? exception.ToString() : "Exception occurred, please try again later."
             }
         });
     }

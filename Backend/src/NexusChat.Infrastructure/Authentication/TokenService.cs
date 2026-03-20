@@ -1,0 +1,13 @@
+using Microsoft.Extensions.Configuration;
+using NexusChat.Application.Interfaces.Authentication;
+using NexusChat.Domain;
+
+namespace NexusChat.Infrastructure.Authentication;
+
+public class TokenService(IConfiguration configuration) : ITokenService
+{
+    public string GenerateToken(string username, UserRole userRole)
+    {
+        throw new NotImplementedException();
+    }
+}
