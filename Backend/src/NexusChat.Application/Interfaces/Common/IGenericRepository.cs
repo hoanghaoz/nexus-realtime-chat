@@ -4,11 +4,11 @@ namespace NexusChat.Application.Interfaces.Common;
 
 public interface IGenericRepository<TEntity,TEntityId> where TEntity : Entity<TEntityId>
 {
-    void Add(TEntity entity);
+    Task AddAsync(TEntity entity, CancellationToken token);
     
-    void Update(TEntity entity);
+    Task UpdateAsync(TEntity entity,CancellationToken token);
     
-    void Delete(TEntity entity);
+    Task DeleteAsync(TEntity entity,CancellationToken token);
     
     Task<TEntity?> GetByIdAsync(TEntityId id,CancellationToken cancellationToken);
 }

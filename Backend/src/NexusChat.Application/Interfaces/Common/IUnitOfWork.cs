@@ -1,6 +1,8 @@
 namespace NexusChat.Application.Interfaces.Common;
 
-public interface IUnitOfWork
+public interface IUnitOfWork : IDisposable
 {
-    Task SaveChangesAsync(CancellationToken token = default);
+    Task BeginTransactionAsync(CancellationToken token = default);
+    Task CommitTransactionAsync(CancellationToken token = default);
+    Task RollbackTransactionAsync(CancellationToken token = default);
 }
