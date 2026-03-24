@@ -24,7 +24,6 @@ public static class DependencyInjection
         
         services.AddScoped<IMongoUnitOfWork>(p => (IMongoUnitOfWork)p.GetRequiredService<IUnitOfWork>());
         
-        services.AddScoped<IUnitOfWork, UnitOfWork>();
         services.AddScoped<IPasswordHasher, PasswordHasher>();
         return services;
     }
