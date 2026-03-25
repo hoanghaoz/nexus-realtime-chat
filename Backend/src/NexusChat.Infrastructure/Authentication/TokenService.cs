@@ -10,7 +10,7 @@ namespace NexusChat.Infrastructure.Authentication;
 
 public class TokenService(IConfiguration configuration) : ITokenService
 {
-    public string GenerateToken(string userid, UserRole userRole)
+    public string GenerateToken(string userId, UserRole userRole)
     {
         var secretKey = configuration["JWT_KEY"] ?? 
                         throw new InvalidOperationException("JWT_KEY is not set in configuration");
@@ -21,7 +21,7 @@ public class TokenService(IConfiguration configuration) : ITokenService
 
         var claims = new List<Claim>
         {
-            new(ClaimTypes.NameIdentifier, userid),
+            new(ClaimTypes.NameIdentifier, userId),
             new(ClaimTypes.Role, userRole.ToString())
         };
         var credentials = new SigningCredentials(key, SecurityAlgorithms.HmacSha256Signature);
