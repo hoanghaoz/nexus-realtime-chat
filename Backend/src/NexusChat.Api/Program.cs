@@ -109,10 +109,10 @@ var app = builder.Build();
 
 // Configure the HTTP request pipeline.
 app.UseExceptionHandler();
+app.UseAuthentication();
+app.UseAuthorization();
 app.MapOpenApi();
 app.MapScalarApiReference();
 app.MapControllers(); // use Scalar for API docs
-
-// app.UseHttpsRedirection();
 app.Run();
 
