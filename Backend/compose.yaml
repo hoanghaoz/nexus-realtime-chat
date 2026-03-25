@@ -4,6 +4,25 @@
     build:
       context: .
       dockerfile: src/NexusChat.Api/Dockerfile
+      
+    environment:
+        - ConnectionStrings__DefaultConnection=${DEFAULT_CONNECTION}
+        - Jwt_Key=${JWT_KEY}
+        - Jwt_Issuer=${JWT_ISSUER}
+        - Jwt_Audience=${JWT_AUDIENCE}
+      
+    ports:
+      - "8080:8080"
+    networks:
+      - backend
+      - frontend
+    
+networks:
+  backend:
+    driver: bridge
+  frontend:
+    driver: bridge
+      
 
 
 
