@@ -17,7 +17,6 @@ public static class DependencyInjection
         MongoMappingConfig.Register();
         // register infrastructure services here, such as database context, repositories, etc.
         var connectionString = configuration.GetConnectionString("DefaultConnection");
-
         services.AddSingleton<IMongoClient>(new MongoClient(connectionString));
         services.AddSingleton<IMongoDatabase>(p =>
             p.GetRequiredService<IMongoClient>().GetDatabase("NexusChat")); 

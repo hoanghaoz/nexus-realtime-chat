@@ -1,6 +1,7 @@
 using MongoDB.Bson;
 using MongoDB.Bson.Serialization;
 using MongoDB.Bson.Serialization.Serializers;
+using NexusChat.Domain.Common;
 using NexusChat.Domain.Entity;
 using NexusChat.Domain.Entity.EmbeddedObject;
 
@@ -10,13 +11,18 @@ public static class MongoMappingConfig
 {
     public static void Register()
     {
+        BsonClassMap.RegisterClassMap<Entity<string>>(cm =>
+        {
+            cm.AutoMap();
+            
+            cm.MapIdProperty(c => c.Id).SetSerializer(new StringSerializer(BsonType.ObjectId));
+        });
         BsonClassMap.RegisterClassMap<Message>(cm =>
         {
             // mapping class property to schema
             cm.AutoMap();
 
             // change type of id from string to ObjectId in MongoDB
-            cm.MapIdProperty(c => c.Id).SetSerializer(new StringSerializer(BsonType.ObjectId));
 
             cm.MapProperty(c => c.FromUserId).SetSerializer(new StringSerializer(BsonType.ObjectId));
             
@@ -27,8 +33,6 @@ public static class MongoMappingConfig
         {
             cm.AutoMap();
 
-            cm.MapIdProperty(c => c.Id).SetSerializer(new StringSerializer(BsonType.ObjectId));
-
             cm.MapProperty(c => c.Friends).SetSerializer(
                 new EnumerableInterfaceImplementerSerializer<List<string>, string>(
                     new StringSerializer(BsonType.ObjectId)));
@@ -38,16 +42,12 @@ public static class MongoMappingConfig
         {
             cm.AutoMap();
             
-            cm.MapIdProperty(c => c.Id).SetSerializer(new StringSerializer(BsonType.ObjectId));
-            
             cm.MapProperty(c => c.CreatedBy).SetSerializer(new StringSerializer(BsonType.ObjectId));
         });
 
         BsonClassMap.RegisterClassMap<FriendRequest>(cm =>
         {
             cm.AutoMap();
-            
-            cm.MapIdProperty(c => c.Id).SetSerializer(new StringSerializer(BsonType.ObjectId));
             
             cm.MapProperty(c => c.FromUserId).SetSerializer(new StringSerializer(BsonType.ObjectId));
             
