@@ -4,6 +4,7 @@ using MongoDB.Driver;
 using NexusChat.Application.Interfaces.Authentication;
 using NexusChat.Application.Interfaces.Common;
 using NexusChat.Infrastructure.Authentication;
+using NexusChat.Infrastructure.Data.Configuration;
 using NexusChat.Infrastructure.Data.Interface;
 using NexusChat.Infrastructure.Repository.Common;
 
@@ -13,9 +14,9 @@ public static class DependencyInjection
 {
     public static IServiceCollection AddInfrastructureService(this IServiceCollection services, IConfiguration configuration)
     {
+        MongoMappingConfig.Register();
         // register infrastructure services here, such as database context, repositories, etc.
         var connectionString = configuration.GetConnectionString("DefaultConnection");
-
         services.AddSingleton<IMongoClient>(new MongoClient(connectionString));
         services.AddSingleton<IMongoDatabase>(p =>
             p.GetRequiredService<IMongoClient>().GetDatabase("NexusChat")); 
