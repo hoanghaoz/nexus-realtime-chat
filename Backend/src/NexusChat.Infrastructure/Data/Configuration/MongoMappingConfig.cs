@@ -4,7 +4,7 @@ using MongoDB.Bson.Serialization.Serializers;
 using NexusChat.Domain.Entity;
 using NexusChat.Domain.Entity.EmbeddedObject;
 
-namespace NexusChat.Infrastructure.Data.Mapping;
+namespace NexusChat.Infrastructure.Data.Configuration;
 
 public static class MongoMappingConfig
 {

@@ -4,8 +4,8 @@ using MongoDB.Driver;
 using NexusChat.Application.Interfaces.Authentication;
 using NexusChat.Application.Interfaces.Common;
 using NexusChat.Infrastructure.Authentication;
+using NexusChat.Infrastructure.Data.Configuration;
 using NexusChat.Infrastructure.Data.Interface;
-using NexusChat.Infrastructure.Data.Mapping;
 using NexusChat.Infrastructure.Repository.Common;
 
 namespace NexusChat.Infrastructure.DependencyInjection;

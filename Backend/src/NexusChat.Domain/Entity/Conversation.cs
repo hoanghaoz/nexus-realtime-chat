@@ -20,5 +20,5 @@ public class Conversation : Entity<string>
     public LastMessage? LastMessage { get; set; }
     
     // count unread messages and display 
-    public Dictionary<string,int> UnReadMessages { get; set; } = new();
+    public Dictionary<string,int> UnreadMessages { get; set; } = new();
 }

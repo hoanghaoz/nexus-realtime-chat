@@ -12,6 +12,9 @@ using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Infrastructure;
 using Microsoft.AspNetCore.RateLimiting;
+using Microsoft.EntityFrameworkCore.Storage;
+using MongoDB.Driver;
+using NexusChat.Infrastructure.Data.Configuration;
 
 Env.TraversePath().Load();
 var builder = WebApplication.CreateBuilder(args);
@@ -106,6 +109,11 @@ builder.Services.AddRateLimiter(options =>
 });
 
 var app = builder.Build();
+using (var scope = app.Services.CreateScope())
+{
+    var database =  scope.ServiceProvider.GetRequiredService<IMongoDatabase>();
+    await MongoIndexConfig.CreateIndexAsync(database);
+}
 
 // Configure the HTTP request pipeline.
 app.UseExceptionHandler();
