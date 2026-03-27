@@ -12,8 +12,11 @@ using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Infrastructure;
 using Microsoft.AspNetCore.RateLimiting;
+using Microsoft.AspNetCore.SignalR;
 using Microsoft.EntityFrameworkCore.Storage;
 using MongoDB.Driver;
+using NexusChat.Api.Hubs;
+using NexusChat.Application.Interfaces.Hubs;
 using NexusChat.Infrastructure.Data.Configuration;
 
 Env.TraversePath().Load();
@@ -28,7 +31,7 @@ builder.Services.AddApplicationServices(builder.Configuration);
 builder.Services.AddInfrastructureService(builder.Configuration);
 builder.Services.AddExceptionHandler<GlobalExceptionHandler>();
 builder.Services.AddFluentValidationAutoValidation();
-
+builder.Services.AddSignalR();
 builder.Services.AddAuthentication(options =>
 {
     options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
@@ -47,6 +50,21 @@ builder.Services.AddAuthentication(options =>
             Encoding.UTF8.GetBytes(builder.Configuration["JWT_KEY"] ?? throw new InvalidOperationException("JWT_KEY is null"))
         ),
         ClockSkew = TimeSpan.Zero // set clock skew to zero to prevent token expiration issues
+    };
+
+    options.Events = new JwtBearerEvents
+    {
+        OnMessageReceived = context =>
+        {
+            var accessToken = context.Request.Query["access_token"];
+            var path = context.HttpContext.Request.Path;
+            if (!string.IsNullOrEmpty(accessToken) && path.StartsWithSegments("/hubs/chat"))
+            {
+                context.Token = accessToken;
+            }
+
+            return Task.CompletedTask;
+        }
     };
 });
 
@@ -123,5 +141,6 @@ app.UseAuthorization();
 app.MapOpenApi();
 app.MapScalarApiReference();
 app.MapControllers(); // use Scalar for API docs
+app.MapHub<ChatHub>("/hubs/chat");
 app.Run();
 
