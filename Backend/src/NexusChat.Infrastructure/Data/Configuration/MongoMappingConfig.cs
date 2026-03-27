@@ -15,14 +15,13 @@ public static class MongoMappingConfig
         {
             cm.AutoMap();
             
+            // change type of id from string to ObjectId in MongoDB
             cm.MapIdProperty(c => c.Id).SetSerializer(new StringSerializer(BsonType.ObjectId));
         });
         BsonClassMap.RegisterClassMap<Message>(cm =>
         {
             // mapping class property to schema
             cm.AutoMap();
-
-            // change type of id from string to ObjectId in MongoDB
 
             cm.MapProperty(c => c.FromUserId).SetSerializer(new StringSerializer(BsonType.ObjectId));
             
