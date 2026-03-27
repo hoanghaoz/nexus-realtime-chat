@@ -41,22 +41,22 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      # 1. Cài đặt Buildx để tận dụng cache
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
-
-      # 2. Đăng nhập Docker Hub
+      # 1. Login to dockerhub
       - name: Login to Docker Hub
         uses: docker/login-action@v3
         with:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
-          password: ${{ secrets.DOCKERHUB_TOKEN }} 
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+      
+      # 2. Setup docker buildx
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v4
 
       - name: Docker Meta
         id: meta
         uses: docker/metadata-action@v5
         with:
-          images: ${{ secrets.DOCKERHUB_USERNAME }}/Nexus-api
+          images: ${{ secrets.DOCKERHUB_USERNAME }}/nexus-api
           tags: |
             # Nếu là nhánh main -> Đặt tag là 'latest'
             type=raw,value=latest,enable=${{ github.ref == 'refs/heads/main' }}
