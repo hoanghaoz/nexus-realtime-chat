@@ -11,4 +11,6 @@ public interface IChatClient
     public Task NotifyUserJoined(string userId,string conversationId);
     public Task NotifyUserLeft(string userId, string conversationId);
     public Task UserTyping(string userId, string conversationId, bool isTyping);
+
+    public Task UserGotTagged(MessageDto message);
 }
