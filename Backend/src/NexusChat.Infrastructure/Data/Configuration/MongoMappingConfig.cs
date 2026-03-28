@@ -1,5 +1,6 @@
 using MongoDB.Bson;
 using MongoDB.Bson.Serialization;
+using MongoDB.Bson.Serialization.IdGenerators;
 using MongoDB.Bson.Serialization.Serializers;
 using NexusChat.Domain.Common;
 using NexusChat.Domain.Entity;
@@ -15,7 +16,8 @@ public static class MongoMappingConfig
         {
             cm.AutoMap();
             
-            cm.MapIdProperty(c => c.Id).SetSerializer(new StringSerializer(BsonType.ObjectId));
+            cm.MapIdProperty(c => c.Id).SetSerializer(new StringSerializer(BsonType.ObjectId))
+                .SetIdGenerator(new StringObjectIdGenerator());
         });
         BsonClassMap.RegisterClassMap<Message>(cm =>
         {
