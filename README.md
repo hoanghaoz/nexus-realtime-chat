@@ -56,6 +56,8 @@ The app will normally run at `http://localhost:5173`.
 
 - [Frontend Architecture](docs/architecture/frontend-architecture.md)
 
+- [Database Design](docs/architecture/database-schema.md)
+
 - [CI/CD Pipeline Guidelines](docs/infrastructure/ci-cd.md)
 
 - [Conventional Commit Guidelines](docs/guildlines/conventional-commit.md)
