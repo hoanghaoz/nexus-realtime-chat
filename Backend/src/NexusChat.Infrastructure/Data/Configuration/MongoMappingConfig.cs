@@ -21,9 +21,7 @@ public static class MongoMappingConfig
         {
             // mapping class property to schema
             cm.AutoMap();
-
-            // change type of id from string to ObjectId in MongoDB
-
+            
             cm.MapProperty(c => c.FromUserId).SetSerializer(new StringSerializer(BsonType.ObjectId));
             
             cm.MapProperty(c => c.ConversationId).SetSerializer(new StringSerializer(BsonType.ObjectId));
