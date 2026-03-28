@@ -10,5 +10,5 @@ public interface IUserRepository : IGenericRepository<User,string>
     
     Task<User?> GetUserByUsernameAsync(string username, CancellationToken token);
     
-    Task<List<FriendDto>?> GetFriendsWithUserAsync(string username, CancellationToken token);
+    Task<List<FriendDto>> GetFriendsWithUserAsync(string username, CancellationToken token);
 }
