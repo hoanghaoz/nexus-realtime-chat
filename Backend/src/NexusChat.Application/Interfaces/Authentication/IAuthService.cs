@@ -1,10 +1,11 @@
 using ErrorOr;
+using NexusChat.Application.DTOs.Authentication;
 
 namespace NexusChat.Application.Interfaces.Authentication;
 
 public interface IAuthService
 {
-    Task<ErrorOr<string>> LoginAsync();
+    Task<ErrorOr<string>> LoginAsync(AuthDto authDto, CancellationToken token);
 
-    Task<ErrorOr<Created>> RegisterAsync();
+    Task<ErrorOr<string>> RegisterAsync(AuthDto authDto, CancellationToken token);
 }
