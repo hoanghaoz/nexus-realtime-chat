@@ -4,11 +4,8 @@ using NexusChat.Application.Interfaces;
 using NexusChat.Application.Interfaces.UserRepository;
 using NexusChat.Domain.Entity;
 
-// Thêm interface UnitOfWork nếu bạn cần commit
-
 namespace NexusChat.Application.Services.UserUpdateService.cs;
 
-// Dùng Primary Constructor cho xịn
 public class UserUpdateService(IUserRepository userRepository) : IUserUpdateService
 {
     public async Task<ErrorOr<string>> UpdateUserAsync(string userId, UserUpdateDto dto, CancellationToken token)

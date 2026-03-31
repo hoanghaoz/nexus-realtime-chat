@@ -1,5 +1,6 @@
 using ErrorOr;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 using NexusChat.Application.DTOs.Users;
 using NexusChat.Application.Interfaces;
 
@@ -18,6 +19,7 @@ public class UserController(IUserUpdateService userUpdateService) : ControllerBa
     /// <param name="token"></param>
     /// <returns>An IActionResult indicating the result of the operation.</returns>
     [HttpPut("update")]
+    [EnableRateLimiting("limit-per-user")]
     public async Task<IActionResult> Update(string userId, [FromBody] UserUpdateDto updateDto, CancellationToken token)
     {
         var result = await userUpdateService.UpdateUserAsync(userId, updateDto, token);
@@ -30,7 +32,7 @@ public class UserController(IUserUpdateService userUpdateService) : ControllerBa
 
     private IActionResult MapErrorToProblem(List<Error> errors)
     {
-        var firstError = errors.First();
+        var firstError = errors[0];
         var statusCode = firstError.Type switch
         {
             ErrorType.NotFound => StatusCodes.Status404NotFound,
