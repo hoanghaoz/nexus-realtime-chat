@@ -14,7 +14,6 @@ public class UserController(IUserUpdateService userUpdateService) : ControllerBa
     /// Updates user information based on the provided ID and data.
     /// </summary>
     /// <param name="userId">The unique identifier of the user.</param>
-    /// <param name="dto">The data transfer object containing updated information.</param>
     /// <param name="updateDto"></param>
     /// <param name="token"></param>
     /// <returns>An IActionResult indicating the result of the operation.</returns>

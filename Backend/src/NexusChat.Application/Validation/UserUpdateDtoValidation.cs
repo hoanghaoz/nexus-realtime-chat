@@ -1,4 +1,3 @@
-using System.Data;
 using FluentValidation;
 using NexusChat.Application.DTOs.Users;
 

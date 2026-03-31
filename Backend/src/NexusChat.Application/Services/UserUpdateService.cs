@@ -31,7 +31,8 @@ public class UserUpdateService(IUserRepository userRepository) : IUserUpdateServ
                     $"You can only update your profile every 14 days. Please try again after {daysRemaining} day(s)");
             }
         }
-
+        user.Avatar = dto.Avatar;
+        user.Status = dto.Status;
         user.UpdatedAt = DateTime.UtcNow;
         await userRepository.UpdateAsync(user, token);
         return "User profile updated successfully";
