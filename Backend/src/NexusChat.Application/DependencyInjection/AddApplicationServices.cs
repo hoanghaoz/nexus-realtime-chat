@@ -6,6 +6,7 @@ using NexusChat.Application.Interfaces;
 using NexusChat.Application.Interfaces.Authentication;
 using NexusChat.Application.Services;
 using NexusChat.Application.Services.UserUpdateService.cs;
+using NexusChat.Application.Interfaces.UserService;
 
 namespace NexusChat.Application.DependencyInjection;
 
@@ -16,6 +17,8 @@ public static class DependencyInjection
         services.AddValidatorsFromAssembly(Assembly.GetExecutingAssembly());
         services.AddScoped<IAuthService,AuthService>();
         services.AddScoped<IUserUpdateService,UserUpdateService>();
+
+        services.AddScoped<IUserSearchService, UserSearchService>();
         return services;
     }
 }

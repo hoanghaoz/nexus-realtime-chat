@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.RateLimiting;
 using NexusChat.Application.DTOs.Users;
 using NexusChat.Application.Interfaces;
+using NexusChat.Application.Interfaces.UserService;
 
 namespace NexusChat.Api.Controllers;
 
@@ -41,5 +42,24 @@ public class UserController(IUserUpdateService userUpdateService) : ControllerBa
             _ => StatusCodes.Status500InternalServerError
         };
         return  Problem(statusCode: statusCode, detail: firstError.Description);
+    }
+
+    /// <summary>
+    /// Search users by username.
+    /// </summary>
+    /// <param name="name">Username to search for.</param>
+    /// <param name="userSearchService">Injected service.</param>
+    /// <param name="token"></param>
+    /// <returns>A list of matching users.</returns>
+    [HttpGet("search")]
+    [EnableRateLimiting("limit-per-user")]
+    public async Task<IActionResult> SearchUsers([FromQuery] string name, [FromServices] IUserSearchService userSearchService, CancellationToken token)
+    {
+        var result = await userSearchService.SearchUsersByNameAsync(name, token);
+
+        return result.Match(
+            users => Ok(users),
+            MapErrorToProblem
+        );
     }
 }
