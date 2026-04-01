@@ -1,89 +1,96 @@
 name: Backend SonarCloud Analysis
-on:  
-  push:    
-    branches: [ "main", "develop" ]  
-  pull_request:    
+
+on:
+  push:
+    branches: [ "main", "develop" ]
+  pull_request:
     branches: [ "main", "develop" ]
 
-jobs:  
-  # --- JOB 1: TRINH SÁT ---  
-  detect-change:    
-    name: Scan File Changes    
-    runs-on: ubuntu-latest    
-    outputs:      
-      is_backend_changed: ${{ steps.filter.outputs.backend_code }}          
-    steps:      
-      - name: Checkout code        
-        uses: actions/checkout@v4              
-      - name: Check path filters        
-        uses: dorny/paths-filter@v3        
-        id: filter        
-        with:          
-          filters: |            
-            backend_code:              
-              - 'Backend/**'  
+jobs:
+  # --- JOB 1: TRINH SÁT ---
+  detect-change:
+    name: Scan File Changes
+    runs-on: ubuntu-latest
+    outputs:
+      is_backend_changed: ${{ steps.filter.outputs.backend_code }}
+      
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        
+      - name: Check path filters
+        uses: dorny/paths-filter@v3
+        id: filter
+        with:
+          filters: |
+            backend_code:
+              - 'Backend/**'
 
-  # --- JOB 2: THỢ XÂY & MÁY QUÉT ---  
-  build-and-analyze:    
-    needs: detect-change # Lệnh chờ: Phải đợi thằng trinh sát làm xong    
-    if: needs.detect-change.outputs.is_backend_changed == 'true' # Lệnh chạy: Cờ true mới làm        
-    name: Backend Build and Analyze    
-    runs-on: ubuntu-latest    
-    env:      
-      FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true            
-    defaults:      
-      run:        
-        working-directory: ./Backend    
-    steps:      
-      - name: Checkout code        
-        uses: actions/checkout@v4        
-        with:          
+  # --- JOB 2: THỢ XÂY & MÁY QUÉT ---
+  build-and-analyze:
+    needs: detect-change # Lệnh chờ: Phải đợi thằng trinh sát làm xong
+    if: needs.detect-change.outputs.is_backend_changed == 'true' # Lệnh chạy: Cờ true mới làm
+    
+    name: Backend Build and Analyze
+    runs-on: ubuntu-latest
+    env:
+      FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+        
+    defaults:
+      run:
+        working-directory: ./Backend
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
           fetch-depth: 0 
-          # Đã XÓA sparse-checkout ở đây để Git tải full data cho Sonar quét
+          sparse-checkout: |
+            Backend
+            
+      - name: Cache NuGet packages
+        uses: actions/cache@v4
+        with:
+          path: ~/.nuget/packages
+          # Chìa khóa này chỉ thay đổi khi bạn thêm/bớt thư viện trong các file .csproj
+          key: ${{ runner.os }}-nuget-${{ hashFiles('Backend/**/*.csproj') }}
+          restore-keys: |
+            ${{ runner.os }}-nuget-
+            
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          java-version: 17
+          distribution: 'zulu' 
 
-      - name: Cache NuGet packages        
-        uses: actions/cache@v4        
-        with:          
-          path: ~/.nuget/packages          
-          # Chìa khóa này chỉ thay đổi khi bạn thêm/bớt thư viện trong các file .csproj          
-          key: ${{ runner.os }}-nuget-${{ hashFiles('Backend/**/*.csproj') }}          
-          restore-keys: |            
-            ${{ runner.os }}-nuget-                  
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.0.x'
 
-      - name: Setup Java        
-        uses: actions/setup-java@v4        
-        with:          
-          java-version: 17          
-          distribution: 'zulu'       
+      - name: Install SonarCloud scanner
+        run: dotnet tool install --global dotnet-sonarscanner
 
-      - name: Setup .NET        
-        uses: actions/setup-dotnet@v4        
-        with:          
-          dotnet-version: '10.0.x'      
+      - name: Begin SonarCloud Analysis
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}  
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }} 
+        run: |
+          dotnet sonarscanner begin \
+            /k:"hoanghaoz_nexuschatbackend" \
+            /o:"hoanghaoz" \
+            /d:sonar.token="$SONAR_TOKEN" \
+            /d:sonar.host.url="https://sonarcloud.io" \
+            /d:sonar.coverage.exclusions="**/*" 
+           # /d:sonar.cs.opencover.reportsPaths="**/coverage.opencover.xml"
 
-      - name: Install SonarCloud scanner        
-        run: dotnet tool install --global dotnet-sonarscanner      
+      - name: Restore dependencies
+        run: dotnet restore 
 
-      - name: Begin SonarCloud Analysis        
-        env:          
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}            
-          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}         
-        run: |          
-          dotnet sonarscanner begin \            
-            /k:"hoanghaoz_nexuschatbackend" \            
-            /o:"hoanghaoz" \            
-            /d:sonar.token="$SONAR_TOKEN" \            
-            /d:sonar.host.url="https://sonarcloud.io" \            
-            /d:sonar.coverage.exclusions="**/*"            
-            # /d:sonar.cs.opencover.reportsPaths="**/coverage.opencover.xml"      
+      - name: Build
+        run: dotnet build --no-restore --configuration Release
 
-      - name: Restore dependencies        
-        run: dotnet restore       
-
-      - name: Build        
-        run: dotnet build --no-restore --configuration Release      
-
-      - name: End SonarCloud Analysis        
-        env:          
-          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}        
+      - name: End SonarCloud Analysis
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
         run: dotnet sonarscanner end /d:sonar.token="$SONAR_TOKEN"
