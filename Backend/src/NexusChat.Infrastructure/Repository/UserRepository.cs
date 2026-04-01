@@ -26,7 +26,7 @@ public class UserRepository(
         var filter = Builders<User>.Filter.Regex(x => x.UserName, new BsonRegularExpression(name, "i"));
         return await DbSet.Find(filter).ToListAsync(token);
     }
-    public async Task<List<FriendDto>?> GetFriendsWithUserAsync(string username,CancellationToken token)
+    public async Task<List<FriendDto>> GetFriendsWithUserAsync(string username,CancellationToken token)
     {
         var user = await GetUserByUsernameAsync(username,token);
         if (user?.Friends == null || !user.Friends.Any())
