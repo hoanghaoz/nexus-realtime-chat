@@ -6,6 +6,7 @@ using NexusChat.Application.Interfaces;
 using NexusChat.Application.Interfaces.Authentication;
 using NexusChat.Application.Interfaces.UserService;
 using NexusChat.Application.Services;
+using NexusChat.Application.Services.UserUpdateService.cs;
 
 namespace NexusChat.Application.DependencyInjection;
 

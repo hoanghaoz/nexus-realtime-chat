@@ -81,7 +81,7 @@ jobs:
             /o:"hoanghaoz" \
             /d:sonar.token="$SONAR_TOKEN" \
             /d:sonar.host.url="https://sonarcloud.io" \
-            /d:sonar.coverage.exclusions="**/*" 
+            /d:sonar.coverage.exclusions="**/*"
            # /d:sonar.cs.opencover.reportsPaths="**/coverage.opencover.xml"
 
       - name: Restore dependencies
