@@ -21,7 +21,7 @@ public class UserRepository(
         return await DbSet.Find(us => us.UserName == username).FirstOrDefaultAsync(token);
     }
 
-    public async Task<List<FriendDto>?> GetFriendsWithUserAsync(string username,CancellationToken token)
+    public async Task<List<FriendDto>> GetFriendsWithUserAsync(string username,CancellationToken token)
     {
         var user = await GetUserByUsernameAsync(username,token);
         if (user?.Friends == null || !user.Friends.Any())
