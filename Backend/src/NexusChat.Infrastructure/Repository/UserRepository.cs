@@ -21,12 +21,8 @@ public class UserRepository(
     {
         return await DbSet.Find(us => us.UserName == username).FirstOrDefaultAsync(token);
     }
-    public async Task<List<User>> SearchUsersByNameAsync(string name, CancellationToken token)
-    {
-        var filter = Builders<User>.Filter.Regex(x => x.UserName, new BsonRegularExpression(name, "i"));
-        return await DbSet.Find(filter).ToListAsync(token);
-    }
-    public async Task<List<FriendDto>?> GetFriendsWithUserAsync(string username,CancellationToken token)
+
+    public async Task<List<FriendDto>> GetFriendsWithUserAsync(string username,CancellationToken token)
     {
         var user = await GetUserByUsernameAsync(username,token);
         if (user?.Friends == null || !user.Friends.Any())
