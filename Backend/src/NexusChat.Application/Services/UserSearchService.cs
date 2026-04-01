@@ -11,10 +11,18 @@ public class UserSearchService(IUserRepository userRepository) : IUserSearchServ
     {
         if (string.IsNullOrWhiteSpace(name))
         {
-            return new List<UserSearchResponseDto>(); // Nếu search rỗng thì trả về mảng rỗng
+            return new List<UserSearchResponseDto>();
         }
 
         var users = await userRepository.SearchUsersByNameAsync(name, token);
+
+        if (users == null || users.Count == 0)
+        {
+            return Error.NotFound(
+                code: "UserSearch.NotFound",
+                description: "Không tìm thấy user nào phù hợp với tên này."
+            );
+        }
 
         var result = users.Select(u => new UserSearchResponseDto(
             u.Id,

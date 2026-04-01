@@ -2,14 +2,17 @@ using ErrorOr;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.RateLimiting;
 using NexusChat.Application.DTOs.Users;
-using NexusChat.Application.Interfaces;
+// Thêm namespace chứa IUserSearchService của bạn
 using NexusChat.Application.Interfaces.UserService;
+// Thêm namespace chứa IUserUpdateService (tuỳ thuộc vào project của bạn)
+using NexusChat.Application.Interfaces;
 
 namespace NexusChat.Api.Controllers;
 
-[Route ("api/users")]
+[Route("api/users")]
 [ApiController]
-public class UserController(IUserUpdateService userUpdateService) : ControllerBase 
+// Đưa IUserSearchService vào Primary Constructor ở đây
+public class UserController(IUserUpdateService userUpdateService, IUserSearchService userSearchService) : ControllerBase
 {
     /// <summary>
     /// Updates user information based on the provided ID and data.
@@ -30,6 +33,25 @@ public class UserController(IUserUpdateService userUpdateService) : ControllerBa
         );
     }
 
+    /// <summary>
+    /// Search users by username.
+    /// </summary>
+    /// <param name="name">Username to search for.</param>
+    /// <param name="token"></param>
+    /// <returns>A list of matching users.</returns>
+    [HttpGet("search")]
+    [EnableRateLimiting("limit-per-user")]
+    [ProducesResponseType(typeof(List<UserSearchResponseDto>), StatusCodes.Status200OK)]
+    public async Task<IActionResult> SearchUsers([FromQuery] string name, CancellationToken token)
+    {
+        var result = await userSearchService.SearchUsersByNameAsync(name, token);
+
+        return result.Match(
+            users => Ok(users),
+            MapErrorToProblem
+        );
+    }
+
     private IActionResult MapErrorToProblem(List<Error> errors)
     {
         var firstError = errors[0];
@@ -41,25 +63,6 @@ public class UserController(IUserUpdateService userUpdateService) : ControllerBa
             ErrorType.Unauthorized => StatusCodes.Status401Unauthorized,
             _ => StatusCodes.Status500InternalServerError
         };
-        return  Problem(statusCode: statusCode, detail: firstError.Description);
-    }
-
-    /// <summary>
-    /// Search users by username.
-    /// </summary>
-    /// <param name="name">Username to search for.</param>
-    /// <param name="userSearchService">Injected service.</param>
-    /// <param name="token"></param>
-    /// <returns>A list of matching users.</returns>
-    [HttpGet("search")]
-    [EnableRateLimiting("limit-per-user")]
-    public async Task<IActionResult> SearchUsers([FromQuery] string name, [FromServices] IUserSearchService userSearchService, CancellationToken token)
-    {
-        var result = await userSearchService.SearchUsersByNameAsync(name, token);
-
-        return result.Match(
-            users => Ok(users),
-            MapErrorToProblem
-        );
+        return Problem(statusCode: statusCode, detail: firstError.Description);
     }
 }
