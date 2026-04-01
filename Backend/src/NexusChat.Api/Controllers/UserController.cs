@@ -2,16 +2,13 @@ using ErrorOr;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.RateLimiting;
 using NexusChat.Application.DTOs.Users;
-// Thêm namespace chứa IUserSearchService của bạn
 using NexusChat.Application.Interfaces.UserService;
-// Thêm namespace chứa IUserUpdateService (tuỳ thuộc vào project của bạn)
 using NexusChat.Application.Interfaces;
 
 namespace NexusChat.Api.Controllers;
 
 [Route("api/users")]
 [ApiController]
-// Đưa IUserSearchService vào Primary Constructor ở đây
 public class UserController(IUserUpdateService userUpdateService, IUserSearchService userSearchService) : ControllerBase
 {
     /// <summary>
