@@ -2,7 +2,7 @@ using ErrorOr;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.RateLimiting;
 using NexusChat.Application.DTOs.Users;
-using NexusChat.Application.Interfaces;
+using NexusChat.Application.Interfaces.UserService;
 
 namespace NexusChat.Api.Controllers;
 
