@@ -10,6 +10,9 @@
         - Jwt_Key=${JWT_KEY}
         - Jwt_Issuer=${JWT_ISSUER}
         - Jwt_Audience=${JWT_AUDIENCE}
+        - Cloudinary_CloudName=${CLOUDINARY_CLOUDNAME}
+        - Cloudinary_ApiKey=${CLOUDINARY_APIKEY}
+        - Cloudinary_ApiSecret=${CLOUDINARY_APISECRET}
       
     ports:
       - "8080:8080"

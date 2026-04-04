@@ -3,6 +3,7 @@ using NexusChat.Application.DTOs;
 using NexusChat.Application.DTOs.Message;
 using NexusChat.Application.Extension;
 using NexusChat.Application.Interfaces;
+using NexusChat.Application.Interfaces.Message;
 using NexusChat.Domain.Entity.EmbeddedObject;
 
 namespace NexusChat.Application.Services;

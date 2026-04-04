@@ -6,8 +6,6 @@ using NexusChat.Application.Interfaces.UserService;
 
 namespace NexusChat.Api.Controllers;
 
-[Route ("api/users")]
-[ApiController]
 /// <summary>
 /// Controller for User Management
 /// </summary>
@@ -18,6 +16,8 @@ namespace NexusChat.Api.Controllers;
 /// All endpoints are rate-limited per user to prevent abuse.
 /// </remarks>
 /// <param name="userUpdateService">Service for user update operations</param>
+[Route ("api/users")]
+[ApiController]
 public class UserController(IUserUpdateService userUpdateService) : ControllerBase 
 {
     /// <summary>

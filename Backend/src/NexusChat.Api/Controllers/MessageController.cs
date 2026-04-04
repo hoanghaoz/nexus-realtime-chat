@@ -4,6 +4,8 @@ using Microsoft.AspNetCore.SignalR;
 using NexusChat.Api.Hubs;
 using NexusChat.Application.DTOs.Message;
 using NexusChat.Application.Interfaces;
+using NexusChat.Application.Interfaces.Message;
+
 namespace NexusChat.Api.Controllers;
 
 /// <summary>
@@ -62,63 +64,5 @@ public class MessageController(
         return response;
     }
     
-    /// <summary>
-    /// Sends a new message to a conversation.
-    /// </summary>
-    /// <remarks>
-    /// Creates and sends a new message to a specified conversation.
-    /// Messages can include text content and/or file attachments.
-    /// Supports mentioning other users in the conversation via MentionedUsersId.
-    /// Upon successful message creation, broadcasts the message to all users in the conversation via SignalR.
-    /// User must be authenticated and a member of the conversation to send messages.
-    /// </remarks>
-    /// <param name="messageRequestDto">Request containing conversation ID, content, attachments, and mentioned users.</param>
-    /// <param name="token">Cancellation token for the request.</param>
-    /// <response code="200">Success; message sent and returns the created message object.</response>
-    /// <response code="401">Unauthorized; user is not authenticated or not a member of the conversation.</response>
-    /// <response code="404">Not found; conversation does not exist.</response>
-    /// <response code="500">Internal server error; failed to send message.</response>
-    /// <returns>An action result containing the created message on success, or an error message on failure.</returns>
-    [HttpPost("send")]
-    public async Task<IActionResult> SendMessage([FromBody] SendMessageRequestDto messageRequestDto,
-        CancellationToken token)
-    {
-        var userId = HttpContext.User.Identity?.Name;
-        if (userId == null)
-        {
-            return Unauthorized();
-        }
-        var result = await messageService.CreateMessageAsync(messageRequestDto, userId, token);
-        var response = result.Match<IActionResult>(
-            message =>
-            {
-                return Ok(message);
-            },
-             errors => errors[0].Code switch
-            {
-                "Conversation.NotFound" => NotFound(new
-                {
-                    message = "Conversation does not exist or you are not a member of this conversation.",
-                    description = errors[0].Description
-                }),
-                
-                "UserId.NotInConversation" => Unauthorized(new
-                {
-                    message = "You are not a member of this conversation.",
-                    description = errors[0].Description
-                }),
-                _ => StatusCode(StatusCodes.Status500InternalServerError, new
-                {
-                    message = "An error occurred while sending the message. Please try again later.",
-                    description = errors[0].Description
-                })
-            });
-        if (!result.IsError)
-        {
-            // Fire-and-forget to handle real-time message sending to clients in the conversation
-            _ = hubContext.Clients.Group(messageRequestDto.ConversationId)
-                .SendCoreAsync("ReceiveMessage", [result.Value], CancellationToken.None);
-        }
-        return response;
-    }
+    
 }

@@ -17,6 +17,7 @@ using Microsoft.Extensions.Caching.Hybrid;
 using MongoDB.Driver;
 using NexusChat.Api.Hubs;
 using NexusChat.Infrastructure.Data.Configuration;
+using NexusChat.Infrastructure.Media;
 
 Env.TraversePath().Load();
 var builder = WebApplication.CreateBuilder(args);
@@ -34,6 +35,7 @@ builder.Services.AddApplicationServices(builder.Configuration);
 builder.Services.AddInfrastructureService(builder.Configuration);
 builder.Services.AddExceptionHandler<GlobalExceptionHandler>();
 builder.Services.AddFluentValidationAutoValidation();
+builder.Services.Configure<CloudinarySetting>(builder.Configuration.GetSection("Cloudinary"));
 builder.Services.AddHybridCache(options =>
 {
     options.DefaultEntryOptions = new HybridCacheEntryOptions

@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.SignalR;
 using NexusChat.Application.DTOs.Message;
 using NexusChat.Application.Interfaces;
 using NexusChat.Application.Interfaces.Hubs;
+using NexusChat.Application.Interfaces.Message;
 
 namespace NexusChat.Api.Hubs;
 

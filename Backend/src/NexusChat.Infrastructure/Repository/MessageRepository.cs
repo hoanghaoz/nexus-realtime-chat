@@ -2,6 +2,7 @@ using MongoDB.Driver;
 using MongoDB.Driver.Linq;
 using NexusChat.Application.DTOs.Message;
 using NexusChat.Application.Interfaces;
+using NexusChat.Application.Interfaces.Message;
 using NexusChat.Domain.Entity;
 using NexusChat.Infrastructure.Data.Interface;
 using NexusChat.Infrastructure.Repository.Common;
