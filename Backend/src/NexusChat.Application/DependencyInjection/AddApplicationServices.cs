@@ -4,6 +4,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Configuration;
 using NexusChat.Application.Interfaces;
 using NexusChat.Application.Interfaces.Authentication;
+using NexusChat.Application.Interfaces.FriendRequests;
 using NexusChat.Application.Interfaces.UserService;
 using NexusChat.Application.Services;
 
@@ -16,6 +17,7 @@ public static class DependencyInjection
         services.AddValidatorsFromAssembly(Assembly.GetExecutingAssembly());
         services.AddScoped<IAuthService,AuthService>();
         services.AddScoped<IUserUpdateService,UserUpdateService>();
+        services.AddScoped<IFriendRequestService, FriendRequestService>();
         return services;
     }
 }
