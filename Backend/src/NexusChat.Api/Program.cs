@@ -135,6 +135,8 @@ builder.Services.AddRateLimiter(options =>
             });
     });
 });
+// Connect between Interface and Impliment of Notification
+builder.Services.AddScoped<INotificationService, NotificationService>();
 
 var app = builder.Build();
 using (var scope = app.Services.CreateScope())
@@ -142,8 +144,6 @@ using (var scope = app.Services.CreateScope())
     var database =  scope.ServiceProvider.GetRequiredService<IMongoDatabase>();
     await MongoIndexConfig.CreateIndexAsync(database);
 }
-// Connect between Interface and Impliment of Notification
-builder.Services.AddScoped<INotificationService, NotificationService>();
 // Configure the HTTP request pipeline.
 app.UseExceptionHandler();
 app.UseCors("AllowAll");
