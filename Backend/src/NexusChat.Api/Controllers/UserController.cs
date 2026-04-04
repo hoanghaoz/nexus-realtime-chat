@@ -28,7 +28,22 @@ public class UserController(IUserUpdateService userUpdateService) : ControllerBa
             MapErrorToProblem
         );
     }
+    /// <summary>
+    /// Xem profile dua tren ID
+    /// </summary>
+    [HttpGet("{id}")]
+    [EnableRateLimiting("limit-per-user")]
+    [ProducesResponseType(typeof(UserProfileResponseDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> GetProfile(string id, CancellationToken token)
+    {
+        var result = await userUpdateService.GetUserProfileAsync(id, token);
 
+        return result.Match(
+            profile => Ok(profile),
+            MapErrorToProblem
+        );
+    }
     private IActionResult MapErrorToProblem(List<Error> errors)
     {
         var firstError = errors[0];
