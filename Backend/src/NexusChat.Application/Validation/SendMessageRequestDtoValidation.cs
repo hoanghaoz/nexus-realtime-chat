@@ -31,10 +31,11 @@ public class SendMessageRequestDtoValidation : AbstractValidator<SendMessageRequ
                 .NotNull().WithMessage("Attachment file type is required.")
                 .IsInEnum().WithMessage("Attachment file type is not valid.");
         }).When(x => x.Attachments != null);
-        
+
         RuleFor(x => x.MentionedUsersId)
-            .Must(x => x != null && x.Distinct().Count() == x.Count).WithMessage("Mentioned userid must be unique.")
-            .WithMessage("Mentioned user ids cannot contain empty or whitespace strings.");
+            .Must(x => x.Distinct().Count() == x.Count)
+            .WithMessage("Mentioned userid must be unique.")
+            .When(x => x.MentionedUsersId != null);
         
         RuleForEach(x => x.MentionedUsersId)
             .NotEmpty().WithMessage("Mentioned user id is required.")

@@ -19,24 +19,6 @@ public class ChatHub(IMessageService messageService) : Hub<IChatClient>
         await base.OnConnectedAsync();
     }
     
-    public async Task SendMessage(SendMessageRequestDto dto,CancellationToken token)
-    {
-        var senderId = Context.UserIdentifier;
-        if (string.IsNullOrEmpty(senderId))
-        {
-            throw new HubException("User is not authenticated.");
-        }
-        var result = await messageService.CreateMessageAsync(dto, senderId, token);
-        if (result.IsError)
-        {
-            var error = result.Errors.First();
-            // send the error message to the caller, so that the frontend can display the error message to the user
-            await Clients.Caller.ReceiveErrorMessage(error.Description);
-            return;
-        }
-        await Clients.Group(dto.ConversationId).ReceiveMessage(result.Value);
-    }
-    
     /// <summary>
     /// This method is call when a user joins a conversation,
     /// It adds the user from the group and sends a notification to all other users in the conversation 
@@ -68,7 +50,7 @@ public class ChatHub(IMessageService messageService) : Hub<IChatClient>
     /// </summary>
     /// <param name="sendMessageRequestDto"></param>
     /// <param name="token"></param>
-    public async Task SendMessageToGroup(SendMessageRequestDto sendMessageRequestDto, CancellationToken token)
+    public async Task SendMessage(SendMessageRequestDto sendMessageRequestDto, CancellationToken token)
     {
         var senderId = Context.UserIdentifier;
         if (string.IsNullOrEmpty(senderId))

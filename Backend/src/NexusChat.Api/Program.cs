@@ -14,7 +14,6 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Infrastructure;
 using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.Extensions.Caching.Hybrid;
-using MongoDB.Bson;
 using MongoDB.Driver;
 using NexusChat.Api.Hubs;
 using NexusChat.Infrastructure.Data.Configuration;
@@ -29,7 +28,7 @@ builder.Services.AddControllers()
     .AddJsonOptions(options =>
     {
         options.JsonSerializerOptions.Converters.Add(new JsonStringEnumConverter());
-    });;
+    });
 builder.Services.AddProblemDetails();
 builder.Services.AddApplicationServices(builder.Configuration);
 builder.Services.AddInfrastructureService(builder.Configuration);

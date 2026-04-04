@@ -11,6 +11,7 @@ public class MessageService(IMessageRepository messageRepository) : IMessageServ
 {
     public async Task<ErrorOr<List<MessageResponseDto>>> GetMessageInConversationAsync(MessageRequestDto dto, CancellationToken token)
     {
+        // TODO: implement ConversationRepository to check ConversationId valid and user in conversation
        var messages = await messageRepository.GetMessageInConversationAsync(dto.ConversationId, dto.Cursor, token);
        return messages;
     }
