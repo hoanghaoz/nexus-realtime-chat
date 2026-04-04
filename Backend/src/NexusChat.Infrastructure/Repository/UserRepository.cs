@@ -37,4 +37,9 @@ public class UserRepository(
                 f.Status
             )).ToList();
     }
+
+    public Task<List<User>> SearchUsersByNameAsync(string name, CancellationToken token)
+    {
+        throw new NotImplementedException();
+    }
 }
