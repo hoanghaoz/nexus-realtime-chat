@@ -1,4 +1,4 @@
-using NexusChat.Application.DTOs.Hubs;
+using NexusChat.Application.DTOs.Message;
 
 namespace NexusChat.Application.Interfaces.Hubs;
 
@@ -7,10 +7,12 @@ namespace NexusChat.Application.Interfaces.Hubs;
 /// </summary>
 public interface IChatClient
 {
-    public Task ReceiveMessage(MessageDto message);
+    public Task ReceiveMessage(MessageResponseDto message);
     public Task NotifyUserJoined(string userId,string conversationId);
     public Task NotifyUserLeft(string userId, string conversationId);
     public Task UserTyping(string userId, string conversationId, bool isTyping);
 
-    public Task UserGotTagged(MessageDto message);
+    public Task UserGotTagged(MessageResponseDto message);
+    
+    public Task ReceiveErrorMessage(string errorMessage);
 }

@@ -1,5 +1,6 @@
 using System.Security.Claims;
 using System.Text;
+using System.Text.Json.Serialization;
 using System.Threading.RateLimiting;
 using DotNetEnv;
 using FluentValidation.AspNetCore;
@@ -12,6 +13,8 @@ using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Infrastructure;
 using Microsoft.AspNetCore.RateLimiting;
+using Microsoft.Extensions.Caching.Hybrid;
+using MongoDB.Bson;
 using MongoDB.Driver;
 using NexusChat.Api.Hubs;
 using NexusChat.Infrastructure.Data.Configuration;
@@ -22,12 +25,27 @@ var builder = WebApplication.CreateBuilder(args);
 // Add services to the container.
 // Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
 builder.Services.AddOpenApi();
-builder.Services.AddControllers();
+builder.Services.AddControllers()
+    .AddJsonOptions(options =>
+    {
+        options.JsonSerializerOptions.Converters.Add(new JsonStringEnumConverter());
+    });;
 builder.Services.AddProblemDetails();
 builder.Services.AddApplicationServices(builder.Configuration);
 builder.Services.AddInfrastructureService(builder.Configuration);
 builder.Services.AddExceptionHandler<GlobalExceptionHandler>();
 builder.Services.AddFluentValidationAutoValidation();
+builder.Services.AddHybridCache(options =>
+{
+    options.DefaultEntryOptions = new HybridCacheEntryOptions
+    {
+        // memory-cache expiration
+        // memory-cache expiration must be less than redis-cache
+        LocalCacheExpiration = TimeSpan.FromMinutes(10),
+        // redis cache expiration
+        Expiration = TimeSpan.FromMinutes(10)
+    };
+});
 builder.Services.AddSignalR();
 builder.Services.AddCors(options =>
 {

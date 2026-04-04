@@ -1,6 +1,7 @@
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using MongoDB.Driver;
+using NexusChat.Application.Interfaces;
 using NexusChat.Application.Interfaces.Authentication;
 using NexusChat.Application.Interfaces.Common;
 using NexusChat.Application.Interfaces.UserRepository;
@@ -32,6 +33,8 @@ public static class DependencyInjection
         services.AddScoped<ITokenService,TokenService>();
 
         services.AddScoped<IUserRepository, UserRepository>();
+        
+        services.AddScoped<IMessageRepository,MessageRepository>();
         return services;
     }
 }
