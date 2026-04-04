@@ -11,11 +11,11 @@ namespace NexusChat.Application.DependencyInjection;
 
 public static class DependencyInjection
 {
-    public static IServiceCollection AddApplicationServices(this IServiceCollection services,IConfiguration configuration)
+    public static IServiceCollection AddApplicationServices(this IServiceCollection services, IConfiguration configuration)
     {
         services.AddValidatorsFromAssembly(Assembly.GetExecutingAssembly());
-        services.AddScoped<IAuthService,AuthService>();
-        services.AddScoped<IUserUpdateService,UserUpdateService>();
+        services.AddScoped<IAuthService, AuthService>();
+        services.AddScoped<IUserUpdateService, UserUpdateService>();
         return services;
     }
 }
