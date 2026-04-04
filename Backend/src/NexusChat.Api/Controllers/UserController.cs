@@ -8,15 +8,37 @@ namespace NexusChat.Api.Controllers;
 
 [Route ("api/users")]
 [ApiController]
+/// <summary>
+/// Controller for User Management
+/// </summary>
+/// <remarks>
+/// Handles user profile and account management operations.
+/// Supports updating user information and profile details.
+/// Requires user authentication for all operations.
+/// All endpoints are rate-limited per user to prevent abuse.
+/// </remarks>
+/// <param name="userUpdateService">Service for user update operations</param>
 public class UserController(IUserUpdateService userUpdateService) : ControllerBase 
 {
     /// <summary>
-    /// Updates user information based on the provided ID and data.
+    /// Updates user profile information.
     /// </summary>
-    /// <param name="userId">The unique identifier of the user.</param>
-    /// <param name="updateDto"></param>
-    /// <param name="token"></param>
-    /// <returns>An IActionResult indicating the result of the operation.</returns>
+    /// <remarks>
+    /// Updates various user profile fields such as display name, email, avatar, and other metadata.
+    /// Only authenticated users can update their own profile.
+    /// All updates are applied immediately and persisted to the database.
+    /// Rate-limited per user to prevent abuse.
+    /// </remarks>
+    /// <param name="userId">The unique identifier of the user whose profile is being updated.</param>
+    /// <param name="updateDto">Data transfer object containing the fields to be updated.</param>
+    /// <param name="token">Cancellation token for the request.</param>
+    /// <response code="200">Success; user profile updated successfully.</response>
+    /// <response code="400">Bad request; validation failed for the provided update data.</response>
+    /// <response code="401">Unauthorized; user is not authenticated or attempting to update another user's profile.</response>
+    /// <response code="404">Not found; user with the specified ID does not exist.</response>
+    /// <response code="409">Conflict; update conflicts with existing data (e.g., duplicate email).</response>
+    /// <response code="500">Internal server error; failed to update user profile.</response>
+    /// <returns>An action result containing a success message on success, or an error message on failure.</returns>
     [HttpPut("update")]
     [EnableRateLimiting("limit-per-user")]
     public async Task<IActionResult> Update(string userId, [FromBody] UserUpdateDto updateDto, CancellationToken token)
