@@ -581,3 +581,6 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+*.DotSettings
+*.DotSettings.user

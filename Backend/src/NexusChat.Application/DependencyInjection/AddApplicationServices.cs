@@ -2,7 +2,9 @@ using System.Reflection;
 using FluentValidation;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Configuration;
+using NexusChat.Application.Interfaces;
 using NexusChat.Application.Interfaces.Authentication;
+using NexusChat.Application.Interfaces.UserService;
 using NexusChat.Application.Services;
 
 namespace NexusChat.Application.DependencyInjection;
@@ -13,6 +15,7 @@ public static class DependencyInjection
     {
         services.AddValidatorsFromAssembly(Assembly.GetExecutingAssembly());
         services.AddScoped<IAuthService,AuthService>();
+        services.AddScoped<IUserUpdateService,UserUpdateService>();
         return services;
     }
 }
