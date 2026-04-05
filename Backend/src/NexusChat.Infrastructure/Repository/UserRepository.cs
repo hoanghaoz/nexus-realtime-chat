@@ -38,8 +38,9 @@ public class UserRepository(
             )).ToList();
     }
 
-    public Task<List<User>> SearchUsersByNameAsync(string name, CancellationToken token)
+    public async Task<List<User>> SearchUsersByNameAsync(string name, CancellationToken token)
     {
-        throw new NotImplementedException();
+        var filter = Builders<User>.Filter.Regex(u => u.UserName, new BsonRegularExpression(name, "i"));
+        return await DbSet.Find(filter).ToListAsync(token);
     }
 }
