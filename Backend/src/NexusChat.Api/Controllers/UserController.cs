@@ -8,7 +8,7 @@ namespace NexusChat.Api.Controllers;
 
 [Route ("api/users")]
 [ApiController]
-public class UserController(IUserUpdateService userUpdateService) : ControllerBase 
+public class UserController(IUserUpdateService userUpdateService, IUserProfileService userProfileService) : ControllerBase 
 {
     /// <summary>
     /// Updates user information based on the provided ID and data.
@@ -34,10 +34,9 @@ public class UserController(IUserUpdateService userUpdateService) : ControllerBa
     [HttpGet("{id}")]
     [EnableRateLimiting("limit-per-user")]
     [ProducesResponseType(typeof(UserProfileResponseDto), StatusCodes.Status200OK)]
-    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
     public async Task<IActionResult> GetProfile(string id, CancellationToken token)
     {
-        var result = await userUpdateService.GetUserProfileAsync(id, token);
+        var result = await userProfileService.GetUserProfileAsync(id, token);
 
         return result.Match(
             profile => Ok(profile),

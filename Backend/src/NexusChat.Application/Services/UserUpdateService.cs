@@ -7,27 +7,6 @@ namespace NexusChat.Application.Services;
 
 public class UserUpdateService(IUserRepository userRepository) : IUserUpdateService
 {
-    public async Task<ErrorOr<UserProfileResponseDto>> GetUserProfileAsync(string userId, CancellationToken token)
-    {
-        var user = await userRepository.GetByIdAsync(userId, token);
-
-        if (user == null)
-        {
-            return Error.NotFound("User.NotFound", $"Không tìm thấy người dùng với ID: {userId}");
-        }
-
-        return new UserProfileResponseDto
-        {
-            Id = user.Id,
-            Username = user.UserName,
-            Avatar = user.Avatar,
-            Status = user.Status,
-            CreatedAt = user.CreatedAt,
-            UpdatedAt = user.UpdatedAt,
-            FriendCount = user.Friends?.Count ?? 0
-        };
-    }
-
     public async Task<ErrorOr<string>> UpdateUserAsync(string userId, UserUpdateDto dto, CancellationToken token)
     {
         var user = await userRepository.GetByIdAsync(userId, token);
