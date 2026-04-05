@@ -1,9 +1,9 @@
+using System.Security.Claims;
 using ErrorOr;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.RateLimiting;
 using NexusChat.Application.DTOs.Users;
 using NexusChat.Application.Interfaces.UserService;
-using NexusChat.Application.Interfaces;
 
 namespace NexusChat.Api.Controllers;
 
@@ -20,9 +20,19 @@ public class UserController(IUserUpdateService userUpdateService, IUserSearchSer
     /// <returns>An IActionResult indicating the result of the operation.</returns>
     [HttpPut("update")]
     [EnableRateLimiting("limit-per-user")]
-    public async Task<IActionResult> Update(string userId, [FromBody] UserUpdateDto updateDto, CancellationToken token)
+    public async Task<IActionResult> Update([FromBody] UserUpdateDto updateDto, CancellationToken token)
     {
-        var result = await userUpdateService.UpdateUserAsync(userId, updateDto, token);
+        // Get ID from Token
+        var myUserId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        // Check ID hacker 
+        if (string.IsNullOrWhiteSpace(myUserId))
+        {
+            return Unauthorized(new { 
+                error = "Unauthorized", 
+                message = "Token không hợp lệ hoặc không tìm thấy ID của bạn!" 
+            });
+        }
+        var result = await userUpdateService.UpdateUserAsync(myUserId, updateDto, token);
 
         return result.Match(
             successMesage => Ok(new { message = successMesage }),

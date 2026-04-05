@@ -71,11 +71,6 @@ public class FriendRequestService(IUserRepository userRepository,IFriendRequestR
         await friendRequestRepository.UpdateAsync(request, token);
         // Add sender into List Friend receiver
         var sender =  await userRepository.GetByIdAsync(request.FromUserId, token);
-        
-        // 
-        // CONTINUE ..... 
-        //
-        
         return "Friend request accepted successfully";
     }
 
