@@ -23,7 +23,7 @@ public class UserProfileService(IUserRepository userRepository) : IUserProfileSe
             Avatar = user.Avatar,
             Status = user.Status,
             CreatedAt = user.CreatedAt,
-            UpdatedAt = user.UpdatedAt,
+            //UpdatedAt = user.UpdatedAt,
             FriendCount = user.Friends?.Count ?? 0
         };
     }
