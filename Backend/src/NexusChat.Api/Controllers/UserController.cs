@@ -31,7 +31,7 @@ public class UserController(IUserUpdateService userUpdateService, IUserProfileSe
     /// <summary>
     /// Xem profile dua tren ID
     /// </summary>
-    [HttpGet("{id}")]
+    [HttpGet("{id}/profile")]
     [EnableRateLimiting("limit-per-user")]
     [ProducesResponseType(typeof(UserProfileResponseDto), StatusCodes.Status200OK)]
     public async Task<IActionResult> GetProfile(string id, CancellationToken token)
