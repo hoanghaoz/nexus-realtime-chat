@@ -10,7 +10,7 @@
         - Jwt_Key=${JWT_KEY}
         - Jwt_Issuer=${JWT_ISSUER}
         - Jwt_Audience=${JWT_AUDIENCE}
-      
+        - ASPNETCORE_ENVIRONMENT=Development
     ports:
       - "8080:8080"
     networks:
