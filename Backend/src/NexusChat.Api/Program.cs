@@ -14,6 +14,8 @@ using Microsoft.AspNetCore.Mvc.Infrastructure;
 using Microsoft.AspNetCore.RateLimiting;
 using MongoDB.Driver;
 using NexusChat.Api.Hubs;
+using NexusChat.Api.Services;
+using NexusChat.Application.Interfaces.FriendRequests;
 using NexusChat.Infrastructure.Data.Configuration;
 
 Env.TraversePath().Load();
@@ -133,6 +135,8 @@ builder.Services.AddRateLimiter(options =>
             });
     });
 });
+// Connect between Interface and Impliment of Notification
+builder.Services.AddScoped<INotificationService, NotificationService>();
 
 var app = builder.Build();
 using (var scope = app.Services.CreateScope())
@@ -140,7 +144,6 @@ using (var scope = app.Services.CreateScope())
     var database =  scope.ServiceProvider.GetRequiredService<IMongoDatabase>();
     await MongoIndexConfig.CreateIndexAsync(database);
 }
-
 // Configure the HTTP request pipeline.
 app.UseExceptionHandler();
 app.UseCors("AllowAll");
