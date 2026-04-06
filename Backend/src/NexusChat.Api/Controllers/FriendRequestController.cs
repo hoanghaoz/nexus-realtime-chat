@@ -12,6 +12,7 @@ namespace NexusChat.Api.Controllers;
 [Authorize] // Enforce authentication for all endpoints in this controller
 public class FriendRequestsController(IFriendRequestService friendRequestService) : ControllerBase
 {
+    private const string InvalidUserError = "Invalid token or user not logged in.";
     /// <summary>
     /// Checks the friendship status between the current user and the target user.
     /// Used to determine the UI button state (e.g., "Add Friend", "Pending", or "Friend").
@@ -26,7 +27,7 @@ public class FriendRequestsController(IFriendRequestService friendRequestService
         var senderId = User.FindFirstValue(ClaimTypes.NameIdentifier);
         if (string.IsNullOrWhiteSpace(senderId))
         {
-            return Unauthorized(new { message = "Invalid token or user not logged in." });
+            return Unauthorized(new { message = InvalidUserError });
         }
 
         var result = await friendRequestService.CheckFriendshipStatusAsync(senderId, receiverId, token);
@@ -52,7 +53,7 @@ public class FriendRequestsController(IFriendRequestService friendRequestService
         var senderId = User.FindFirstValue(ClaimTypes.NameIdentifier);
         if (string.IsNullOrWhiteSpace(senderId))
         {
-            return Unauthorized(new { message = "Invalid token or user not logged in." });
+            return Unauthorized(new { message = InvalidUserError });
         }
 
         var result = await friendRequestService.SendRequestAsync(senderId, dto, token);
@@ -77,7 +78,7 @@ public class FriendRequestsController(IFriendRequestService friendRequestService
         var receiverId = User.FindFirstValue(ClaimTypes.NameIdentifier);
         if (string.IsNullOrWhiteSpace(receiverId))
         {
-            return Unauthorized(new { message = "Invalid token or user not logged in." });
+            return Unauthorized(new { message = InvalidUserError });
         }
 
         var result = await friendRequestService.AcceptRequestAsync(requestId, receiverId, token);
@@ -102,7 +103,7 @@ public class FriendRequestsController(IFriendRequestService friendRequestService
         var receiverId = User.FindFirstValue(ClaimTypes.NameIdentifier);
         if (string.IsNullOrWhiteSpace(receiverId))
         {
-            return Unauthorized(new { message = "Invalid token or user not logged in." });
+            return Unauthorized(new { message = InvalidUserError});
         }
 
         var result = await friendRequestService.DeclineRequestAsync(requestId, receiverId, token);
@@ -125,7 +126,7 @@ public class FriendRequestsController(IFriendRequestService friendRequestService
         var receiverId = User.FindFirstValue(ClaimTypes.NameIdentifier);
         if (string.IsNullOrWhiteSpace(receiverId))
         {
-            return Unauthorized(new { message = "Invalid token or user not logged in." });
+            return Unauthorized(new { message = InvalidUserError });
         }
 
         var result = await friendRequestService.GetPendingRequestsAsync(receiverId, token);
@@ -141,7 +142,7 @@ public class FriendRequestsController(IFriendRequestService friendRequestService
     /// </summary>
     private IActionResult MapErrorToProblem(List<Error> errors)
     {
-        var firstError = errors.First();
+        var firstError = errors[0];
 
         var statusCode = firstError.Type switch
         {

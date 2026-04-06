@@ -67,12 +67,12 @@ public class FriendRequestService(IUserRepository userRepository,IFriendRequestR
             if (oldRequest.RequestType == RequestType.Reject)
             {
                 // Fallback to CreatedAt if UpdatedAt is not set/available
-                var cooldownTime = oldRequest.CreatedAt.AddDays(7); 
+                var cooldownTime = oldRequest.CreatedAt.AddMinutes(5); 
                 
                 if (DateTime.UtcNow < cooldownTime)
                 {
                     var timeLeft = cooldownTime - DateTime.UtcNow;
-                    return Error.Validation($"Your previous request was rejected. Please try again in {timeLeft.Days} days and {timeLeft.Hours} hours.");
+                    return Error.Validation($"Your previous request was rejected. Please try again in {timeLeft.Minutes} minutes and {timeLeft.Seconds} seconds.");
                 }
 
                 // Passed the cooldown: Reset the existing request to Pending
