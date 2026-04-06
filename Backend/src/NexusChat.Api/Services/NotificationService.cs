@@ -13,8 +13,8 @@ public class NotificationService(IHubContext<ChatHub, IChatClient> hubContext) :
        await hubContext.Clients.User(receiverId).ReceiveFriendRequest(dto);
     }
 
-    public Task SendAcceptFriendNotificationAsync(string senderId, string message, CancellationToken token)
+    public async Task SendAcceptFriendNotificationAsync(string receiverId, AcceptFriendNotificationDto dto, CancellationToken token)
     {
-        throw new NotImplementedException();
+        await hubContext.Clients.User(receiverId).ReceiveAcceptFriendNotification(dto);
     }
 }

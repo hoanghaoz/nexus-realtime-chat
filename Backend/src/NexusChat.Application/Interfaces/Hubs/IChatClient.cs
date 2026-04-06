@@ -14,4 +14,5 @@ public interface IChatClient
     public Task UserTyping(string userId, string conversationId, bool isTyping);
     public Task UserGotTagged(MessageDto message);
     public Task ReceiveFriendRequest(FriendRequestDto request);
+    public Task ReceiveAcceptFriendNotification(AcceptFriendNotificationDto dto);
 }

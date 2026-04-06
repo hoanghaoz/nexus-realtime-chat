@@ -32,7 +32,7 @@ public class FriendRequestService(IUserRepository userRepository,IFriendRequestR
         {
             RequestType.Waiting => "Pending",
             RequestType.Reject => "None",
-            RequestType.Accept => "Friend", null => "None",
+            RequestType.Accept => "Friend",
             _ => "None"
         };
     }
@@ -155,8 +155,15 @@ public class FriendRequestService(IUserRepository userRepository,IFriendRequestR
                 receiver.Friends.Add(sender.Id);
                 await userRepository.UpdateAsync(receiver, token);
             }
+            var acceptNotification = new AcceptFriendNotificationDto(
+                receiver.Id,
+                receiver.UserName,
+                receiver.Avatar ?? "",
+                DateTime.UtcNow
+            );
+            // Notify the original sender that their request was accepted
+            await notificationService.SendAcceptFriendNotificationAsync(sender.Id, acceptNotification, token);  
         }
-
         return "Friend request accepted successfully";
     }
 
