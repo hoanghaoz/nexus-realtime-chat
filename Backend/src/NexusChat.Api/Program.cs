@@ -26,6 +26,10 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddOpenApi();
 builder.Services.AddControllers();
 builder.Services.AddProblemDetails();
+builder.Services.Configure<ApiBehaviorOptions>(options =>
+{
+    options.SuppressModelStateInvalidFilter = true;
+});
 builder.Services.AddApplicationServices(builder.Configuration);
 builder.Services.AddInfrastructureService(builder.Configuration);
 builder.Services.AddExceptionHandler<GlobalExceptionHandler>();
