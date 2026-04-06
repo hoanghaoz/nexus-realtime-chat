@@ -9,4 +9,5 @@ public class FriendRequest : Entity<string>
     public required string ToUserId { get; set; }
     public RequestType RequestType { get; set; } = RequestType.Waiting;
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+    public DateTime? UpdatedAt { get; set; }
 }

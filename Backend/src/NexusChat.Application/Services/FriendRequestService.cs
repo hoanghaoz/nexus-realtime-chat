@@ -7,48 +7,119 @@ using NexusChat.Domain.Enum;
 
 namespace NexusChat.Application.Services;
 
-
 public class FriendRequestService(IUserRepository userRepository,IFriendRequestRepository friendRequestRepository, INotificationService notificationService) : IFriendRequestService 
 {
+    public async Task<ErrorOr<string>> CheckFriendshipStatusAsync(string senderId, string receiverId, CancellationToken token)
+    {
+        // Prevent users from checking friendship status with themselves
+        if (senderId == receiverId)
+        {
+            return Error.Validation("Cannot check friendship status with yourself.");
+        }
+
+        // Fast path: Check the Friends array first for existing friendship
+        var currentUser = await userRepository.GetByIdAsync(senderId, token);
+        if (currentUser != null && currentUser.Friends.Contains(receiverId))
+        {
+            return "Friend";
+        }
+
+        // Slow path: Fetch the request history between these two users
+        var request = await friendRequestRepository.GetRequestBetweenUsersAsync(senderId, receiverId, token);
+
+        // Evaluate the request type and map it to the corresponding UI status
+        return request?.RequestType switch
+        {
+            RequestType.Waiting => "Pending",
+            RequestType.Reject => "None",
+            RequestType.Accept => "Friend", null => "None",
+            _ => "None"
+        };
+    }
+
+
     public async Task<ErrorOr<string>> SendRequestAsync(string senderId, CreateFriendRequestDto createFriendRequest, CancellationToken token)
     {
         // Check send friend request to yourself 
         if (senderId == createFriendRequest.ToUserId)
             return Error.Validation("You cannot send a friend request to yourself.");
-        // Check Existence of ReceiverId
+        
+        // Check Existence of ReceiverId and SenderId
+        var sender = await userRepository.GetByIdAsync(senderId, token);
         var receiver = await userRepository.GetByIdAsync(createFriendRequest.ToUserId, token);
         if (receiver is null)
         {
             return Error.NotFound($"The user with id {receiver?.Id} was not found.");
         }
+
+        if (sender is null)
+        {
+            return Error.NotFound($"The user with id {sender?.Id} was not found.");
+        }
+        
+        // Check whether sender and receiver are friends
+        if (sender.Friends.Contains(receiver.Id))
+            return Error.Conflict("You are already friends with this user.");
+        
         // Check Has Pending 
-        var hasPending = await friendRequestRepository.HasPendingRequestAsync(senderId, receiver.Id, token);
-        if (hasPending)
+        var oldRequest = await friendRequestRepository.GetRequestBetweenUsersAsync(senderId, receiver.Id, token);
+        string activeRequestId;
+        if (oldRequest != null)
         {
-            return Error.Conflict($"The user with id {receiver.Id} is already pending.");
+            // If already pending, block the action
+            if (oldRequest.RequestType == RequestType.Waiting)
+                return Error.Conflict($"The friend request to user with id {receiver.Id} is already pending.");
+
+            // If rejected, enforce a 7-day cooldown period
+            if (oldRequest.RequestType == RequestType.Reject)
+            {
+                // Fallback to CreatedAt if UpdatedAt is not set/available
+                var cooldownTime = oldRequest.CreatedAt.AddDays(7); 
+                
+                if (DateTime.UtcNow < cooldownTime)
+                {
+                    var timeLeft = cooldownTime - DateTime.UtcNow;
+                    return Error.Validation($"Your previous request was rejected. Please try again in {timeLeft.Days} days and {timeLeft.Hours} hours.");
+                }
+
+                // Passed the cooldown: Reset the existing request to Pending
+                oldRequest.RequestType = RequestType.Waiting;
+                // oldRequest.UpdatedAt = DateTime.UtcNow; // Uncomment if you added UpdatedAt to FriendRequest entity
+                
+                await friendRequestRepository.UpdateAsync(oldRequest, token);
+                activeRequestId = oldRequest.Id;
+            }
+            else
+            {
+                return Error.Conflict("Invalid friend request state.");
+            }
         }
-        // Create Request 
-        var newRequest = new FriendRequest
+        else
         {
-            Id = Guid.NewGuid().ToString(),
-            FromUserId = senderId,
-            ToUserId = receiver.Id,
-        };
-        
-        await friendRequestRepository.AddAsync(newRequest, token);
-        
-        var sender = await userRepository.GetByIdAsync(senderId, token);
-        if (sender != null)
-        {
-            var notification = new FriendRequestDto(
-                newRequest.Id,
-                senderId,
-                sender.UserName ?? "Unknown",
-                sender.Avatar ?? "" ,
-                newRequest.CreatedAt
-            );
-            await notificationService.SendFriendRequestNotificationAsync(receiver.Id, notification, token);
+            // Create Request (No prior history found)
+            var newRequest = new FriendRequest
+            {
+                Id = Guid.NewGuid().ToString(),
+                FromUserId = senderId,
+                ToUserId = receiver.Id,
+                RequestType = RequestType.Waiting, // Explicitly set status
+                CreatedAt = DateTime.UtcNow
+            };
+            
+            await friendRequestRepository.AddAsync(newRequest, token);
+            activeRequestId = newRequest.Id;
         }
+        
+        // Send Notification using the active request ID (either new or updated)
+        var notification = new FriendRequestDto(
+            activeRequestId,
+            senderId,
+            sender.UserName,
+            sender.Avatar ?? "",
+            DateTime.UtcNow
+        );
+        await notificationService.SendFriendRequestNotificationAsync(receiver.Id, notification, token);
+        
         return "Sent add friend request successfully";
     }
     
@@ -56,7 +127,6 @@ public class FriendRequestService(IUserRepository userRepository,IFriendRequestR
     {
         // Find FriendRequest with status is pending
         var request = await friendRequestRepository.GetRequestByIdAsync(requestId, token);
-        var receiver  = await userRepository.GetByIdAsync(toUserId, token);
         if (request is null)
         {
             return Error.NotFound("The request was not found.");
@@ -66,11 +136,27 @@ public class FriendRequestService(IUserRepository userRepository,IFriendRequestR
         {
             return Error.Validation("You are not authorized to accept someone else's invitation!"); 
         }
-
         request.RequestType = RequestType.Accept;
         await friendRequestRepository.UpdateAsync(request, token);
+        
         // Add sender into List Friend receiver
-        var sender =  await userRepository.GetByIdAsync(request.FromUserId, token);
+        var sender = await userRepository.GetByIdAsync(request.FromUserId, token);
+        var receiver = await userRepository.GetByIdAsync(toUserId, token);
+
+        if (sender != null && receiver != null)
+        {
+            if (!sender.Friends.Contains(receiver.Id))
+            {
+                sender.Friends.Add(receiver.Id);
+                await userRepository.UpdateAsync(sender, token);
+            }
+            if (!receiver.Friends.Contains(sender.Id))
+            {
+                receiver.Friends.Add(sender.Id);
+                await userRepository.UpdateAsync(receiver, token);
+            }
+        }
+
         return "Friend request accepted successfully";
     }
 

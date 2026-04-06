@@ -1,6 +1,6 @@
 using FluentValidation;
 using NexusChat.Application.DTOs.FriendRequests;
-using NexusChat.Application.DTOs.Hubs;
+
 
 namespace NexusChat.Application.Validation;
 
