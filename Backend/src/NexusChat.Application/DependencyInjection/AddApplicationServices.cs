@@ -15,8 +15,10 @@ public static class DependencyInjection
     {
         services.AddScoped<IUserSearchService, UserSearchService>();
         services.AddValidatorsFromAssembly(Assembly.GetExecutingAssembly());
-        services.AddScoped<IAuthService, AuthService>();
-        services.AddScoped<IUserUpdateService, UserUpdateService>();
+        services.AddScoped<IAuthService,AuthService>();
+        services.AddScoped<IUserUpdateService,UserUpdateService>();
+        services.AddScoped<IUserProfileService, UserProfileService>();
+        services.AddScoped<IUserSearchService, UserSearchService>();
         return services;
     }
 }
