@@ -16,17 +16,16 @@ public static class MongoMappingConfig
         {
             cm.AutoMap();
             
-            cm.MapIdProperty(c => c.Id).SetSerializer(new StringSerializer(BsonType.ObjectId))
-                .SetIdGenerator(new StringObjectIdGenerator());
+            cm.MapIdProperty(c => c.Id).SetSerializer(new StringSerializer(BsonType.String));
         });
         BsonClassMap.RegisterClassMap<Message>(cm =>
         {
             // mapping class property to schema
             cm.AutoMap();
             
-            cm.MapProperty(c => c.FromUserId).SetSerializer(new StringSerializer(BsonType.ObjectId));
+            cm.MapProperty(c => c.FromUserId).SetSerializer(new StringSerializer(BsonType.String));
             
-            cm.MapProperty(c => c.ConversationId).SetSerializer(new StringSerializer(BsonType.ObjectId));
+            cm.MapProperty(c => c.ConversationId).SetSerializer(new StringSerializer(BsonType.String));
         });
 
         BsonClassMap.RegisterClassMap<User>(cm =>
@@ -35,37 +34,37 @@ public static class MongoMappingConfig
 
             cm.MapProperty(c => c.Friends).SetSerializer(
                 new EnumerableInterfaceImplementerSerializer<List<string>, string>(
-                    new StringSerializer(BsonType.ObjectId)));
+                    new StringSerializer(BsonType.String)));
         });
 
         BsonClassMap.RegisterClassMap<Conversation>(cm =>
         {
             cm.AutoMap();
             
-            cm.MapProperty(c => c.CreatedBy).SetSerializer(new StringSerializer(BsonType.ObjectId));
+            cm.MapProperty(c => c.CreatedBy).SetSerializer(new StringSerializer(BsonType.String));
         });
 
         BsonClassMap.RegisterClassMap<FriendRequest>(cm =>
         {
             cm.AutoMap();
             
-            cm.MapProperty(c => c.FromUserId).SetSerializer(new StringSerializer(BsonType.ObjectId));
+            cm.MapProperty(c => c.FromUserId).SetSerializer(new StringSerializer(BsonType.String));
             
-            cm.MapProperty(c => c.ToUserId).SetSerializer(new StringSerializer(BsonType.ObjectId));
+            cm.MapProperty(c => c.ToUserId).SetSerializer(new StringSerializer(BsonType.String));
         });
 
         BsonClassMap.RegisterClassMap<LastMessage>(cm =>
         {
             cm.AutoMap();
             
-            cm.MapProperty(c => c.SenderId).SetSerializer(new StringSerializer(BsonType.ObjectId));
+            cm.MapProperty(c => c.SenderId).SetSerializer(new StringSerializer(BsonType.String));
         });
 
         BsonClassMap.RegisterClassMap<Participant>(cm =>
         {
             cm.AutoMap();
             
-            cm.MapProperty(c => c.UserId).SetSerializer(new StringSerializer(BsonType.ObjectId));
+            cm.MapProperty(c => c.UserId).SetSerializer(new StringSerializer(BsonType.String));
         });
     }
 }
