@@ -55,7 +55,8 @@ public abstract class GenericRepository<TEntity,TEntityId>(
 
      public async Task<TEntity?> GetByIdAsync(TEntityId id, CancellationToken token)
      {
-          var cursor = await DbSet.FindAsync(x => x.Id!.Equals(id), cancellationToken: token);
+          var filter = Builders<TEntity>.Filter.Eq(x => x.Id, id);
+          var cursor = await DbSet.FindAsync(filter, cancellationToken: token);
           return await cursor.FirstOrDefaultAsync(token);
      }
 }

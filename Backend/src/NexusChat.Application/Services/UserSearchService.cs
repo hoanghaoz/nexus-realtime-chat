@@ -16,7 +16,7 @@ public class UserSearchService(IUserRepository userRepository) : IUserSearchServ
 
         var users = await userRepository.SearchUsersByNameAsync(name, token);
 
-        if (users == null || users.Count == 0)
+        if (users.Count == 0)
         {
             return Error.NotFound(
                 code: "UserSearch.NotFound",
