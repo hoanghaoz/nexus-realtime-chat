@@ -33,6 +33,7 @@ public class AuthService(
         var passwordHash =  passwordHasher.HashPassword(authDto.Password);
         var newUser = new User
         {
+            Id = Guid.NewGuid().ToString(),
             UserName = authDto.Username,
             Password = passwordHash,
             Status = UserStatus.Online,
