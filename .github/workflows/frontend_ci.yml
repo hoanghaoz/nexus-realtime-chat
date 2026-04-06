@@ -1,0 +1,51 @@
+name: Frontend SonarCloud Analysis
+
+on:
+  push:
+    branches: [ "main", "develop" ]
+  pull_request:
+    branches: [ "main", "develop" ]
+
+jobs:
+  detect-change:
+    name: Scan File Changes
+    runs-on: ubuntu-latest
+    outputs:
+      is_frontend_changed: ${{ steps.filter.outputs.frontend_code }}
+      
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        
+      - name: Check path filters
+        uses: dorny/paths-filter@v3
+        id: filter
+        with:
+          filters: |
+            frontend_code:
+              - 'Frontend/**'
+
+  analyze:
+    needs: detect-change
+    if: needs.detect-change.outputs.is_frontend_changed == 'true'
+    name: Frontend Analyze
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # Bắt buộc để SonarCloud có thể so sánh code (Blame/PR)
+
+      - name: SonarCloud Scan
+        uses: SonarSource/sonarcloud-github-action@master
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }} # Mặc định có sẵn, giúp bot comment vào Pull Request
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}   # Token bạn vừa tạo ở bước trước
+        with:
+          projectBaseDir: Frontend # Chỉ định thư mục chứa code Frontend
+          args: >
+            -Dsonar.projectKey=hoanghaoz_nexuschatfrontend
+            -Dsonar.organization=hoanghaoz
+            -Dsonar.sources=.
+            -Dsonar.exclusions=**/node_modules/**,**/dist/**,**/build/**,**/*.test.js,**/*.spec.js

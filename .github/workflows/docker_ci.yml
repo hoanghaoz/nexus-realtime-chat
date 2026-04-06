@@ -1,0 +1,76 @@
+name: Docker Build & Push Image
+
+on:
+  push:
+    branches:
+      - "main"
+      - "develop"
+  pull_request:
+    branches:
+      - "main"
+
+jobs:
+  detect-change:
+    name: Scan File Changes
+    runs-on: ubuntu-latest
+    env:
+      FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+    outputs:
+      is_Dockerfile_changed: ${{ steps.filter.outputs.backend_code }}
+      
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        
+      - name: Check path filters
+        uses: dorny/paths-filter@v3
+        id: filter
+        with:
+          filters: |
+            backend_code:
+              - 'Backend/src/**'
+              
+  build_and_push:
+    needs: detect-change
+    if: needs.detect-change.outputs.is_Dockerfile_changed == 'true'
+    runs-on: ubuntu-latest
+    env:
+      FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+    name: Docker Build and Push
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      # 1. Login to dockerhub
+      - name: Login to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+      
+      # 2. Setup docker buildx
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v4
+
+      - name: Docker Meta
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ secrets.DOCKERHUB_USERNAME }}/nexus-api
+          tags: |
+            # Nếu là nhánh main -> Đặt tag là 'latest'
+            type=raw,value=latest,enable=${{ github.ref == 'refs/heads/main' }}
+            # Nếu là nhánh develop -> Đặt tag là 'dev'
+            type=raw,value=dev,enable=${{ github.ref == 'refs/heads/develop' }}
+
+      # 3. Build và Push 
+      - name: Build and push
+        uses: docker/build-push-action@v6
+        with:
+          context: ./Backend
+          file: ./Backend/src/NexusChat.Api/Dockerfile # Đường dẫn file Dockerfile
+          push: ${{ github.event_name != 'pull_request' }}
+          tags: ${{ steps.meta.outputs.tags }} # Lấy kết quả của Docker Meta
+          # Bật Cache để lần sau build nhanh hơn
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
