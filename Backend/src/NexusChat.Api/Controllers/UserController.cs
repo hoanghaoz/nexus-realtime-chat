@@ -9,7 +9,7 @@ namespace NexusChat.Api.Controllers;
 
 [Route("api/users")]
 [ApiController]
-public class UserController(IUserUpdateService userUpdateService, IUserSearchService userSearchService) : ControllerBase
+public class UserController(IUserUpdateService userUpdateService, IUserSearchService userSearchService, IUserProfileService userProfileService) : ControllerBase
 {
     /// <summary>
     /// Updates user information based on the provided ID and data.
@@ -39,7 +39,21 @@ public class UserController(IUserUpdateService userUpdateService, IUserSearchSer
             MapErrorToProblem
         );
     }
+    /// <summary>
+    /// Xem profile dua tren ID
+    /// </summary>
+    [HttpGet("{id}/profile")]
+    [EnableRateLimiting("limit-per-user")]
+    [ProducesResponseType(typeof(UserProfileResponseDto), StatusCodes.Status200OK)]
+    public async Task<IActionResult> GetProfile(string id, CancellationToken token)
+    {
+        var result = await userProfileService.GetUserProfileAsync(id, token);
 
+        return result.Match(
+            profile => Ok(profile),
+            MapErrorToProblem
+        );
+    }
     /// <summary>
     /// Search users by username.
     /// </summary>
