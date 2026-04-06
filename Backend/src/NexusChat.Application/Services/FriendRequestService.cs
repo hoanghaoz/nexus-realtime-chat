@@ -49,12 +49,12 @@ public class FriendRequestService(IUserRepository userRepository,IFriendRequestR
         var receiver = await userRepository.GetByIdAsync(createFriendRequest.ToUserId, token);
         if (receiver is null)
         {
-            return Error.NotFound($"The user with id {receiver?.Id} was not found.");
+            return Error.NotFound($"The user with id {receiver.Id} was not found.");
         }
 
         if (sender is null)
         {
-            return Error.NotFound($"The user with id {sender?.Id} was not found.");
+            return Error.NotFound($"The user with id {sender.Id} was not found.");
         }
         
         // Check whether sender and receiver are friends
