@@ -47,15 +47,8 @@ public class FriendRequestService(IUserRepository userRepository,IFriendRequestR
         // Check Existence of ReceiverId and SenderId
         var sender = await userRepository.GetByIdAsync(senderId, token);
         var receiver = await userRepository.GetByIdAsync(createFriendRequest.ToUserId, token);
-        if (receiver is null)
-        {
-            return Error.NotFound($"The user with id {receiver.Id} was not found.");
-        }
-
-        if (sender is null)
-        {
-            return Error.NotFound($"The user with id {sender.Id} was not found.");
-        }
+        if (receiver == null || sender == null)
+            return Error.NotFound("The user you are trying to send a friend request to does not exist.");
         
         // Check whether sender and receiver are friends
         if (sender.Friends.Contains(receiver.Id))
