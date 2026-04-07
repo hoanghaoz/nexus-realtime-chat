@@ -97,8 +97,20 @@ export function SignInForm({
       </Card>
       <FieldDescription className="px-6 text-center">
         Bằng cách nhấn vào "Tạo tài khoản", bạn đồng ý với{" "}
-        <a href="#">Điều khoản Dịch vụ</a> and{" "}
-        <a href="#">Chính sách Bảo mật</a>.
+        <Link
+          to="/terms"
+          className="underline underline-offset-4 hover:text-primary"
+        >
+          Điều khoản Dịch vụ
+        </Link>{" "}
+        and{" "}
+        <Link
+          to="/privacy"
+          className="underline underline-offset-4 hover:text-primary"
+        >
+          Chính sách Bảo mật
+        </Link>
+        .
       </FieldDescription>
     </div>
   );
