@@ -66,7 +66,7 @@ public class ChatHub(IMessageService messageService) : Hub<IChatClient>
 
         if (sendMessageRequestDto.MentionedUsersId != null)
             foreach (var userId in sendMessageRequestDto.MentionedUsersId)
-                await Clients.User(userId).UserGotTagged(result.Value);
+                await Clients.User(userId).UserGotTaggedNotify(result.Value);
 
         await Clients.Group(sendMessageRequestDto.ConversationId).ReceiveMessage(result.Value);
     }
@@ -100,9 +100,9 @@ public class ChatHub(IMessageService messageService) : Hub<IChatClient>
     /// </summary>
     /// <param name="conversationId"></param>
     /// <param name="isTyping"></param>
-    public async Task TypingIndicator(string conversationId, bool isTyping)
+    public async Task SendTypingIndicator(string conversationId, bool isTyping)
     {
         var senderId = Context.UserIdentifier;
-        await Clients.OthersInGroup(conversationId).UserTyping(senderId ?? "Unknown", conversationId, isTyping);
+        await Clients.OthersInGroup(conversationId).UserTypingNotify(senderId ?? "Unknown", conversationId, isTyping);
     }
 }
