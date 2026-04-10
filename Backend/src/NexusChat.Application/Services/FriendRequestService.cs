@@ -14,7 +14,7 @@ public class FriendRequestService(IUserRepository userRepository,IFriendRequestR
         // Prevent users from checking friendship status with themselves
         if (senderId == receiverId)
         {
-            return Error.Validation("Cannot check friendship status with yourself.");
+            return Error.Validation(description: "Cannot check friendship status with yourself.");
         }
 
         // Fast path: Check the Friends array first for existing friendship
@@ -42,17 +42,17 @@ public class FriendRequestService(IUserRepository userRepository,IFriendRequestR
     {
         // Check send friend request to yourself 
         if (senderId == createFriendRequest.ToUserId)
-            return Error.Validation("You cannot send a friend request to yourself.");
+            return Error.Validation(description: "Cannot send request to with yourself.");
         
         // Check Existence of ReceiverId and SenderId
         var sender = await userRepository.GetByIdAsync(senderId, token);
         var receiver = await userRepository.GetByIdAsync(createFriendRequest.ToUserId, token);
         if (receiver == null || sender == null)
-            return Error.NotFound("The user you are trying to send a friend request to does not exist.");
+            return Error.NotFound(description: "The user you are trying to send a friend request to does not exist.");
         
         // Check whether sender and receiver are friends
         if (sender.Friends.Contains(receiver.Id))
-            return Error.Conflict("You are already friends with this user.");
+            return Error.Conflict(description:"You are already friends with this user.");
         
         // Check Has Pending 
         var oldRequest = await friendRequestRepository.GetRequestBetweenUsersAsync(senderId, receiver.Id, token);
@@ -61,7 +61,7 @@ public class FriendRequestService(IUserRepository userRepository,IFriendRequestR
         {
             // If already pending, block the action
             if (oldRequest.RequestType == RequestType.Waiting)
-                return Error.Conflict($"The friend request to user with id {receiver.Id} is already pending.");
+                return Error.Conflict(description:$"The friend request to user with id {receiver.Id} is already pending.");
 
             // If rejected, enforce a 7-day cooldown period
             if (oldRequest.RequestType == RequestType.Reject)
@@ -72,7 +72,7 @@ public class FriendRequestService(IUserRepository userRepository,IFriendRequestR
                 if (DateTime.UtcNow < cooldownTime)
                 {
                     var timeLeft = cooldownTime - DateTime.UtcNow;
-                    return Error.Validation($"Your previous request was rejected. Please try again in {timeLeft.Minutes} minutes and {timeLeft.Seconds} seconds.");
+                    return Error.Validation(description:$"Your previous request was rejected. Please try again in {timeLeft.Minutes} minutes and {timeLeft.Seconds} seconds.");
                 }
 
                 // Passed the cooldown: Reset the existing request to Pending
@@ -84,7 +84,7 @@ public class FriendRequestService(IUserRepository userRepository,IFriendRequestR
             }
             else
             {
-                return Error.Conflict("Invalid friend request state.");
+                return Error.Conflict(description:"Invalid friend request state.");
             }
         }
         else
@@ -122,12 +122,12 @@ public class FriendRequestService(IUserRepository userRepository,IFriendRequestR
         var request = await friendRequestRepository.GetRequestByIdAsync(requestId, token);
         if (request is null)
         {
-            return Error.NotFound("The request was not found.");
+            return Error.NotFound(description:"The request was not found.");
         }
         // Security: Check whether this request actually belongs to the user who is attempting to accept it
         if (request.ToUserId != toUserId)
         {
-            return Error.Validation("You are not authorized to accept someone else's invitation!"); 
+            return Error.Validation(description:"You are not authorized to accept someone else's invitation!"); 
         }
         request.RequestType = RequestType.Accept;
         await friendRequestRepository.UpdateAsync(request, token);
@@ -166,12 +166,12 @@ public class FriendRequestService(IUserRepository userRepository,IFriendRequestR
         var request = await friendRequestRepository.GetRequestByIdAsync(requestId, token);
         if (request is null)
         {
-            return Error.NotFound("The request was not found.");
+            return Error.NotFound(description:"The request was not found.");
         }
         // Security: Check whether this request actually belongs to the user who is attempting to accept it
         if (request.ToUserId != toUserId)
         {
-            return Error.Validation("You are not authorized to reject someone else's invitation!"); 
+            return Error.Validation(description:"You are not authorized to reject someone else's invitation!"); 
         }
 
         request.RequestType = RequestType.Reject;

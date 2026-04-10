@@ -2,6 +2,7 @@ using System.Security.Claims;
 using ErrorOr;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 using NexusChat.Application.DTOs.FriendRequests;
 using NexusChat.Application.Interfaces.FriendRequests;
 
@@ -21,6 +22,7 @@ public class FriendRequestsController(IFriendRequestService friendRequestService
     /// <param name="token">A cancellation token to observe while waiting for the task to complete.</param>
     /// <returns>Returns a string status: "None", "Pending", or "Friend".</returns>
     [HttpGet("status/{receiverId}")]
+    [EnableRateLimiting("limit-per-user")]
     public async Task<IActionResult> GetFriendshipStatus(string receiverId, CancellationToken token)
     {
         // The user initiating the check acts as the Sender
@@ -47,6 +49,7 @@ public class FriendRequestsController(IFriendRequestService friendRequestService
     /// <param name="token">A cancellation token to observe while waiting for the task to complete.</param>
     /// <returns>A success message if the request is sent or re-activated.</returns>
     [HttpPost]
+    [EnableRateLimiting("limit-per-user")]
     public async Task<IActionResult> SendRequest([FromBody] CreateFriendRequestDto dto, CancellationToken token)
     {
         // The user sending the friend request acts as the Sender
@@ -72,6 +75,7 @@ public class FriendRequestsController(IFriendRequestService friendRequestService
     /// <param name="requestId">The unique ID of the friend request.</param>
     /// <param name="token">A cancellation token to observe while waiting for the task to complete.</param>
     [HttpPut("{requestId}/accept")]
+    [EnableRateLimiting("limit-per-user")]
     public async Task<IActionResult> AcceptRequest(string requestId, CancellationToken token)
     {
         // The user accepting the request acts as the Receiver
@@ -97,6 +101,7 @@ public class FriendRequestsController(IFriendRequestService friendRequestService
     /// <param name="requestId">The unique ID of the friend request.</param>
     /// <param name="token">A cancellation token to observe while waiting for the task to complete.</param>
     [HttpPut("{requestId}/decline")]
+    [EnableRateLimiting("limit-per-user")]
     public async Task<IActionResult> DeclineRequest(string requestId, CancellationToken token)
     {
         // The user declining the request acts as the Receiver
@@ -120,6 +125,7 @@ public class FriendRequestsController(IFriendRequestService friendRequestService
     /// </summary>
     /// <returns>A list of friend requests with sender info (Name, Avatar, ID).</returns>
     [HttpGet("pending")]
+    [EnableRateLimiting("limit-per-user")]
     public async Task<IActionResult> GetPendingRequests(CancellationToken token)
     {
         // The user viewing the pending list acts as the Receiver
