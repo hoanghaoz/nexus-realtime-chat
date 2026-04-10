@@ -14,6 +14,7 @@
         - Cloudinary_ApiKey=${CLOUDINARY_APIKEY}
         - Cloudinary_ApiSecret=${CLOUDINARY_APISECRET}
       
+        - ASPNETCORE_ENVIRONMENT=Development
     ports:
       - "8080:8080"
     networks:

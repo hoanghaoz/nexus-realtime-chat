@@ -1,3 +1,4 @@
+using MongoDB.Bson;
 using MongoDB.Driver;
 using NexusChat.Application.DTOs;
 using NexusChat.Application.Interfaces.UserRepository;
@@ -35,5 +36,11 @@ public class UserRepository(
                 f.Avatar, 
                 f.Status
             )).ToList();
+    }
+
+    public async Task<List<User>> SearchUsersByNameAsync(string name, CancellationToken token)
+    {
+        var filter = Builders<User>.Filter.Regex(u => u.UserName, new BsonRegularExpression(name, "i"));
+        return await DbSet.Find(filter).ToListAsync(token);
     }
 }
