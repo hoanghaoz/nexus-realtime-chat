@@ -1,3 +1,3 @@
 namespace NexusChat.Application.DTOs.Message;
 
-public sealed record EditMessageRequestDto(string MessageId,string NewContent,bool IsEdited);
+public sealed record EditMessageRequestDto(string NewContent,bool IsEdited);

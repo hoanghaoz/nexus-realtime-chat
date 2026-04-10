@@ -1,3 +1,3 @@
 namespace NexusChat.Application.DTOs.Message;
 
-public sealed record ReactMessageRequestDto(string MessageId,string Emoji,bool IsReacted = true);
+public sealed record ReactMessageRequestDto(string Emoji, bool IsReacted = true);

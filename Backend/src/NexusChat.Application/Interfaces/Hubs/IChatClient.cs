@@ -1,6 +1,5 @@
 using NexusChat.Application.DTOs.Message;
 using NexusChat.Application.DTOs.FriendRequests;
-using NexusChat.Application.DTOs.Hubs;
 
 namespace NexusChat.Application.Interfaces.Hubs;
 
@@ -13,7 +12,9 @@ public interface IChatClient
     public Task NotifyUserJoined(string userId,string conversationId);
     public Task NotifyUserLeft(string userId, string conversationId);
     public Task UserTyping(string userId, string conversationId, bool isTyping);
-    public Task UserGotTagged(MessageDto message);
+    public Task UserGotTagged(MessageResponseDto message);
     public Task ReceiveFriendRequest(FriendRequestDto request);
     public Task ReceiveAcceptFriendNotification(AcceptFriendNotificationDto dto);
+    
+    public Task ReceiveErrorMessage(string message);
 }

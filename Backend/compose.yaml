@@ -7,12 +7,12 @@
       
     environment:
         - ConnectionStrings__DefaultConnection=${DEFAULT_CONNECTION}
-        - Jwt_Key=${JWT_KEY}
-        - Jwt_Issuer=${JWT_ISSUER}
-        - Jwt_Audience=${JWT_AUDIENCE}
-        - Cloudinary_CloudName=${CLOUDINARY_CLOUDNAME}
-        - Cloudinary_ApiKey=${CLOUDINARY_APIKEY}
-        - Cloudinary_ApiSecret=${CLOUDINARY_APISECRET}
+        - Jwt__Key=${JWT_KEY}
+        - Jwt__Issuer=${JWT_ISSUER}
+        - Jwt__Audience=${JWT_AUDIENCE}
+        - Cloudinary__CloudName=${CLOUDINARY_CLOUDNAME}
+        - Cloudinary__ApiKey=${CLOUDINARY_APIKEY}
+        - Cloudinary__ApiSecret=${CLOUDINARY_APISECRET}
       
         - ASPNETCORE_ENVIRONMENT=Development
     ports:

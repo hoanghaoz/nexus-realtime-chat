@@ -12,10 +12,10 @@ public class TokenService(IConfiguration configuration) : ITokenService
 {
     public string GenerateToken(string userId, UserRole userRole)
     {
-        var secretKey = configuration["JWT_KEY"] ?? 
+        var secretKey = configuration["Jwt:Key"] ?? 
                         throw new InvalidOperationException("JWT_KEY is not set in configuration");
-        var issue = configuration["JWT_ISSUER"];
-        var audience = configuration["JWT_AUDIENCE"];
+        var issue = configuration["Jwt:Issue"];
+        var audience = configuration["Jwt:Audience"];
         
         var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(secretKey));
 
