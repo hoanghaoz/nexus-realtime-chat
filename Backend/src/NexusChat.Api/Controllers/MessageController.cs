@@ -17,7 +17,7 @@ namespace NexusChat.Api.Controllers;
 /// <param name="messageService">Service for message operations</param>
 [Route("api/message")]
 [ApiController]
-[Authorize("User")]
+[Authorize]
 public class MessageController(
     IMessageService messageService) : ControllerBase
 {

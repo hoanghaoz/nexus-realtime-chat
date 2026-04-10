@@ -12,11 +12,11 @@ public class TokenService(IConfiguration configuration) : ITokenService
 {
     public string GenerateToken(string userId, UserRole userRole)
     {
-        var secretKey = configuration["Jwt:Key"] ?? 
+        var secretKey = configuration["Jwt:Key"] ??
                         throw new InvalidOperationException("JWT_KEY is not set in configuration");
-        var issue = configuration["Jwt:Issue"];
+        var issue = configuration["Jwt:Issuer"];
         var audience = configuration["Jwt:Audience"];
-        
+
         var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(secretKey));
 
         var claims = new List<Claim>
@@ -25,7 +25,7 @@ public class TokenService(IConfiguration configuration) : ITokenService
             new(ClaimTypes.Role, userRole.ToString())
         };
         var credentials = new SigningCredentials(key, SecurityAlgorithms.HmacSha256Signature);
-        
+
         var tokenDescriptor = new SecurityTokenDescriptor
         {
             Subject = new ClaimsIdentity(claims),
@@ -34,7 +34,7 @@ public class TokenService(IConfiguration configuration) : ITokenService
             Audience = audience,
             SigningCredentials = credentials
         };
-        
+
         var tokenHandler = new JwtSecurityTokenHandler();
         var token = tokenHandler.CreateToken(tokenDescriptor);
         return tokenHandler.WriteToken(token);
