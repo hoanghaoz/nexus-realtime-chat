@@ -1,12 +1,13 @@
 using ErrorOr;
 using NexusChat.Application.DTOs.Message;
 using NexusChat.Application.Extension;
+using NexusChat.Application.Interfaces.Hubs;
 using NexusChat.Application.Interfaces.Message;
 using NexusChat.Domain.Entity.EmbeddedObject;
 
 namespace NexusChat.Application.Services;
 
-public class MessageService(IMessageRepository messageRepository) : IMessageService
+public class MessageService(IMessageRepository messageRepository, IRealtimeNotification notify) : IMessageService
 {
     public async Task<ErrorOr<List<MessageResponseDto>>> GetMessageInConversationAsync(MessageRequestDto dto,
         CancellationToken token)
@@ -30,6 +31,7 @@ public class MessageService(IMessageRepository messageRepository) : IMessageServ
         updatedMessage.IsEdited = true;
         updatedMessage.EditedAt = DateTime.UtcNow;
         await messageRepository.UpdateAsync(updatedMessage, token);
+        await notify.NotifyMessageEditedAsync(updatedMessage.ConversationId, updatedMessage.Id, dto.NewContent, token);
         return updatedMessage.MapMessageDto();
     }
 
@@ -49,7 +51,8 @@ public class MessageService(IMessageRepository messageRepository) : IMessageServ
                 Emoji = dto.Emoji
             });
         await messageRepository.UpdateAsync(updatedMessage, token);
-
+        await notify.NotifyMessageReactedAsync(updatedMessage.ConversationId, updatedMessage.Id, dto.Emoji, fromUserId,
+            updatedMessage.FromUserId, token);
         // extension method to map message to messageDto
         return updatedMessage.MapMessageDto();
     }
@@ -66,6 +69,7 @@ public class MessageService(IMessageRepository messageRepository) : IMessageServ
         updatedMessage.IsDeleted = true;
         updatedMessage.DeletedAt = DateTime.UtcNow;
         await messageRepository.UpdateAsync(updatedMessage, token);
+        await notify.NotifyMessageDeletedAsync(updatedMessage.ConversationId, updatedMessage.Id, token);
         return Result.Success;
     }
 
