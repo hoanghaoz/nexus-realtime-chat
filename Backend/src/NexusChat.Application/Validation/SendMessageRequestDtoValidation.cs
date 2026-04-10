@@ -24,7 +24,8 @@ public class SendMessageRequestDtoValidation : AbstractValidator<SendMessageRequ
 
             attachment.RuleFor(a => a.FileSize)
                 .NotNull().WithMessage("Attachment file size is required.")
-                .LessThanOrEqualTo(25*1024*1024).WithMessage("Attachment file size must be less than or equal to 25MB.")
+                .LessThanOrEqualTo(25 * 1024 * 1024)
+                .WithMessage("Attachment file size must be less than or equal to 25MB.")
                 .GreaterThanOrEqualTo(0).WithMessage("Attachment file size cannot be negative.");
 
             attachment.RuleFor(a => a.Type)
@@ -33,13 +34,12 @@ public class SendMessageRequestDtoValidation : AbstractValidator<SendMessageRequ
         }).When(x => x.Attachments != null);
 
         RuleFor(x => x.MentionedUsersId)
-            .Must(x => x.Distinct().Count() == x.Count)
+            .Must(x => x != null && x.Distinct().Count() == x.Count)
             .WithMessage("Mentioned userid must be unique.")
             .When(x => x.MentionedUsersId != null);
-        
+
         RuleForEach(x => x.MentionedUsersId)
             .NotEmpty().WithMessage("Mentioned user id is required.")
             .When(x => x.MentionedUsersId != null);
     }
 }
-

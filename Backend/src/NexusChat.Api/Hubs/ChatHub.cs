@@ -85,7 +85,7 @@ public class ChatHub(IMessageService messageService) : Hub<IChatClient>
         var result = await messageService.CreateMessageAsync(sendMessageRequestDto, senderId, token);
         if (result.IsError)
         {
-            await Clients.Caller.ReceiveErrorMessage(result.Errors.First().Description);
+            await Clients.Caller.ReceiveErrorMessage(result.Errors[0].Description);
             return;
         }
 
