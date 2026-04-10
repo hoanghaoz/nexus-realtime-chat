@@ -9,6 +9,9 @@ namespace NexusChat.Application.Services;
 
 public class MessageService(IMessageRepository messageRepository, IRealtimeNotification notify) : IMessageService
 {
+    /// <summary>
+    ///     Retrieves messages from a conversation with cursor-based pagination.
+    /// </summary>
     public async Task<ErrorOr<List<MessageResponseDto>>> GetMessageInConversationAsync(MessageRequestDto dto,
         CancellationToken token)
     {
@@ -17,6 +20,9 @@ public class MessageService(IMessageRepository messageRepository, IRealtimeNotif
         return messages;
     }
 
+    /// <summary>
+    ///     Edits message content. Only the message owner can edit. Notifies all conversation members.
+    /// </summary>
     public async Task<ErrorOr<MessageResponseDto>> EditMessageContentAsync(EditMessageRequestDto dto, string fromUserId,
         string messageId,
         CancellationToken token)
@@ -35,6 +41,9 @@ public class MessageService(IMessageRepository messageRepository, IRealtimeNotif
         return updatedMessage.MapMessageDto();
     }
 
+    /// <summary>
+    ///     Adds or removes reaction from a message. Notifies all members and sends toast to message owner.
+    /// </summary>
     public async Task<ErrorOr<MessageResponseDto>> ReactMessageContentAsync(ReactMessageRequestDto dto,
         string fromUserId,
         string messageId, CancellationToken token)
@@ -57,6 +66,9 @@ public class MessageService(IMessageRepository messageRepository, IRealtimeNotif
         return updatedMessage.MapMessageDto();
     }
 
+    /// <summary>
+    ///     Soft deletes a message. Only the message owner can delete. Notifies all conversation members.
+    /// </summary>
     public async Task<ErrorOr<Success>> DeleteMessageContentAsync(string messageId, string fromUserId,
         CancellationToken token)
     {
@@ -73,6 +85,9 @@ public class MessageService(IMessageRepository messageRepository, IRealtimeNotif
         return Result.Success;
     }
 
+    /// <summary>
+    ///     Creates a new message in a conversation.
+    /// </summary>
     public async Task<ErrorOr<MessageResponseDto>> CreateMessageAsync(SendMessageRequestDto dto, string fromUserId,
         CancellationToken token)
     {
