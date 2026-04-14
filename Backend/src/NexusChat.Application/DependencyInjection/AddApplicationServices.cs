@@ -1,12 +1,13 @@
-using System.Reflection;
 using FluentValidation;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using NexusChat.Application.Interfaces.Authentication;
 using NexusChat.Application.Interfaces.FriendRequests;
 using NexusChat.Application.Interfaces.Message;
+using NexusChat.Application.Interfaces.RoomService;
 using NexusChat.Application.Interfaces.UserService;
 using NexusChat.Application.Services;
+using System.Reflection;
 
 namespace NexusChat.Application.DependencyInjection;
 
@@ -23,6 +24,7 @@ public static class DependencyInjection
         services.AddScoped<IUserProfileService, UserProfileService>();
         services.AddScoped<IUserSearchService, UserSearchService>();
         services.AddScoped<IMessageService, MessageService>();
+        services.AddScoped<IGroupService, GroupService>();
         return services;
     }
 }

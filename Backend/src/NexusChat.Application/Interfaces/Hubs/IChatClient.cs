@@ -1,5 +1,6 @@
 using NexusChat.Application.DTOs.FriendRequests;
 using NexusChat.Application.DTOs.Message;
+using NexusChat.Application.DTOs.Rooms;
 
 namespace NexusChat.Application.Interfaces.Hubs;
 
@@ -101,4 +102,10 @@ public interface IChatClient
     /// <param name="emoji">The emoji or reaction type.</param>
     /// <param name="token">Cancellation token for the operation.</param>
     public Task ReceiveToastNotification(string fromUserId, string messageId, string emoji, CancellationToken token);
+
+
+    Task ReceiveAddedToGroupNotification(GroupResponseDto group);
+    // <summary>
+    //     Notifies a user that they have been added to a group conversation.
+
 }
