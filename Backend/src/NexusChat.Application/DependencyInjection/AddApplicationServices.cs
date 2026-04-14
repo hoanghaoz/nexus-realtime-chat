@@ -16,7 +16,6 @@ public static class DependencyInjection
     public static IServiceCollection AddApplicationServices(this IServiceCollection services,
         IConfiguration configuration)
     {
-        services.AddScoped<IUserSearchService, UserSearchService>();
         services.AddValidatorsFromAssembly(Assembly.GetExecutingAssembly());
         services.AddScoped<IAuthService, AuthService>();
         services.AddScoped<IUserUpdateService, UserUpdateService>();

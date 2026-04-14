@@ -8,6 +8,7 @@ using NexusChat.Application.Interfaces.Common;
 using NexusChat.Application.Interfaces.FriendRequests;
 using NexusChat.Application.Interfaces.Media;
 using NexusChat.Application.Interfaces.Message;
+using NexusChat.Application.Interfaces.RoomService;
 using NexusChat.Application.Interfaces.UserRepository;
 using NexusChat.Infrastructure.Authentication;
 using NexusChat.Infrastructure.Data.Configuration;
@@ -33,7 +34,9 @@ public static class DependencyInjection
         services.AddScoped<IUnitOfWork, UnitOfWork>();
         
         services.AddScoped<IMongoUnitOfWork>(p => (IMongoUnitOfWork)p.GetRequiredService<IUnitOfWork>());
-        
+
+        services.AddScoped<IConversationRepository, ConversationRepository>();
+
         services.AddScoped<IPasswordHasher, PasswordHasher>();
         
         services.AddScoped<ITokenService,TokenService>();
