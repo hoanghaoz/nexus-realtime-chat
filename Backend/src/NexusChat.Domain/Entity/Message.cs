@@ -12,10 +12,16 @@ public class Message : Entity<string>
     public List<Attachment> Attachments { get; set; } = [];
     
     public List<Reaction> Reactions { get; set; } = [];
+    
+    public List<string> MentionedUsersId { get; set; } = [];
 
     public bool IsDeleted { get; set; } = false;
+
+    public bool IsEdited { get; set; } = false;
     
     public DateTime? DeletedAt { get; set; }
+    
+    public DateTime? EditedAt { get; set; }
     
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 }

@@ -13,7 +13,7 @@
 
 ## 🛠️ Tech Stack
 
-**Frontend:** ReactJS, Vite
+**Frontend:** ReactJS, Vite, TypeScript
 
 **Backend:** ASP.NET Core 10 Web API, SignalR (Real-time Communication)
 
