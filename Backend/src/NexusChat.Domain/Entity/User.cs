@@ -13,8 +13,6 @@ public class User : Entity<string>
     public DateTime? UpdatedAt { get; set; } 
     
     public bool IsOnline { get; set; }
-    
-    public DateTime? LastOnline { get; set; } = DateTime.UtcNow;    
     // List contains other UserId who is friend with this user
     public List<string> Friends { get; set; } = [];
 }

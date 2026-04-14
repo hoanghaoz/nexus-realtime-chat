@@ -5,19 +5,13 @@ using NexusChat.Application.Interfaces.Hubs;
 
 namespace NexusChat.Api.Hubs;
 
-/// <summary>
-/// This class defines methods that the clients call on servers
-/// It inherits from the Hub class provided by SignalR, which allows it to manage connections and send messages to clients.
-/// The SendMessage method is an example of a method that can be called by clients to send a message to all connected clients.
-/// </summary>
 [Authorize]
-public class ChatHub : Hub<IChatClient>
-{
-    public override async Task OnConnectedAsync()
-    {
-        await base.OnConnectedAsync();
-    }
-    
+public class ChatHub() : Hub<IChatClient>
+{   /// <summary>
+    /// This class defines methods that the clients call on servers
+    /// It inherits from the Hub class provided by SignalR, which allows it to manage connections and send messages to clients.
+    /// The SendMessage method is an example of a method that can be called by clients to send a message to all connected clients.
+    /// </summary> 
     public async Task SendMessage()
     {
         var senderId = Context.UserIdentifier;

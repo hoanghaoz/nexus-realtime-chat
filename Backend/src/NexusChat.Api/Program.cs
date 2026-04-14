@@ -16,6 +16,7 @@ using MongoDB.Driver;
 using NexusChat.Api.Hubs;
 using NexusChat.Api.Services;
 using NexusChat.Application.Interfaces.FriendRequests;
+using NexusChat.Application.Interfaces.Hubs;
 using NexusChat.Infrastructure.Data.Configuration;
 
 Env.TraversePath().Load();
@@ -35,6 +36,7 @@ builder.Services.AddInfrastructureService(builder.Configuration);
 builder.Services.AddExceptionHandler<GlobalExceptionHandler>();
 builder.Services.AddFluentValidationAutoValidation();
 builder.Services.AddSignalR();
+builder.Services.AddSingleton<IPresenceTracker, PresenceTracker>();
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowAll", policy =>
@@ -157,5 +159,6 @@ app.MapOpenApi();
 app.MapScalarApiReference();
 app.MapControllers(); // use Scalar for API docs
 app.MapHub<ChatHub>("/hubs/chat");
+app.MapHub<PresenceHub>("/hubs/presence");
 app.Run();
 
