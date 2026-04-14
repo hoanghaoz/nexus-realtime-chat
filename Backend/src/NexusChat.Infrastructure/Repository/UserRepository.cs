@@ -25,7 +25,7 @@ public class UserRepository(
     public async Task<List<FriendDto>> GetFriendsWithUserAsync(string username,CancellationToken token)
     {
         var user = await GetUserByUsernameAsync(username,token);
-        if (user?.Friends == null || !user.Friends.Any())
+        if (user?.Friends == null || user.Friends.Count == 0)
         {
             return [];
         }
