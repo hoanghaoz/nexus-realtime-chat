@@ -29,6 +29,7 @@ public class GroupService(IConversationRepository conversationRepo) : IGroupServ
 
         var newGroup = new Conversation
         {
+            Id = Guid.NewGuid().ToString(),
             Name = dto.Name,
             RoomType = RoomType.Group,
             CreatedBy = creatorId,

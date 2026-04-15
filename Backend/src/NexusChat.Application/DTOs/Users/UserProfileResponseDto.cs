@@ -9,6 +9,6 @@ public class UserProfileResponseDto
     public string? Avatar { get; set; }
     public UserStatus Status { get; set; }
     public DateTime CreatedAt { get; set; }
-    //public DateTime? UpdatedAt { get; set; }
+    public DateTime? UpdatedAt { get; set; }
     public int FriendCount { get; set; }
 }
