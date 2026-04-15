@@ -2,6 +2,6 @@ namespace NexusChat.Domain.Enum;
 
 public enum ParticipantRole
 {
-    Admin = 1,
-    User = 2
+    Owner = 1,
+    Member = 2
 }
