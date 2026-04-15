@@ -10,7 +10,7 @@ public interface IUserRepository : IGenericRepository<User,string>
     
     Task<User?> GetUserByUsernameAsync(string username, CancellationToken token);
     
-    Task<List<User>> GetFriendsByUserIdAsync(string username, CancellationToken token);
+    Task<List<User>> GetFriendsByUserIdAsync(string userId, CancellationToken token);
 
     Task<List<User>> SearchUsersByNameAsync(string name, CancellationToken token);
 }

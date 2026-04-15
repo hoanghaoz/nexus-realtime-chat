@@ -24,7 +24,7 @@ public class UserRepository(
     public async Task<List<User>> GetFriendsByUserIdAsync(string userId,CancellationToken token)
     {
         var user = await GetByIdAsync(userId, token);
-        if (user?.Friends == null || !user.Friends.Any())
+        if (user?.Friends == null || user.Friends.Count == 0)
         {
             return [];
         }

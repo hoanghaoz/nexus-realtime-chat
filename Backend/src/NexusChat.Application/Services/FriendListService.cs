@@ -20,7 +20,7 @@ public class FriendListService(IUserRepository userRepository, IPresenceTracker 
         // 1. Fetch friends list from database
         var friendsFromDb = await userRepository.GetFriendsByUserIdAsync(userId, token);
 
-        if (!friendsFromDb.Any()) return new List<FriendResponseDto>();
+        if (friendsFromDb.Count == 0) return new List<FriendResponseDto>();
 
         // 2. Get list of currently online users from the presence tracker (in-memory cache)
         var onlineUserIds = await presenceTracker.GetOnlineUsers();
