@@ -1,6 +1,7 @@
 using NexusChat.Application.Interfaces.Common;
 using NexusChat.Domain.Entity;
-namespace NexusChat.Application.Interfaces.FriendRequests;
+
+namespace NexusChat.Application.Interfaces.FriendRepository;
 
 public interface IFriendRequestRepository : IGenericRepository<FriendRequest, string>
 {
