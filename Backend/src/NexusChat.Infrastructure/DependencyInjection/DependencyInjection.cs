@@ -5,6 +5,7 @@ using Microsoft.Extensions.Options;
 using MongoDB.Driver;
 using NexusChat.Application.Interfaces.Authentication;
 using NexusChat.Application.Interfaces.Common;
+using NexusChat.Application.Interfaces.FriendRepository;
 using NexusChat.Application.Interfaces.FriendRequests;
 using NexusChat.Application.Interfaces.Media;
 using NexusChat.Application.Interfaces.Message;

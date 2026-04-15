@@ -15,7 +15,9 @@ using NexusChat.Api.Middlewares;
 using NexusChat.Api.Services;
 using NexusChat.Application.DependencyInjection;
 using NexusChat.Application.Interfaces.FriendRequests;
+using NexusChat.Application.Interfaces.FriendService;
 using NexusChat.Application.Interfaces.Hubs;
+using NexusChat.Application.Services;
 using NexusChat.Infrastructure.Data.Configuration;
 using NexusChat.Infrastructure.DependencyInjection;
 using NexusChat.Infrastructure.Media;
@@ -149,7 +151,8 @@ builder.Services.AddRateLimiter(options =>
 });
 // Connect between Interface and Impliment of Notification
 builder.Services.AddScoped<INotificationService, NotificationService>();
-
+builder.Services.AddScoped<IFriendListService, FriendListService>(); 
+builder.Services.AddSingleton<IPresenceTracker, PresenceTracker>(); // check status user is online or offline 
 var app = builder.Build();
 using (var scope = app.Services.CreateScope())
 {
@@ -166,4 +169,5 @@ app.MapOpenApi();
 app.MapScalarApiReference();
 app.MapControllers(); // use Scalar for API docs
 app.MapHub<ChatHub>("/hubs/chat");
+app.MapHub<PresenceHub>("/hubs/presence");
 app.Run();

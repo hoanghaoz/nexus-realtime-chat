@@ -1,5 +1,7 @@
 using MongoDB.Driver;
+using NexusChat.Application.Interfaces.FriendRepository;
 using NexusChat.Application.Interfaces.FriendRequests;
+using NexusChat.Application.Interfaces.FriendService;
 using NexusChat.Domain.Entity;
 using NexusChat.Domain.Enum;
 using NexusChat.Infrastructure.Data.Interface;
