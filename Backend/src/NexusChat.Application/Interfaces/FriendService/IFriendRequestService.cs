@@ -1,7 +1,7 @@
 using ErrorOr;
 using NexusChat.Application.DTOs.FriendRequests;
 
-namespace NexusChat.Application.Interfaces.FriendRequests;
+namespace NexusChat.Application.Interfaces.FriendService;
 
 public interface IFriendRequestService
 {

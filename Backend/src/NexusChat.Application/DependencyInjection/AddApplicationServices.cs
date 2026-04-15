@@ -5,6 +5,7 @@ using Microsoft.Extensions.Configuration;
 using NexusChat.Application.Interfaces;
 using NexusChat.Application.Interfaces.Authentication;
 using NexusChat.Application.Interfaces.FriendRequests;
+using NexusChat.Application.Interfaces.FriendService;
 using NexusChat.Application.Interfaces.UserService;
 using NexusChat.Application.Services;
 
