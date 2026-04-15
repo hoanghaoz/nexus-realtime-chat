@@ -5,6 +5,5 @@ namespace NexusChat.Application.DTOs;
 public sealed record FriendResponseDto(string Id,
     string UserName,
     string? Avatar,
-    bool IsOnline,
-    DateTime LastActive
+    bool IsOnline
     );
