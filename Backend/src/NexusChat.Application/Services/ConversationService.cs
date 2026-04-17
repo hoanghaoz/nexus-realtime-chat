@@ -82,7 +82,7 @@ public class ConversationService(
                     IsOnline: false,
                     Role: GetCurrentUserRole(conversation, currentUserId));
             }
-            // 
+            // Get Information of the other participant to display in the conversation list (e.g., their name and avatar)
             var otherUser = await userRepository.GetByIdAsync(otherParticipant.UserId, token);
             return new ConversationResponse(
                 TypeRoom: conversation.RoomType,
