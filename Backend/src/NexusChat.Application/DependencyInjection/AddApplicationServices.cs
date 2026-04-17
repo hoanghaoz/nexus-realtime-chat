@@ -4,6 +4,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Configuration;
 using NexusChat.Application.Interfaces;
 using NexusChat.Application.Interfaces.Authentication;
+using NexusChat.Application.Interfaces.ConversationService;
 using NexusChat.Application.Interfaces.FriendRequests;
 using NexusChat.Application.Interfaces.FriendService;
 using NexusChat.Application.Interfaces.UserService;
@@ -23,6 +24,7 @@ public static class DependencyInjection
         services.AddScoped<IUserProfileService, UserProfileService>();
         services.AddScoped<IUserSearchService, UserSearchService>();
         services.AddScoped<IFriendListService, FriendListService>();
+        services.AddScoped<IConversationService, ConversationService >();
         return services;
     }
 }
