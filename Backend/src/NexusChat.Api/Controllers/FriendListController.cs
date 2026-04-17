@@ -90,7 +90,7 @@ public class FriendListController(IFriendListService friendListService) : Contro
         if (string.IsNullOrEmpty(userId))
             return Unauthorized(new { message = InvalidUserError });
 
-        var result = await friendListService.SearchFriendsAsync(userId, keyword, token);
+        var result = await friendListService.SearchFriendsAsync(userId, keyword, token)  ;
 
         var response = result.Match<IActionResult>(
             friends => Ok(friends),

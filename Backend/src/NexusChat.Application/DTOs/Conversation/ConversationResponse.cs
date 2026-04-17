@@ -7,7 +7,8 @@ public sealed record ConversationResponse(
     string DisplayName,
     string? DisplayAvatar,
     LastMessagePreviewResponse? LastMessage,
-    bool IsOnline
+    bool IsOnline,
+    string Role
 );
 
 public sealed record LastMessagePreviewResponse(
