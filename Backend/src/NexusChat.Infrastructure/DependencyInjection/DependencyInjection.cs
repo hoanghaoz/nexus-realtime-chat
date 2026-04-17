@@ -5,6 +5,7 @@ using Microsoft.Extensions.Options;
 using MongoDB.Driver;
 using NexusChat.Application.Interfaces.Authentication;
 using NexusChat.Application.Interfaces.Common;
+using NexusChat.Application.Interfaces.ConversationRepository;
 using NexusChat.Application.Interfaces.FriendRepository;
 using NexusChat.Application.Interfaces.FriendRequests;
 using NexusChat.Application.Interfaces.Media;
@@ -46,6 +47,7 @@ public static class DependencyInjection
         
         services.AddScoped<IMessageRepository,MessageRepository>();
         services.AddScoped<IFriendRequestRepository, FriendRequestRepository>();
+        services.AddScoped<IConversationRepository, ConversationRepository>();
         services.AddSingleton<ICloudinary>(sp =>
         {
             var config = sp.GetRequiredService<IOptions<CloudinarySetting>>().Value;
