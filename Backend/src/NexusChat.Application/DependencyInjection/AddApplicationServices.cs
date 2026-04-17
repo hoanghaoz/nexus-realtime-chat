@@ -25,6 +25,7 @@ public static class DependencyInjection
         services.AddScoped<IUserSearchService, UserSearchService>();
         services.AddScoped<IFriendListService, FriendListService>();
         services.AddScoped<IConversationService, ConversationService >();
+        services.AddScoped<IGroupService, GroupService>();
         return services;
     }
 }
