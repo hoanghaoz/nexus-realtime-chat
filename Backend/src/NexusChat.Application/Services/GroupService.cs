@@ -145,5 +145,35 @@ public class GroupService(IConversationRepository conversationRepo, IRealtimeNot
 
         return true;
     }
-    
+    public async Task<ErrorOr<bool>> RemoveMemberAsync(string actionUserId, string groupId, string targetUserId, CancellationToken token)
+    {
+        var group = await conversationRepo.GetByIdAsync(groupId, token);
+        if (group is null || group.RoomType != RoomType.Group)
+        {
+            return Error.NotFound("Group.NotFound", "Không tìm thấy nhóm này.");
+        }
+
+        if (group.CreatedBy != actionUserId)
+        {
+            return Error.Validation("Group.Unauthorized", "Chỉ trưởng nhóm mới được quyền xóa người khác.");
+        }
+
+        if (actionUserId == targetUserId)
+        {
+            return Error.Validation("Group.InvalidAction", "Trưởng nhóm không thể tự xóa chính mình.");
+        }
+
+        var targetParticipant = group.Participants.FirstOrDefault(p => p.UserId == targetUserId);
+        if (targetParticipant == null)
+        {
+            return Error.NotFound("Group.MemberNotFound", "Người này không có mặt trong nhóm.");
+        }
+
+        group.Participants.Remove(targetParticipant);
+
+        await conversationRepo.UpdateAsync(group, token);
+
+        return true;
+    }
+
 }

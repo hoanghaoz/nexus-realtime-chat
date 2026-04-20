@@ -11,4 +11,5 @@ public interface IGroupService
     Task<ErrorOr<bool>> DeleteGroupAsync(string userId, string groupId, CancellationToken token);
 
     Task<ErrorOr<GroupResponseDto>> AddMemberAsync(string userId, string groupId, AddMemberRequestDto dto, CancellationToken token);
+    Task<ErrorOr<bool>> RemoveMemberAsync(string actionUserId, string groupId, string targetUserId, CancellationToken token);
 }

@@ -84,6 +84,22 @@ public class GroupController(
 
         return Ok(result.Value);
     }
+
+    [HttpDelete("{groupId}/IdMemberRemove")] 
+    public async Task<IActionResult> RemoveMemberFromGroup(string groupId, string targetUserId, CancellationToken token)
+    {
+        var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+        if (string.IsNullOrEmpty(userId)) return Unauthorized();
+
+        var result = await groupService.RemoveMemberAsync(userId, groupId, targetUserId, token);
+
+        if (result.IsError)
+        {
+            return MapErrorToProblem(result.Errors);
+        }
+
+        return Ok(new { message = "Đã xóa thành viên ra khỏi nhóm" });
+    }
     private IActionResult MapErrorToProblem(List<Error> errors)
     {
         var firstError = errors[0];
