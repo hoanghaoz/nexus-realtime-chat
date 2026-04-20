@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.SignalR;
+using NexusChat.Application.DTOs.Rooms;
 using NexusChat.Application.Interfaces.Hubs;
 
 namespace NexusChat.Api.Hubs;
@@ -64,5 +65,10 @@ public class SignalRNotificationService(IHubContext<ChatHub, IChatClient> hubCon
             .MessageReactNotify(conversationId, messageId, emoji, fromUserId, token);
         if (fromUserId != toUserId)
             await hubContext.Clients.User(toUserId).ReceiveToastNotification(fromUserId,messageId, emoji, token);
+    }
+
+    public async Task NotifyAddedToGroupAsync(List<string> userIds, GroupResponseDto group, CancellationToken token)
+    {
+        await hubContext.Clients.Users(userIds).ReceiveAddedToGroupNotification(group);
     }
 }

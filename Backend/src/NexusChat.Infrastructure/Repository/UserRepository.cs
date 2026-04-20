@@ -1,6 +1,5 @@
 using MongoDB.Bson;
 using MongoDB.Driver;
-using NexusChat.Application.DTOs;
 using NexusChat.Application.Interfaces.UserRepository;
 using NexusChat.Domain.Entity;
 using NexusChat.Infrastructure.Data.Interface;
@@ -21,21 +20,15 @@ public class UserRepository(
     {
         return await DbSet.Find(us => us.UserName == username).FirstOrDefaultAsync(token);
     }
-
-    public async Task<List<FriendDto>> GetFriendsWithUserAsync(string username,CancellationToken token)
+    
+    public async Task<List<User>> GetFriendsByUserIdAsync(string userId,CancellationToken token)
     {
-        var user = await GetUserByUsernameAsync(username,token);
+        var user = await GetByIdAsync(userId, token);
         if (user?.Friends == null || user.Friends.Count == 0)
         {
             return [];
         }
-        var friends = await DbSet.Find(us => user.Friends.Contains(us.Id)).ToListAsync(token);
-        return friends.Select(f => new FriendDto(
-                f.Id, 
-                f.UserName, 
-                f.Avatar, 
-                f.Status
-            )).ToList();
+        return await DbSet.Find(us => user.Friends.Contains(us.Id)).ToListAsync(token);
     }
 
     public async Task<List<User>> SearchUsersByNameAsync(string name, CancellationToken token)

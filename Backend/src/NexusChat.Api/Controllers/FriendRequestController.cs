@@ -5,6 +5,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.RateLimiting;
 using NexusChat.Application.DTOs.FriendRequests;
 using NexusChat.Application.Interfaces.FriendRequests;
+using NexusChat.Application.Interfaces.FriendService;
 
 namespace NexusChat.Api.Controllers;
 
