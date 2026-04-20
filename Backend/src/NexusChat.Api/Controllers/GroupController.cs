@@ -38,7 +38,7 @@ public class GroupController(
 
         return Ok(group);
     }
-    [HttpPut("edit name group")]
+    [HttpPut("{groupId}/edit name group")]
     public async Task<IActionResult> UpdateGroup(string groupId, [FromBody] UpdateGroupRequestDto dto, CancellationToken token)
     {
         var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
@@ -54,7 +54,7 @@ public class GroupController(
         return Ok(result.Value);
     }
 
-    [HttpDelete("delete group")]
+    [HttpDelete("{groupId}/delete group")]
     public async Task<IActionResult> DeleteGroup(string groupId, CancellationToken token)
     {
         var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
@@ -69,7 +69,37 @@ public class GroupController(
 
         return Ok(new { message = "Xóa nhóm thành công!" });
     }
+    [HttpPost("{groupId}/AddMember")]
+    public async Task<IActionResult> AddMembersToGroup(string groupId, [FromBody] AddMemberRequestDto dto, CancellationToken token)
+    {
+        var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+        if (string.IsNullOrEmpty(userId)) return Unauthorized();
 
+        var result = await groupService.AddMemberAsync(userId, groupId, dto, token);
+
+        if (result.IsError)
+        {
+            return MapErrorToProblem(result.Errors);
+        }
+
+        return Ok(result.Value);
+    }
+
+    [HttpDelete("{groupId}/IdMemberRemove")] 
+    public async Task<IActionResult> RemoveMemberFromGroup(string groupId, string targetUserId, CancellationToken token)
+    {
+        var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+        if (string.IsNullOrEmpty(userId)) return Unauthorized();
+
+        var result = await groupService.RemoveMemberAsync(userId, groupId, targetUserId, token);
+
+        if (result.IsError)
+        {
+            return MapErrorToProblem(result.Errors);
+        }
+
+        return Ok(new { message = "Đã xóa thành viên ra khỏi nhóm" });
+    }
     private IActionResult MapErrorToProblem(List<Error> errors)
     {
         var firstError = errors[0];

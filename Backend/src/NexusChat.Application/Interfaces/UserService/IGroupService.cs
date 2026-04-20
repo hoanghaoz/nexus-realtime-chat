@@ -9,4 +9,7 @@ public interface IGroupService
     Task<ErrorOr<GroupResponseDto>> CreateGroupAsync(string creatorId, CreateGroupRequestDto dto, CancellationToken token);
     Task<ErrorOr<GroupResponseDto>> UpdateGroupAsync(string userId, string groupId, UpdateGroupRequestDto dto, CancellationToken token);
     Task<ErrorOr<bool>> DeleteGroupAsync(string userId, string groupId, CancellationToken token);
+
+    Task<ErrorOr<GroupResponseDto>> AddMemberAsync(string userId, string groupId, AddMemberRequestDto dto, CancellationToken token);
+    Task<ErrorOr<bool>> RemoveMemberAsync(string actionUserId, string groupId, string targetUserId, CancellationToken token);
 }
