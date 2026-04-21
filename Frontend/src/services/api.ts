@@ -8,8 +8,12 @@ const api = axios.create({
 });
 
 api.interceptors.request.use((config) => {
-  const token = localStorage.getItem("accessToken");
-  if (token && config.headers) {
+  const token = globalThis.localStorage?.getItem("accessToken");
+  const url = (config.url ?? "").toString();
+  // don't attach auth header for auth endpoints (login/register)
+  const isAuthEndpoint = url.includes("/auth/") || url.endsWith("/auth");
+
+  if (!isAuthEndpoint && token && config.headers) {
     config.headers.Authorization = `Bearer ${token}`;
   }
   return config;
@@ -20,8 +24,8 @@ api.interceptors.response.use(
   (err) => {
     if (err?.response?.status === 401) {
       // token expired or unauthorized -> clear and redirect to sign-in
-      localStorage.removeItem("accessToken");
-      window.location.href = "/sign-in";
+      globalThis.localStorage?.removeItem("accessToken");
+      if (globalThis.location) globalThis.location.href = "/sign-in";
     }
     return Promise.reject(err);
   }

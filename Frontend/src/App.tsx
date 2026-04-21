@@ -6,18 +6,16 @@ import { Toaster } from "sonner";
 
 function App() {
   return (
-    <>
-      <AuthProvider>
-        <Toaster richColors />
-        <BrowserRouter>
-          <Routes>
-            <Route path="/sign-in" element={<SignIn />} />
-            <Route path="/sign-up" element={<SignUp />} />
-            <Route path="/" element={<SignIn />} />
-          </Routes>
-        </BrowserRouter>
-      </AuthProvider>
-    </>
+    <AuthProvider>
+      <Toaster richColors />
+      <BrowserRouter>
+        <Routes>
+          <Route path="/sign-in" element={<SignIn />} />
+          <Route path="/sign-up" element={<SignUp />} />
+          <Route path="/" element={<SignIn />} />
+        </Routes>
+      </BrowserRouter>
+    </AuthProvider>
   );
 }
 

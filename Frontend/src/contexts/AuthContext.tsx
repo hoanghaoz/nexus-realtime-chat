@@ -38,7 +38,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   }, [token]);
 
-  const register = async (creds: Credentials) => {
+  const register = React.useCallback(async (creds: Credentials) => {
     const payload = {
       username: creds.username ?? creds.email,
       password: creds.password,
@@ -47,9 +47,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const accessToken = res.data?.accessToken;
     if (!accessToken) throw new Error("No token returned");
     setToken(accessToken);
-  };
+  }, [setToken]);
 
-  const login = async (creds: Credentials) => {
+  const login = React.useCallback(async (creds: Credentials) => {
     const payload = {
       username: creds.username ?? creds.email,
       password: creds.password,
@@ -58,13 +58,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const accessToken = res.data?.accessToken;
     if (!accessToken) throw new Error("No token returned");
     setToken(accessToken);
-  };
+  }, [setToken]);
 
-  const logout = () => setToken(null);
+  const logout = React.useCallback(() => setToken(null), [setToken]);
 
-  return (
-    <AuthContext.Provider value={{ token, isAuthenticated: !!token, register, login, logout }}>
-      {children}
-    </AuthContext.Provider>
+  const value = React.useMemo(
+    () => ({ token, isAuthenticated: !!token, register, login, logout }),
+    [token, register, login, logout]
   );
+
+  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 };
