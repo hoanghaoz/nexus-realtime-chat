@@ -1,5 +1,3 @@
-using System.Xml.Xsl;
-using NexusChat.Application.DTOs;
 using NexusChat.Application.DTOs.Message;
 using NexusChat.Domain.Entity;
 using NexusChat.Domain.Entity.EmbeddedObject;
@@ -16,16 +14,30 @@ public static class MessageMapping
             message.Content,
             message.ConversationId,
             message.CreatedAt,
-            message.Attachments.Select(ob => new AttachmentDto(
-                    ob.FileUrl ?? string.Empty,
-                    ob.FileSize ?? 0,
-                    ob.FileName ?? string.Empty,
-                    ob.FileType))
+            message.Attachments.Select(ob => ob switch
+                {
+                    FileAttachment file => (AttachmentBaseDto) new FileAttachmentDto(
+                        file.FileUrl ?? string.Empty, 
+                        file.FileName ?? string.Empty,
+                        file.FileSize,
+                        file.FileType,
+                        file.CreatedAt
+                    ),
+                    LinkPreviewAttachment link => new LinkPreviewDto(
+                        link.PreviewLinkUrl ?? string.Empty,
+                        link.Title ?? string.Empty,
+                        link.Description ?? string.Empty,
+                        link.ImageUrl ?? string.Empty,
+                        link.CreatedAt
+                    ),
+                    _ => throw new InvalidOperationException($"Unknown attachment type: {ob.GetType().Name}")
+                })
                 .ToList(),
             message.Reactions.Select(re => new ReactionDto(
                     re.FromUserId,
                     re.Emoji))
                 .ToList(),
+            message.MentionedUsersId,
             message.IsDeleted,
             message.IsEdited,
             message.DeletedAt,
@@ -41,14 +53,28 @@ public static class MessageMapping
             FromUserId = fromUserId,
             Content = dto.Content,
             Reactions = [],
-            Attachments = dto.Attachments?.Select(a => new Attachment
+            Attachments = dto.Attachments?.Select(a => a switch
             {
-                FileUrl = a.FileUrl,
-                FileSize = a.FileSize,
-                FileName = a.FileName,
-                FileType = a.Type
+                FileAttachmentDto file => (Attachment) new FileAttachment
+                {
+                    FileUrl = file.FileUrl,
+                    FileName = file.FileName,
+                    FileSize = file.FileSize ?? 0,
+                    FileType = file.Type,
+                    CreatedAt = file.CreatedAt
+                },
+                LinkPreviewDto link => new LinkPreviewAttachment
+                {
+                    PreviewLinkUrl = link.PreviewLinkUrl,
+                    FileType = link.Type,
+                    Title = link.Title,
+                    Description = link.Description,
+                    ImageUrl = link.ImageUrl,
+                    CreatedAt = link.CreatedAt
+                },
+                _ => throw new InvalidOperationException($"Unknown attachment type: {a.GetType().Name}")
             }).ToList() ?? [],
-            CreatedAt = DateTime.UtcNow,
+            CreatedAt = DateTime.UtcNow
         };
     }
 }

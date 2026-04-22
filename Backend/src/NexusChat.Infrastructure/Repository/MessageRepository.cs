@@ -1,9 +1,9 @@
 using MongoDB.Driver;
 using MongoDB.Driver.Linq;
 using NexusChat.Application.DTOs.Message;
-using NexusChat.Application.Interfaces;
 using NexusChat.Application.Interfaces.Message;
 using NexusChat.Domain.Entity;
+using NexusChat.Domain.Entity.EmbeddedObject;
 using NexusChat.Infrastructure.Data.Interface;
 using NexusChat.Infrastructure.Repository.Common;
 
@@ -14,12 +14,12 @@ public class MessageRepository(
     IMongoUnitOfWork mongoUnitOfWork)
     : GenericRepository<Message, string>(mongoDatabase, mongoUnitOfWork), IMessageRepository
 {
-
     /// <summary>
-    /// Apply Cursor Pagination to get message from conversation,
-    /// if the cursor is null, it means that we are getting the latest messages,
-    /// so we will order by createdAt descending and take 20 messages.
-    /// Otherwise, we will get the messages that are created before the cursor and order by createdAt descending and take 20 messages.
+    ///     Apply Cursor Pagination to get message from conversation,
+    ///     if the cursor is null, it means that we are getting the latest messages,
+    ///     so we will order by createdAt descending and take 20 messages.
+    ///     Otherwise, we will get the messages that are created before the cursor and order by createdAt descending and take
+    ///     20 messages.
     /// </summary>
     /// <param name="conversationId"></param>
     /// <param name="cursor"></param>
@@ -33,31 +33,43 @@ public class MessageRepository(
             ? query.Where(x => x.ConversationId.Equals(conversationId))
             : query.Where(x => x.ConversationId.Equals(conversationId) && x.CreatedAt < cursor);
 
-        var response = await query
-            .OrderByDescending(x => x.CreatedAt)
-            .Select(x => new MessageResponseDto(
-                x.Id,
-                x.FromUserId,
-                x.Content,
-                x.ConversationId,
-                x.CreatedAt,
-                x.Attachments.Select(ob => new AttachmentDto(
-                        ob.FileUrl ?? string.Empty,
-                        ob.FileSize ?? 0,
-                        ob.FileName ?? string.Empty,
-                        ob.FileType))
-                    .ToList(),
-                x.Reactions.Select(re => new ReactionDto(
-                        re.FromUserId,
-                        re.Emoji))
-                    .ToList(),
-                x.IsDeleted,
-                x.IsEdited,
-                x.DeletedAt,
-                x.EditedAt
-            ))
-            .Take(20)
-            .ToListAsync(token);
+        var messages = await query.OrderByDescending(x => x.CreatedAt).Take(20).ToListAsync(token);
+
+        var response = messages.Select(m => new MessageResponseDto
+        (
+            m.Id,
+            m.FromUserId,
+            m.Content,
+            m.ConversationId,
+            m.CreatedAt,
+            m.Attachments.Select(ob => ob switch
+            {
+                FileAttachment file => (AttachmentBaseDto) new FileAttachmentDto(
+                    file.FileUrl ?? string.Empty, 
+                    file.FileName ?? string.Empty,
+                    file.FileSize,
+                    file.FileType,
+                    file.CreatedAt
+                    ),
+                LinkPreviewAttachment link => new LinkPreviewDto(
+                    link.PreviewLinkUrl ?? string.Empty,
+                    link.Title ?? string.Empty,
+                    link.Description ?? string.Empty,
+                    link.ImageUrl ?? string.Empty,
+                    link.CreatedAt
+                    ),
+                _ => throw new InvalidOperationException($"Unknown attachment type: {ob.GetType().Name}")
+            }).ToList(),
+            m.Reactions.Select(re => new ReactionDto(
+                re.FromUserId,
+                re.Emoji))
+                .ToList(),
+            m.MentionedUsersId,
+            m.IsDeleted,
+            m.IsEdited,
+            m.DeletedAt,
+            m.EditedAt
+        )).ToList();
         return response;
     }
 }

@@ -1,21 +1,28 @@
+using System.Text.RegularExpressions;
 using ErrorOr;
 using NexusChat.Application.DTOs.Message;
 using NexusChat.Application.Extension;
+using NexusChat.Application.Interfaces.ConversationRepository;
 using NexusChat.Application.Interfaces.Hubs;
 using NexusChat.Application.Interfaces.Message;
 using NexusChat.Domain.Entity.EmbeddedObject;
 
 namespace NexusChat.Application.Services;
 
-public class MessageService(IMessageRepository messageRepository, IRealtimeNotification notify) : IMessageService
+public class MessageService(
+    IMessageRepository messageRepository,
+    IRealtimeNotification notify,
+    IConversationRepository conversationRepository) : IMessageService
 {
     /// <summary>
     ///     Retrieves messages from a conversation with cursor-based pagination.
     /// </summary>
     public async Task<ErrorOr<List<MessageResponseDto>>> GetMessageInConversationAsync(MessageRequestDto dto,
+        string fromUserId,
         CancellationToken token)
     {
-        // TODO: implement ConversationRepository to check ConversationId valid and user in conversation
+        var isValidUser = await conversationRepository.IsUserInConversationAsync(dto.ConversationId, fromUserId, token);
+        if (!isValidUser) return Error.Unauthorized("User.Unauthorized", "You are not a member of this conversation.");
         var messages = await messageRepository.GetMessageInConversationAsync(dto.ConversationId, dto.Cursor, token);
         return messages;
     }
@@ -91,9 +98,25 @@ public class MessageService(IMessageRepository messageRepository, IRealtimeNotif
     public async Task<ErrorOr<MessageResponseDto>> CreateMessageAsync(SendMessageRequestDto dto, string fromUserId,
         CancellationToken token)
     {
-        // TODO: Implement ConversationRepository to check fromUserId and ConversationId valid
+        var validUser = await conversationRepository.IsUserInConversationAsync(dto.ConversationId, fromUserId, token);
+        if (!validUser) return Error.Unauthorized("User.Unauthorized", "You are not a member of this conversation.");
+
+        // handle link preview if content had
+        var link = GetLinkFromMessage(dto.Content);
+        if (link != null)
+        {
+        }
+
         var message = dto.MapToEntity(fromUserId);
         await messageRepository.AddAsync(message, token);
         return message.MapMessageDto();
+    }
+
+    private static string? GetLinkFromMessage(string? content)
+    {
+        if (string.IsNullOrEmpty(content)) return null;
+        const string urlPattern = @"(https?://[^\s]+)";
+        var match = Regex.Match(content, urlPattern, RegexOptions.IgnoreCase);
+        return match.Success ? match.Value : null;
     }
 }
