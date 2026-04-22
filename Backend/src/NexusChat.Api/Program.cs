@@ -21,6 +21,7 @@ using NexusChat.Application.Services;
 using NexusChat.Infrastructure.Data.Configuration;
 using NexusChat.Infrastructure.DependencyInjection;
 using NexusChat.Infrastructure.Media;
+using NexusChat.Infrastructure.Worker;
 using Scalar.AspNetCore;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -149,10 +150,12 @@ builder.Services.AddRateLimiter(options =>
             });
     });
 });
-// Connect between Interface and Impliment of Notification
+// Connect between Interface and Implement of Notification
 builder.Services.AddScoped<INotificationService, NotificationService>();
-builder.Services.AddScoped<IFriendListService, FriendListService>(); 
+builder.Services.AddScoped<IFriendListService, FriendListService>();
 builder.Services.AddSingleton<IPresenceTracker, PresenceTracker>(); // check status user is online or offline 
+builder.Services.AddHostedService<LinkPreviewWorker>();
+builder.Services.AddSingleton<INotifyLinkPreviewed, LinkPreviewedNotifyService>();
 var app = builder.Build();
 using (var scope = app.Services.CreateScope())
 {

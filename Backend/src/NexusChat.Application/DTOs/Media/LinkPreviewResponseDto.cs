@@ -5,5 +5,5 @@ public sealed record LinkPreviewResponseDto(
     string Title,
     string? Description,
     string? ImageUrl,
-    string SiteName,
-    string Favicon);
+    string? SiteName,
+    string? Favicon);

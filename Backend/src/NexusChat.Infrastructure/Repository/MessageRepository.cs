@@ -1,6 +1,7 @@
 using MongoDB.Driver;
 using MongoDB.Driver.Linq;
 using NexusChat.Application.DTOs.Message;
+using NexusChat.Application.Extension;
 using NexusChat.Application.Interfaces.Message;
 using NexusChat.Domain.Entity;
 using NexusChat.Domain.Entity.EmbeddedObject;
@@ -44,25 +45,25 @@ public class MessageRepository(
             m.CreatedAt,
             m.Attachments.Select(ob => ob switch
             {
-                FileAttachment file => (AttachmentBaseDto) new FileAttachmentDto(
-                    file.FileUrl ?? string.Empty, 
+                FileAttachment file => (AttachmentBaseDto)new FileAttachmentDto(
+                    file.FileUrl ?? string.Empty,
                     file.FileName ?? string.Empty,
                     file.FileSize,
                     file.FileType,
                     file.CreatedAt
-                    ),
+                ),
                 LinkPreviewAttachment link => new LinkPreviewDto(
                     link.PreviewLinkUrl ?? string.Empty,
                     link.Title ?? string.Empty,
                     link.Description ?? string.Empty,
                     link.ImageUrl ?? string.Empty,
                     link.CreatedAt
-                    ),
+                ),
                 _ => throw new InvalidOperationException($"Unknown attachment type: {ob.GetType().Name}")
             }).ToList(),
             m.Reactions.Select(re => new ReactionDto(
-                re.FromUserId,
-                re.Emoji))
+                    re.FromUserId,
+                    re.Emoji))
                 .ToList(),
             m.MentionedUsersId,
             m.IsDeleted,
@@ -71,5 +72,20 @@ public class MessageRepository(
             m.EditedAt
         )).ToList();
         return response;
+    }
+
+    public async Task<MessageResponseDto> UpdateAttachmentAsync(string messageId,
+        LinkPreviewAttachment linkPreviewAttachment, CancellationToken token)
+    {
+        var entity = await DbSet.AsQueryable()
+            .Where(x => x.Id.Equals(messageId))
+            .FirstOrDefaultAsync(token);
+
+        if (entity is null) throw new KeyNotFoundException($"Message with id '{messageId}' was not found.");
+
+        entity.Attachments.Add(linkPreviewAttachment);
+        await UpdateAsync(entity, token);
+
+        return entity.MapMessageDto();
     }
 }

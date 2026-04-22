@@ -16,8 +16,8 @@ public static class MessageMapping
             message.CreatedAt,
             message.Attachments.Select(ob => ob switch
                 {
-                    FileAttachment file => (AttachmentBaseDto) new FileAttachmentDto(
-                        file.FileUrl ?? string.Empty, 
+                    FileAttachment file => (AttachmentBaseDto)new FileAttachmentDto(
+                        file.FileUrl ?? string.Empty,
                         file.FileName ?? string.Empty,
                         file.FileSize,
                         file.FileType,
@@ -55,22 +55,13 @@ public static class MessageMapping
             Reactions = [],
             Attachments = dto.Attachments?.Select(a => a switch
             {
-                FileAttachmentDto file => (Attachment) new FileAttachment
+                FileAttachmentDto file => (Attachment)new FileAttachment
                 {
                     FileUrl = file.FileUrl,
                     FileName = file.FileName,
                     FileSize = file.FileSize ?? 0,
                     FileType = file.Type,
-                    CreatedAt = file.CreatedAt
-                },
-                LinkPreviewDto link => new LinkPreviewAttachment
-                {
-                    PreviewLinkUrl = link.PreviewLinkUrl,
-                    FileType = link.Type,
-                    Title = link.Title,
-                    Description = link.Description,
-                    ImageUrl = link.ImageUrl,
-                    CreatedAt = link.CreatedAt
+                    CreatedAt = DateTime.UtcNow
                 },
                 _ => throw new InvalidOperationException($"Unknown attachment type: {a.GetType().Name}")
             }).ToList() ?? [],

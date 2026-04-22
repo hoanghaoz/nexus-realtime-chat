@@ -1,9 +1,11 @@
 using System.Text.RegularExpressions;
 using ErrorOr;
+using NexusChat.Application.DTOs.Media;
 using NexusChat.Application.DTOs.Message;
 using NexusChat.Application.Extension;
 using NexusChat.Application.Interfaces.ConversationRepository;
 using NexusChat.Application.Interfaces.Hubs;
+using NexusChat.Application.Interfaces.Media;
 using NexusChat.Application.Interfaces.Message;
 using NexusChat.Domain.Entity.EmbeddedObject;
 
@@ -12,7 +14,8 @@ namespace NexusChat.Application.Services;
 public class MessageService(
     IMessageRepository messageRepository,
     IRealtimeNotification notify,
-    IConversationRepository conversationRepository) : IMessageService
+    IConversationRepository conversationRepository,
+    ILinkPreviewService linkPreviewService) : IMessageService
 {
     /// <summary>
     ///     Retrieves messages from a conversation with cursor-based pagination.
@@ -101,14 +104,20 @@ public class MessageService(
         var validUser = await conversationRepository.IsUserInConversationAsync(dto.ConversationId, fromUserId, token);
         if (!validUser) return Error.Unauthorized("User.Unauthorized", "You are not a member of this conversation.");
 
+        var message = dto.MapToEntity(fromUserId);
+        await messageRepository.AddAsync(message, token);
         // handle link preview if content had
         var link = GetLinkFromMessage(dto.Content);
         if (link != null)
         {
+            var linkRequest = new LinkPreviewRequestDto(
+                message.Id,
+                message.ConversationId,
+                link
+            );
+            await linkPreviewService.EnqueueAsync(linkRequest, token);
         }
 
-        var message = dto.MapToEntity(fromUserId);
-        await messageRepository.AddAsync(message, token);
         return message.MapMessageDto();
     }
 
