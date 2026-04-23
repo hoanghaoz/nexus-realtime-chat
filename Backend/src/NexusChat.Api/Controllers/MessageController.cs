@@ -41,7 +41,10 @@ public class MessageController(
     public async Task<IActionResult> GetMessagesFromConversation([FromQuery] MessageRequestDto messageRequestDto,
         CancellationToken token)
     {
-        var result = await messageService.GetMessageInConversationAsync(messageRequestDto, token);
+        var fromUserId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        if (fromUserId == null)
+            return Unauthorized("You are not authorized to access this resource. Please log in and try again.");
+        var result = await messageService.GetMessageInConversationAsync(messageRequestDto, fromUserId, token);
 
         var response = result.Match<IActionResult>(
             messages => Ok(messages),
@@ -50,6 +53,11 @@ public class MessageController(
                 "Conversation.NotFound" => NotFound(new
                 {
                     message = "Conversation does not exist or you are not a member of this conversation.",
+                    description = errors[0].Description
+                }),
+                "User.Unauthorized" => Unauthorized(new
+                {
+                    message = "You are not authorized to access this resource.",
                     description = errors[0].Description
                 }),
                 _ => StatusCode(StatusCodes.Status500InternalServerError, new
