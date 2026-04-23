@@ -49,7 +49,7 @@ builder.Services.AddHybridCache(options =>
         Expiration = TimeSpan.FromMinutes(10)
     };
 });
-builder.Services.AddSignalR();
+builder.Services.AddSignalR(opt => { opt.EnableDetailedErrors = true; });
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowAll", policy =>

@@ -1,4 +1,3 @@
-using System.Text.RegularExpressions;
 using ErrorOr;
 using NexusChat.Application.DTOs.Media;
 using NexusChat.Application.DTOs.Message;
@@ -107,7 +106,7 @@ public class MessageService(
         var message = dto.MapToEntity(fromUserId);
         await messageRepository.AddAsync(message, token);
         // handle link preview if content had
-        var link = GetLinkFromMessage(dto.Content);
+        var link = dto.Content.GetFirstLink();
         if (link != null)
         {
             var linkRequest = new LinkPreviewRequestDto(
@@ -119,13 +118,5 @@ public class MessageService(
         }
 
         return message.MapMessageDto();
-    }
-
-    private static string? GetLinkFromMessage(string? content)
-    {
-        if (string.IsNullOrEmpty(content)) return null;
-        const string urlPattern = @"(https?://[^\s]+)";
-        var match = Regex.Match(content, urlPattern, RegexOptions.IgnoreCase);
-        return match.Success ? match.Value : null;
     }
 }

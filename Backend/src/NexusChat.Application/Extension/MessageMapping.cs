@@ -49,6 +49,7 @@ public static class MessageMapping
     {
         return new Message
         {
+            Id = Guid.NewGuid().ToString(),
             ConversationId = dto.ConversationId,
             FromUserId = fromUserId,
             Content = dto.Content,
