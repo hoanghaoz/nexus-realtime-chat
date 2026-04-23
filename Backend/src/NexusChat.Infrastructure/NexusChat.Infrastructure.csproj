@@ -17,8 +17,8 @@
         <PackageReference Include="Microsoft.Extensions.Caching.StackExchangeRedis" Version="10.0.6"/>
         <PackageReference Include="Microsoft.Extensions.Hosting.Abstractions" Version="10.0.7"/>
         <PackageReference Include="Microsoft.IdentityModel.Tokens" Version="8.17.0"/>
-        <PackageReference Include="MongoDB.Bson" Version="3.7.1"/>
-        <PackageReference Include="MongoDB.Driver" Version="3.7.1"/>
+        <PackageReference Include="MongoDB.Bson" Version="3.8.0"/>
+        <PackageReference Include="MongoDB.Driver" Version="3.8.0"/>
         <PackageReference Include="MongoDB.Driver.Core" Version="2.30.0"/>
         <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" Version="10.0.1"/>
         <PackageReference Include="OpenGraph-Net" Version="4.0.1"/>
