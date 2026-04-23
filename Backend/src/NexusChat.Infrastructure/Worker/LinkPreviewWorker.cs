@@ -75,10 +75,10 @@ public class LinkPreviewWorker(
             {
                 break;
             }
-            catch (OperationCanceledException)
+            catch (OperationCanceledException operationCanceledException)
             {
                 // Timeout token canceled this specific job; worker should keep processing remaining jobs.
-                logger.LogWarning("Timeout when get link preview");
+                logger.LogWarning(operationCanceledException,"Timeout when get link preview");
             }
             catch (Exception ex)
             {

@@ -14,24 +14,7 @@ public static class MessageMapping
             message.Content,
             message.ConversationId,
             message.CreatedAt,
-            message.Attachments.Select(ob => ob switch
-                {
-                    FileAttachment file => (AttachmentBaseDto)new FileAttachmentDto(
-                        file.FileUrl ?? string.Empty,
-                        file.FileName ?? string.Empty,
-                        file.FileSize,
-                        file.FileType,
-                        file.CreatedAt
-                    ),
-                    LinkPreviewAttachment link => new LinkPreviewDto(
-                        link.PreviewLinkUrl ?? string.Empty,
-                        link.Title ?? string.Empty,
-                        link.Description ?? string.Empty,
-                        link.ImageUrl ?? string.Empty,
-                        link.CreatedAt
-                    ),
-                    _ => throw new InvalidOperationException($"Unknown attachment type: {ob.GetType().Name}")
-                })
+            message.Attachments.Select(MapAttachmentToDto)
                 .ToList(),
             message.Reactions.Select(re => new ReactionDto(
                     re.FromUserId,
@@ -54,19 +37,46 @@ public static class MessageMapping
             FromUserId = fromUserId,
             Content = dto.Content,
             Reactions = [],
-            Attachments = dto.Attachments?.Select(a => a switch
-            {
-                FileAttachmentDto file => (Attachment)new FileAttachment
-                {
-                    FileUrl = file.FileUrl,
-                    FileName = file.FileName,
-                    FileSize = file.FileSize ?? 0,
-                    FileType = file.Type,
-                    CreatedAt = DateTime.UtcNow
-                },
-                _ => throw new InvalidOperationException($"Unknown attachment type: {a.GetType().Name}")
-            }).ToList() ?? [],
+            Attachments = dto.Attachments?.Select(MapDtoToAttachment).ToList() ?? [],
             CreatedAt = DateTime.UtcNow
+        };
+    }
+
+    private static AttachmentBaseDto MapAttachmentToDto(Attachment attachment)
+    {
+        return attachment switch
+        {
+            FileAttachment file => new FileAttachmentDto(
+                file.FileUrl ?? string.Empty,
+                file.FileName ?? string.Empty,
+                file.FileSize,
+                file.FileType,
+                file.CreatedAt
+            ),
+            LinkPreviewAttachment link => new LinkPreviewDto(
+                link.PreviewLinkUrl ?? string.Empty,
+                link.Title ?? string.Empty,
+                link.Description ?? string.Empty,
+                link.ImageUrl ?? string.Empty,
+                link.CreatedAt
+            ),
+            _ => throw new InvalidOperationException($"Unknown attachment type: {attachment.GetType().Name}")
+        };
+    }
+
+    private static Attachment MapDtoToAttachment(AttachmentBaseDto attachment)
+    {
+        return attachment switch
+        {
+            FileAttachmentDto file => new FileAttachment
+            {
+                FileUrl = file.FileUrl,
+                FileName = file.FileName,
+                FileSize = file.FileSize ?? 0,
+                FileType = file.Type,
+                CreatedAt = DateTime.UtcNow
+            },
+            _ => throw new InvalidOperationException($"Unknown attachment type: {attachment.GetType().Name}")
         };
     }
 }
