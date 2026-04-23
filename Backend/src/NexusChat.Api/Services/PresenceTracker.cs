@@ -11,6 +11,12 @@ public class PresenceTracker : IPresenceTracker
     private readonly Dictionary<string, HashSet<string>> _onlineUsers = new();
     private readonly object _sync = new();
 
+    /// <summary>
+    /// Registers a user connection.
+    /// </summary>
+    /// <param name="userId">Connected user id.</param>
+    /// <param name="connectionId">SignalR connection id.</param>
+    /// <returns><c>true</c> when this is the user's first active connection.</returns>
     public Task<bool> UserConnected(string userId, string connectionId)
     {
         bool isFirstConnection; // check first connection 
@@ -30,6 +36,12 @@ public class PresenceTracker : IPresenceTracker
         return Task.FromResult(isFirstConnection);
     }
 
+    /// <summary>
+    /// Removes a user connection.
+    /// </summary>
+    /// <param name="userId">Disconnected user id.</param>
+    /// <param name="connectionId">SignalR connection id.</param>
+    /// <returns><c>true</c> when the user has no active connections left.</returns>
     public Task<bool> UserDisconnected(string userId, string connectionId)
     {
         bool isLastOffline = false; // check last connection
@@ -52,6 +64,10 @@ public class PresenceTracker : IPresenceTracker
         return Task.FromResult(isLastOffline);
     }
 
+    /// <summary>
+    /// Gets all currently online user ids.
+    /// </summary>
+    /// <returns>Sorted list of online users.</returns>
     public Task<string[]> GetOnlineUsers()
     {
         string[] users;
@@ -64,6 +80,11 @@ public class PresenceTracker : IPresenceTracker
         return Task.FromResult(users);
     }
 
+    /// <summary>
+    /// Gets active connection ids for a user.
+    /// </summary>
+    /// <param name="userId">User id to lookup.</param>
+    /// <returns>Connection ids for the user, or an empty array.</returns>
     public Task<string[]> GetConnectionsForUser(string userId)
     {
         string[] connections;
@@ -78,6 +99,3 @@ public class PresenceTracker : IPresenceTracker
         return Task.FromResult(connections);
     }
 }
-
-
-
