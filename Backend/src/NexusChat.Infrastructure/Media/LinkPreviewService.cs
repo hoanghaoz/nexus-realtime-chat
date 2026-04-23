@@ -17,12 +17,12 @@ public class LinkPreviewService : ILinkPreviewService
         _queue = Channel.CreateBounded<LinkPreviewRequestDto>(options);
     }
 
-    public async ValueTask EnqueueAsync(LinkPreviewRequestDto requestDto, CancellationToken cancellationToken)
+    public async ValueTask EnqueueAsync(LinkPreviewRequestDto requestDto, CancellationToken cancellationToken = default)
     {
         await _queue.Writer.WriteAsync(requestDto, cancellationToken);
     }
 
-    public async ValueTask<LinkPreviewRequestDto> DequeueAsync(CancellationToken cancellationToken)
+    public async ValueTask<LinkPreviewRequestDto> DequeueAsync(CancellationToken cancellationToken = default)
     {
         return await _queue.Reader.ReadAsync(cancellationToken);
     }
