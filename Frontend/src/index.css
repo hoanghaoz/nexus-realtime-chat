@@ -81,12 +81,7 @@
   --sidebar-accent-foreground: oklch(0.205 0 0);
   --sidebar-border: oklch(0.922 0 0);
   --sidebar-ring: oklch(0.708 0 0);
-  --site-bg: #ffffff
-    radial-gradient(
-      circle at top center,
-      rgba(59, 130, 246, 0.5),
-      transparent 70%
-    );
+  --site-bg: radial-gradient(125% 125% at 50% 10%, #ffffff 40%, #14b8a6 100%);
 }
 
 .dark {
