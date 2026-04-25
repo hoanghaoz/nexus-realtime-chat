@@ -36,6 +36,7 @@ public class AuthService(
             Id = Guid.NewGuid().ToString(),
             UserName = authDto.Username,
             Password = passwordHash,
+            Email = authDto.Email ?? string.Empty,
             Status = UserStatus.Online,
             CreatedAt = DateTime.UtcNow
         };
