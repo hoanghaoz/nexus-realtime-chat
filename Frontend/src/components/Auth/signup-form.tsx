@@ -12,7 +12,9 @@ import { Input } from "@/components/ui/input";
 import { z } from "zod";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
+import { useContext } from "react";
+import { AuthContext } from "@/contexts/AuthContext";
 
 // Định nghĩa schema cho form đăng ký
 const signUpSchema = z
@@ -49,8 +51,21 @@ export function SignupForm({
   });
 
   // Hàm xử lý khi dữ liệu đã SẠCH
-  const onSubmit = (values: z.infer<typeof signUpSchema>) => {
-    // Gọi API Backend
+  const auth = useContext(AuthContext);
+  const navigate = useNavigate();
+
+  const onSubmit = async (values: z.infer<typeof signUpSchema>) => {
+    try {
+      await auth.register({
+        username: values.username,
+        email: values.email,
+        password: values.password,
+      });
+      navigate("/");
+    } catch (err: any) {
+      const message = err?.response?.data || err?.message || "Đăng ký thất bại";
+      alert(message);
+    }
   };
 
   return (

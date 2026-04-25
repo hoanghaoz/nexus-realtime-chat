@@ -6,6 +6,8 @@
   "scripts": {
     "dev": "vite",
     "build": "tsc -b && vite build",
+    "test": "vitest",
+    "test:coverage": "vitest --coverage",
     "lint": "eslint .",
     "preview": "vite preview"
   },
@@ -33,16 +35,33 @@
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
+    "@testing-library/jest-dom": "^6.9.1",
+    "@testing-library/react": "^16.3.2",
+    "@testing-library/user-event": "^14.6.1",
     "@types/node": "^25.6.0",
     "@types/react": "^19.2.14",
     "@types/react-dom": "^19.2.3",
     "@vitejs/plugin-react": "^6.0.1",
+<<<<<<< HEAD
+    "c8": "^11.0.0",
+    "eslint": "^10.2.0",
+    "eslint-plugin-react-hooks": "^7.1.0",
+=======
     "eslint": "^10.2.1",
     "eslint-plugin-react-hooks": "^7.1.1",
+>>>>>>> 1e1dc0db03a98e971fb575a1cfea8cc5079563fe
     "eslint-plugin-react-refresh": "^0.5.2",
     "globals": "^17.5.0",
+    "jsdom": "^29.0.2",
+    "msw": "^2.13.4",
     "typescript": "~6.0.3",
+<<<<<<< HEAD
+    "typescript-eslint": "^8.58.2",
+    "vite": "^8.0.8",
+    "vitest": "^4.1.4"
+=======
     "typescript-eslint": "^8.59.0",
     "vite": "^8.0.10"
+>>>>>>> 1e1dc0db03a98e971fb575a1cfea8cc5079563fe
   }
 }
