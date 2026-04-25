@@ -1,6 +1,8 @@
 import type { MessageBubbleProps } from "@/types/nexus-chat";
 
-export default function MessageBubble({ message }: MessageBubbleProps) {
+export default function MessageBubble({
+  message,
+}: Readonly<MessageBubbleProps>) {
   if (message.type === "me") {
     return (
       <div className="flex items-end gap-3 self-end max-w-[85%] lg:max-w-[70%] group">

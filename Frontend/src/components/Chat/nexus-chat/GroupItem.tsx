@@ -1,6 +1,6 @@
 import type { GroupItemProps } from "@/types/nexus-chat";
 
-export default function GroupItem({ group }: GroupItemProps) {
+export default function GroupItem({ group }: Readonly<GroupItemProps>) {
   return (
     <div
       className={`bg-white dark:bg-slate-800/80 rounded-[20px] p-3.5 flex items-center justify-between shadow-[0_2px_10px_rgba(0,0,0,0.03)] cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-700/80 transition-colors group ${
