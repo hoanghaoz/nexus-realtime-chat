@@ -6,7 +6,6 @@ import {
   SidebarContent,
   SidebarFooter,
   SidebarGroup,
-  SidebarGroupAction,
   SidebarGroupContent,
   SidebarGroupLabel,
   SidebarHeader,
@@ -16,11 +15,6 @@ import {
 } from "@/components/ui/sidebar";
 import { Moon, Sun } from "lucide-react";
 import { Switch } from "../ui/switch";
-import CreateNewChat from "../Chat/CreateNewChat";
-import NewGroupChatModal from "../Chat/NewGroupChatModal";
-import GroupChatList from "../Chat/GroupChatList";
-import AddFriendModal from "../Chat/AddFriendModal";
-import DirectMessageList from "../Chat/DirectMessageList";
 import { useThemeStore } from "@/stores/useThemeStore";
 
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
@@ -57,34 +51,14 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
 
       {/* Content */}
       <SidebarContent>
-        {/* New chat */}
         <SidebarGroup>
+          <SidebarGroupLabel className="uppercase">
+            Nexus Chat
+          </SidebarGroupLabel>
           <SidebarGroupContent>
-            <CreateNewChat />
-          </SidebarGroupContent>
-        </SidebarGroup>
-
-        {/* Group chat */}
-        <SidebarGroup>
-          <SidebarGroupLabel className="uppercase">Nhóm chat</SidebarGroupLabel>
-          <SidebarGroupAction title="Tạo Nhóm Mới" className="cursor-pointer">
-            <NewGroupChatModal />
-          </SidebarGroupAction>
-
-          <SidebarGroupContent>
-            <GroupChatList />
-          </SidebarGroupContent>
-        </SidebarGroup>
-
-        {/* Direct message */}
-        <SidebarGroup>
-          <SidebarGroupLabel className="uppercase">Bạn bè</SidebarGroupLabel>
-          <SidebarGroupAction title="Kết Bạn" className="cursor-pointer">
-            <AddFriendModal />
-          </SidebarGroupAction>
-
-          <SidebarGroupContent>
-            <DirectMessageList />
+            <div className="px-2 py-1 text-sm text-muted-foreground">
+              Màn hình chat hiện dùng kiến trúc mới trong NexusChat.
+            </div>
           </SidebarGroupContent>
         </SidebarGroup>
       </SidebarContent>

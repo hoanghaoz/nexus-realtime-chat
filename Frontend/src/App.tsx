@@ -1,7 +1,6 @@
 import { BrowserRouter, Route, Routes } from "react-router-dom";
 import SignIn from "./pages/SignIn";
 import SignUp from "./pages/SignUp";
-import { AuthProvider } from "@/contexts/AuthContext";
 import { Toaster } from "sonner";
 import ChatApp from "./pages/ChatApp";
 import { TooltipProvider } from "@/components/ui/tooltip";

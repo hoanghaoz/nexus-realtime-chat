@@ -1,16 +1,7 @@
-import { AppSidebar } from "@/components/Sidebar/app-sidebar";
-import { SidebarProvider } from "@/components/ui/sidebar";
-import ChatWindowLayout from "@/components/Chat/ChatWindowLayout";
-const ChatApp = () => {
-  return (
-    <SidebarProvider>
-      <AppSidebar />
+import NexusChat from "@/components/Chat/NexusChat";
 
-      <div className="flex h-screen w-full p-2">
-        <ChatWindowLayout />
-      </div>
-    </SidebarProvider>
-  );
+const ChatApp = () => {
+  return <NexusChat />;
 };
 
 export default ChatApp;

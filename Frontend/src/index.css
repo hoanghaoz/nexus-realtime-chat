@@ -1,3 +1,5 @@
+@import url("https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800;900&display=swap");
+@import url("https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap");
 @import "tailwindcss";
 @import "tw-animate-css";
 @import "shadcn/tailwind.css";
@@ -214,7 +216,7 @@
       );
 
     /* --- ADDED: Chat App System (Ocean Theme - Dark) --- */
-    --chat-bubble-sent: #0284c7; /* Deep Sky Blue to match dark ocean */
+    --chat-bubble-sent: #374151; /* Dark gray in dark mode */
     --chat-bubble-sent-foreground: #ffffff;
     --chat-bubble-received: oklch(0.205 0 0);
     --chat-bubble-received-foreground: oklch(0.985 0 0);
@@ -284,7 +286,7 @@
 /* --- ADDED: Chat App Utility Classes --- */
 @layer components {
   .glass {
-    @apply bg-gradient-to-br border-teal-300/30 dark:border-sky-500/20 backdrop-blur-md;
+    @apply bg-linear-to-br border-teal-300/30 dark:border-sky-500/20 backdrop-blur-md;
     background: var(--gradient-glass);
   }
 
@@ -294,25 +296,25 @@
   }
 
   .chat-bubble-sent {
-    @apply bg-[var(--chat-bubble-sent)] text-[var(--chat-bubble-sent-foreground)] shadow-md;
+    @apply bg-(--chat-bubble-sent) text-(--chat-bubble-sent-foreground) shadow-md;
     box-shadow: var(--shadow-bubble);
   }
 
   .chat-bubble-received {
-    @apply bg-[var(--chat-bubble-received)] text-[var(--chat-bubble-received-foreground)] border border-border/50;
+    @apply bg-(--chat-bubble-received) text-(--chat-bubble-received-foreground) border border-border/50;
   }
 
   .status-online {
-    @apply bg-[var(--online)];
+    @apply bg-(--online);
     box-shadow: 0 0 8px rgba(16, 185, 129, 0.5);
   }
 
   .status-offline {
-    @apply bg-[var(--offline)];
+    @apply bg-(--offline);
   }
 
   .status-away {
-    @apply bg-[var(--away)];
+    @apply bg-(--away);
   }
 
   .bg-gradient-primary {
@@ -386,7 +388,7 @@
 
   .pulse-ring::before {
     content: "";
-    @apply absolute inset-0 rounded-full bg-teal-500/30 dark:bg-sky-500/30 animate-ping duration-[2000ms];
+    @apply absolute inset-0 rounded-full bg-teal-500/30 dark:bg-sky-500/30 animate-ping duration-2000;
   }
 
   .message-bounce {
@@ -404,4 +406,46 @@
       transform: translateY(0) scale(1);
     }
   }
+}
+
+/* Converted from the source HTML styles for icon font and custom scrollbar behavior. */
+.material-symbols-outlined {
+  font-variation-settings:
+    "FILL" 0,
+    "wght" 400,
+    "GRAD" 0,
+    "opsz" 24;
+}
+
+.icon-fill {
+  font-variation-settings: "FILL" 1;
+}
+
+.font-manrope {
+  font-family: "Manrope", sans-serif;
+}
+
+::-webkit-scrollbar {
+  width: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 10px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.2);
+}
+
+.light-scrollbar::-webkit-scrollbar-thumb {
+  background: rgba(0, 0, 0, 0.1);
+}
+
+.light-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: rgba(0, 0, 0, 0.2);
 }
