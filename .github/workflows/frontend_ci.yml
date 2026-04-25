@@ -49,3 +49,4 @@ jobs:
             -Dsonar.organization=hoanghaoz
             -Dsonar.sources=.
             -Dsonar.exclusions=**/node_modules/**,**/dist/**,**/build/**,**/*.test.js,**/*.spec.js
+            -Dsonar.coverage.exclusions=**/*
