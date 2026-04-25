@@ -1,6 +1,15 @@
 import axios from "axios";
 
-const base = (import.meta.env.VITE_API_URL || "").replace(/\/+$/, "");
+export function trimTrailingSlashes(s: string) {
+  // Avoid regular expressions to eliminate any risk of catastrophic backtracking.
+  let end = s.length;
+  while (end > 0 && s.charAt(end - 1) === "/") {
+    end--;
+  }
+  return s.slice(0, end);
+}
+
+const base = trimTrailingSlashes(import.meta.env.VITE_API_URL || "");
 
 const api = axios.create({
   baseURL: `${base}/api`,
