@@ -1,7 +1,7 @@
-import React from "react";
+import NexusChat from "@/components/Chat/NexusChat";
 
 const ChatApp = () => {
-  return <div></div>;
+  return <NexusChat />;
 };
 
 export default ChatApp;

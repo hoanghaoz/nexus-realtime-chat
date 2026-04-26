@@ -1,6 +1,3 @@
-import { HubConnectionBuilder, LogLevel } from "@microsoft/signalr";
-
-
 export function trimTrailingSlashes(s: string) {
   // Avoid regular expressions to eliminate any risk of catastrophic backtracking.
   let end = s.length;
@@ -22,7 +19,8 @@ export async function createChatConnection() {
 
   return new signalr.HubConnectionBuilder()
     .withUrl(`${base}/hubs/chat`, {
-      accessTokenFactory: () => globalThis.localStorage?.getItem("accessToken") || "",
+      accessTokenFactory: () =>
+        globalThis.localStorage?.getItem("accessToken") || "",
     })
     .withAutomaticReconnect()
     .configureLogging(signalr.LogLevel.Information)
