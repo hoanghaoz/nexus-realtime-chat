@@ -1,10 +1,9 @@
 using ErrorOr;
 using NexusChat.Application.DTOs.Users;
-using NexusChat.Application.Interfaces;
 using NexusChat.Application.Interfaces.UserRepository;
-using NexusChat.Domain.Entity;
+using NexusChat.Application.Interfaces.UserService;
 
-namespace NexusChat.Application.Services.UserUpdateService.cs;
+namespace NexusChat.Application.Services;
 
 public class UserUpdateService(IUserRepository userRepository) : IUserUpdateService
 {
