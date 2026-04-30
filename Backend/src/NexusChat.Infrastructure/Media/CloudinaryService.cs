@@ -1,12 +1,13 @@
 using CloudinaryDotNet;
 using CloudinaryDotNet.Actions;
 using ErrorOr;
+using NexusChat.Application.DTOs.Media;
 using NexusChat.Application.Interfaces.Media;
 using Error = ErrorOr.Error;
 
 namespace NexusChat.Infrastructure.Media;
 
-public class CloudinaryService(ICloudinary cloudinary) : IMediaService
+public class CloudinaryService(ICloudinary cloudinary) : IUploadService
 {
     private static readonly string[] ImgExtensions = { ".jpg", ".jpeg", ".png", ".gif", ".bmp" };
     private static readonly string[] VideoExtensions = { ".mp4", ".avi", ".mov", ".wmv", ".flv" };

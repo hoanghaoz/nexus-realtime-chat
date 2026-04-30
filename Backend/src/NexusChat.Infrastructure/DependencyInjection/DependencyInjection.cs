@@ -51,8 +51,9 @@ public static class DependencyInjection
             var account = new Account(config.CloudName, config.ApiKey, config.ApiSecret);
             return new Cloudinary(account);
         });
-        services.AddScoped<IMediaService, CloudinaryService>();
+        services.AddScoped<IUploadService, CloudinaryService>();
         services.AddSingleton<ILinkPreviewService, LinkPreviewService>();
+        services.AddScoped<IMediaService, MediaService>();
         return services;
     }
 }

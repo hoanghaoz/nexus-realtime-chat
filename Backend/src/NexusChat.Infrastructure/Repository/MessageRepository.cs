@@ -1,5 +1,6 @@
 using MongoDB.Driver;
 using MongoDB.Driver.Linq;
+using NexusChat.Application.DTOs.Media;
 using NexusChat.Application.DTOs.Message;
 using NexusChat.Application.Extension;
 using NexusChat.Application.Interfaces.Message;
@@ -87,5 +88,10 @@ public class MessageRepository(
         await UpdateAsync(entity, token);
 
         return entity.MapMessageDto();
+    }
+
+    public Task<List<MediaResponseDto>> GetMediaByConversationIdAsync(string conversationId, string? type, int skip, int limit, CancellationToken token)
+    {
+        throw new NotImplementedException();
     }
 }

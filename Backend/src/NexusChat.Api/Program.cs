@@ -92,7 +92,6 @@ builder.Services.AddAuthentication(options =>
             {
                 context.Token = accessToken;
             }   
-            
             return Task.CompletedTask;
         }
     };
