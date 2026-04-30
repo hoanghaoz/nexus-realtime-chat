@@ -1,7 +1,6 @@
 namespace NexusChat.Application.DTOs.Media;
 
-public class MediaResponseDto
-(
+public sealed record MediaResponseDto(
     string MessageId,
     string FileUrl,
     string FileType,

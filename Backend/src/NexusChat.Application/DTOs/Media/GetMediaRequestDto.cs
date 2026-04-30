@@ -1,8 +1,7 @@
 namespace NexusChat.Application.DTOs.Media;
 
-public class GetMediaRequestDto
-(
-    string? Type,
+public sealed record GetMediaRequestDto(
+    string? Type = null,
     int Page = 1,
     int PageSize = 20
 );
