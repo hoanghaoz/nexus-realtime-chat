@@ -1,6 +1,4 @@
-using NexusChat.Domain.Enum;
-
-namespace NexusChat.Application.DTOs;
+namespace NexusChat.Application.DTOs.FriendRequests;
 
 public sealed record FriendResponseDto(string Id,
     string UserName,

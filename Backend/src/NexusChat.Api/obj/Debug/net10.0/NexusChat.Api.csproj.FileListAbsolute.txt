@@ -36,7 +36,6 @@ E:\Hao\RealtimeChat1\Backend\src\NexusChat.Api\bin\Debug\net10.0\Npgsql.EntityFr
 E:\Hao\RealtimeChat1\Backend\src\NexusChat.Api\bin\Debug\net10.0\Scalar.AspNetCore.dll
 E:\Hao\RealtimeChat1\Backend\src\NexusChat.Api\bin\Debug\net10.0\SharpCompress.dll
 E:\Hao\RealtimeChat1\Backend\src\NexusChat.Api\bin\Debug\net10.0\Snappier.dll
-E:\Hao\RealtimeChat1\Backend\src\NexusChat.Api\bin\Debug\net10.0\Sprache.dll
 E:\Hao\RealtimeChat1\Backend\src\NexusChat.Api\bin\Debug\net10.0\System.IdentityModel.Tokens.Jwt.dll
 E:\Hao\RealtimeChat1\Backend\src\NexusChat.Api\bin\Debug\net10.0\ZstdSharp.dll
 E:\Hao\RealtimeChat1\Backend\src\NexusChat.Api\bin\Debug\net10.0\runtimes\linux\native\libmongocrypt.so
@@ -78,3 +77,6 @@ E:\Hao\RealtimeChat1\Backend\src\NexusChat.Api\bin\Debug\net10.0\Microsoft.Exten
 E:\Hao\RealtimeChat1\Backend\src\NexusChat.Api\bin\Debug\net10.0\Newtonsoft.Json.dll
 E:\Hao\RealtimeChat1\Backend\src\NexusChat.Api\bin\Debug\net10.0\Pipelines.Sockets.Unofficial.dll
 E:\Hao\RealtimeChat1\Backend\src\NexusChat.Api\bin\Debug\net10.0\StackExchange.Redis.dll
+E:\Hao\RealtimeChat1\Backend\src\NexusChat.Api\bin\Debug\net10.0\HtmlAgilityPack.dll
+E:\Hao\RealtimeChat1\Backend\src\NexusChat.Api\bin\Debug\net10.0\OpenGraphNet.dll
+E:\Hao\RealtimeChat1\Backend\src\NexusChat.Api\bin\Debug\net10.0\Superpower.dll

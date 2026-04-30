@@ -8,13 +8,13 @@
     ".NETCoreApp,Version=v10.0": {
       "NexusChat.Api/1.0.0": {
         "dependencies": {
-          "DotNetEnv": "3.1.1",
+          "DotNetEnv": "3.2.0",
           "FluentValidation.AspNetCore": "11.3.1",
-          "Microsoft.AspNetCore.Authentication.JwtBearer": "10.0.5",
+          "Microsoft.AspNetCore.Authentication.JwtBearer": "10.0.7",
           "Microsoft.AspNetCore.OpenApi": "10.0.5",
           "NexusChat.Application": "1.0.0",
           "NexusChat.Infrastructure": "1.0.0",
-          "Scalar.AspNetCore": "2.13.22",
+          "Scalar.AspNetCore": "2.14.6",
           "System.IdentityModel.Tokens.Jwt": "8.16.0"
         },
         "runtime": {
@@ -48,14 +48,14 @@
           }
         }
       },
-      "CloudinaryDotNet/1.28.0": {
+      "CloudinaryDotNet/1.29.0": {
         "dependencies": {
           "Newtonsoft.Json": "13.0.3"
         },
         "runtime": {
           "lib/netstandard2.0/CloudinaryDotNet.dll": {
-            "assemblyVersion": "1.28.0.0",
-            "fileVersion": "1.28.0.0"
+            "assemblyVersion": "1.29.0.0",
+            "fileVersion": "1.29.0.0"
           }
         }
       },
@@ -67,14 +67,14 @@
           }
         }
       },
-      "DotNetEnv/3.1.1": {
+      "DotNetEnv/3.2.0": {
         "dependencies": {
-          "Sprache": "2.3.1"
+          "Superpower": "3.0.0"
         },
         "runtime": {
-          "lib/netstandard1.3/DotNetEnv.dll": {
-            "assemblyVersion": "3.1.1.0",
-            "fileVersion": "3.1.1.0"
+          "lib/netstandard2.0/DotNetEnv.dll": {
+            "assemblyVersion": "3.2.0.0",
+            "fileVersion": "3.2.0.0"
           }
         }
       },
@@ -117,14 +117,22 @@
           }
         }
       },
-      "Microsoft.AspNetCore.Authentication.JwtBearer/10.0.5": {
+      "HtmlAgilityPack/1.11.43": {
+        "runtime": {
+          "lib/netstandard2.0/HtmlAgilityPack.dll": {
+            "assemblyVersion": "1.11.43.0",
+            "fileVersion": "1.11.43.0"
+          }
+        }
+      },
+      "Microsoft.AspNetCore.Authentication.JwtBearer/10.0.7": {
         "dependencies": {
           "Microsoft.IdentityModel.Protocols.OpenIdConnect": "8.0.1"
         },
         "runtime": {
           "lib/net10.0/Microsoft.AspNetCore.Authentication.JwtBearer.dll": {
-            "assemblyVersion": "10.0.5.0",
-            "fileVersion": "10.0.526.15411"
+            "assemblyVersion": "10.0.7.0",
+            "fileVersion": "10.0.726.21808"
           }
         }
       },
@@ -139,28 +147,28 @@
           }
         }
       },
-      "Microsoft.EntityFrameworkCore/10.0.5": {
+      "Microsoft.EntityFrameworkCore/10.0.7": {
         "dependencies": {
-          "Microsoft.EntityFrameworkCore.Abstractions": "10.0.5"
+          "Microsoft.EntityFrameworkCore.Abstractions": "10.0.7"
         },
         "runtime": {
           "lib/net10.0/Microsoft.EntityFrameworkCore.dll": {
-            "assemblyVersion": "10.0.5.0",
-            "fileVersion": "10.0.526.15411"
+            "assemblyVersion": "10.0.7.0",
+            "fileVersion": "10.0.726.21808"
           }
         }
       },
-      "Microsoft.EntityFrameworkCore.Abstractions/10.0.5": {
+      "Microsoft.EntityFrameworkCore.Abstractions/10.0.7": {
         "runtime": {
           "lib/net10.0/Microsoft.EntityFrameworkCore.Abstractions.dll": {
-            "assemblyVersion": "10.0.5.0",
-            "fileVersion": "10.0.526.15411"
+            "assemblyVersion": "10.0.7.0",
+            "fileVersion": "10.0.726.21808"
           }
         }
       },
       "Microsoft.EntityFrameworkCore.Relational/10.0.4": {
         "dependencies": {
-          "Microsoft.EntityFrameworkCore": "10.0.5"
+          "Microsoft.EntityFrameworkCore": "10.0.7"
         },
         "runtime": {
           "lib/net10.0/Microsoft.EntityFrameworkCore.Relational.dll": {
@@ -177,14 +185,14 @@
           }
         }
       },
-      "Microsoft.Extensions.Caching.StackExchangeRedis/10.0.5": {
+      "Microsoft.Extensions.Caching.StackExchangeRedis/10.0.7": {
         "dependencies": {
           "StackExchange.Redis": "2.7.27"
         },
         "runtime": {
           "lib/net10.0/Microsoft.Extensions.Caching.StackExchangeRedis.dll": {
-            "assemblyVersion": "10.0.5.0",
-            "fileVersion": "10.0.526.15411"
+            "assemblyVersion": "10.0.7.0",
+            "fileVersion": "10.0.726.21808"
           }
         }
       },
@@ -260,26 +268,26 @@
           }
         }
       },
-      "MongoDB.Bson/3.7.1": {
+      "MongoDB.Bson/3.8.0": {
         "runtime": {
           "lib/net6.0/MongoDB.Bson.dll": {
-            "assemblyVersion": "3.7.1.0",
-            "fileVersion": "3.7.1.0"
+            "assemblyVersion": "3.8.0.0",
+            "fileVersion": "3.8.0.0"
           }
         }
       },
-      "MongoDB.Driver/3.7.1": {
+      "MongoDB.Driver/3.8.0": {
         "dependencies": {
           "DnsClient": "1.6.1",
-          "MongoDB.Bson": "3.7.1",
+          "MongoDB.Bson": "3.8.0",
           "SharpCompress": "0.30.1",
           "Snappier": "1.0.0",
           "ZstdSharp.Port": "0.7.3"
         },
         "runtime": {
           "lib/net6.0/MongoDB.Driver.dll": {
-            "assemblyVersion": "3.7.1.0",
-            "fileVersion": "3.7.1.0"
+            "assemblyVersion": "3.8.0.0",
+            "fileVersion": "3.8.0.0"
           }
         }
       },
@@ -287,7 +295,7 @@
         "dependencies": {
           "AWSSDK.SecurityToken": "3.7.100.14",
           "DnsClient": "1.6.1",
-          "MongoDB.Bson": "3.7.1",
+          "MongoDB.Bson": "3.8.0",
           "MongoDB.Libmongocrypt": "1.12.0",
           "SharpCompress": "0.30.1",
           "Snappier": "1.0.0",
@@ -343,7 +351,7 @@
       },
       "Npgsql.EntityFrameworkCore.PostgreSQL/10.0.1": {
         "dependencies": {
-          "Microsoft.EntityFrameworkCore": "10.0.5",
+          "Microsoft.EntityFrameworkCore": "10.0.7",
           "Microsoft.EntityFrameworkCore.Relational": "10.0.4",
           "Npgsql": "10.0.2"
         },
@@ -351,6 +359,17 @@
           "lib/net10.0/Npgsql.EntityFrameworkCore.PostgreSQL.dll": {
             "assemblyVersion": "10.0.1.0",
             "fileVersion": "10.0.1.0"
+          }
+        }
+      },
+      "OpenGraph-Net/4.0.1": {
+        "dependencies": {
+          "HtmlAgilityPack": "1.11.43"
+        },
+        "runtime": {
+          "lib/net6.0/OpenGraphNet.dll": {
+            "assemblyVersion": "4.0.0.0",
+            "fileVersion": "4.0.1.0"
           }
         }
       },
@@ -362,11 +381,11 @@
           }
         }
       },
-      "Scalar.AspNetCore/2.13.22": {
+      "Scalar.AspNetCore/2.14.6": {
         "runtime": {
           "lib/net10.0/Scalar.AspNetCore.dll": {
-            "assemblyVersion": "2.13.22.0",
-            "fileVersion": "2.13.22.0"
+            "assemblyVersion": "2.14.6.0",
+            "fileVersion": "2.14.6.0"
           }
         }
       },
@@ -386,14 +405,6 @@
           }
         }
       },
-      "Sprache/2.3.1": {
-        "runtime": {
-          "lib/netstandard2.1/Sprache.dll": {
-            "assemblyVersion": "2.3.1.0",
-            "fileVersion": "2.3.1.0"
-          }
-        }
-      },
       "StackExchange.Redis/2.7.27": {
         "dependencies": {
           "Pipelines.Sockets.Unofficial": "2.2.8"
@@ -402,6 +413,14 @@
           "lib/net6.0/StackExchange.Redis.dll": {
             "assemblyVersion": "2.0.0.0",
             "fileVersion": "2.7.27.49176"
+          }
+        }
+      },
+      "Superpower/3.0.0": {
+        "runtime": {
+          "lib/net5.0/Superpower.dll": {
+            "assemblyVersion": "1.0.0.0",
+            "fileVersion": "3.0.0.0"
           }
         }
       },
@@ -452,17 +471,18 @@
       "NexusChat.Infrastructure/1.0.0": {
         "dependencies": {
           "BCrypt.Net-Next": "4.1.0",
-          "CloudinaryDotNet": "1.28.0",
-          "DotNetEnv": "3.1.1",
-          "Microsoft.EntityFrameworkCore": "10.0.5",
-          "Microsoft.EntityFrameworkCore.Abstractions": "10.0.5",
-          "Microsoft.Extensions.Caching.StackExchangeRedis": "10.0.5",
+          "CloudinaryDotNet": "1.29.0",
+          "DotNetEnv": "3.2.0",
+          "Microsoft.EntityFrameworkCore": "10.0.7",
+          "Microsoft.EntityFrameworkCore.Abstractions": "10.0.7",
+          "Microsoft.Extensions.Caching.StackExchangeRedis": "10.0.7",
           "Microsoft.IdentityModel.Tokens": "8.17.0",
-          "MongoDB.Bson": "3.7.1",
-          "MongoDB.Driver": "3.7.1",
+          "MongoDB.Bson": "3.8.0",
+          "MongoDB.Driver": "3.8.0",
           "MongoDB.Driver.Core": "2.30.0",
           "NexusChat.Application": "1.0.0",
           "Npgsql.EntityFrameworkCore.PostgreSQL": "10.0.1",
+          "OpenGraph-Net": "4.0.1",
           "System.IdentityModel.Tokens.Jwt": "8.16.0"
         },
         "runtime": {
@@ -501,12 +521,12 @@
       "path": "bcrypt.net-next/4.1.0",
       "hashPath": "bcrypt.net-next.4.1.0.nupkg.sha512"
     },
-    "CloudinaryDotNet/1.28.0": {
+    "CloudinaryDotNet/1.29.0": {
       "type": "package",
       "serviceable": true,
-      "sha512": "sha512-o5Dfp5DrpF69s8qjlh4dxzXuJUCRxt7KQaweU8wMDxd1cPFONCVNZsgFQZ3v0PZDN76fLonZ5vFDjVTA3UTjCA==",
-      "path": "cloudinarydotnet/1.28.0",
-      "hashPath": "cloudinarydotnet.1.28.0.nupkg.sha512"
+      "sha512": "sha512-z1Y9NvD2k5QxEtU5kF//G0f9RtpwHHijPpix9CMeI0tJv4/yTfYZoJ7ONTLQFSlv4Gkmo05wh+Uno0S72hX71g==",
+      "path": "cloudinarydotnet/1.29.0",
+      "hashPath": "cloudinarydotnet.1.29.0.nupkg.sha512"
     },
     "DnsClient/1.6.1": {
       "type": "package",
@@ -515,12 +535,12 @@
       "path": "dnsclient/1.6.1",
       "hashPath": "dnsclient.1.6.1.nupkg.sha512"
     },
-    "DotNetEnv/3.1.1": {
+    "DotNetEnv/3.2.0": {
       "type": "package",
       "serviceable": true,
-      "sha512": "sha512-o4SqUVCq0pqHF/HYsZk6k22XGIVmvsDVo+Dy7l0ubq9uQ45JkXswrMRJmYvhGLXWFYF0M5OupMonytB+0zvpGQ==",
-      "path": "dotnetenv/3.1.1",
-      "hashPath": "dotnetenv.3.1.1.nupkg.sha512"
+      "sha512": "sha512-2q+PD+aJcRW9QuRcIv4F8WbvEDxI6cwxzZJec2i45cBY4cAKCAoW4ZPkApJ7H82wr6Yfmxx/0kb1nLnRmZrGZA==",
+      "path": "dotnetenv/3.2.0",
+      "hashPath": "dotnetenv.3.2.0.nupkg.sha512"
     },
     "ErrorOr/2.0.1": {
       "type": "package",
@@ -550,12 +570,19 @@
       "path": "fluentvalidation.dependencyinjectionextensions/12.1.1",
       "hashPath": "fluentvalidation.dependencyinjectionextensions.12.1.1.nupkg.sha512"
     },
-    "Microsoft.AspNetCore.Authentication.JwtBearer/10.0.5": {
+    "HtmlAgilityPack/1.11.43": {
       "type": "package",
       "serviceable": true,
-      "sha512": "sha512-fZzXogChrwQ/SfifQJgeW7AtR8hUv5+LH9oLWjm5OqfnVt3N8MwcMHHMdawvqqdjP79lIZgetnSpj77BLsSI1g==",
-      "path": "microsoft.aspnetcore.authentication.jwtbearer/10.0.5",
-      "hashPath": "microsoft.aspnetcore.authentication.jwtbearer.10.0.5.nupkg.sha512"
+      "sha512": "sha512-C2gpt+S2tdFlQMOC3DK7rHZ8iv6EpDuIo4v0UTUSGX1F1bZ+NAQ3gp77HK8/JfCDszUm3Y2rHoyTp/TpO4KOIA==",
+      "path": "htmlagilitypack/1.11.43",
+      "hashPath": "htmlagilitypack.1.11.43.nupkg.sha512"
+    },
+    "Microsoft.AspNetCore.Authentication.JwtBearer/10.0.7": {
+      "type": "package",
+      "serviceable": true,
+      "sha512": "sha512-g8klpd7OFJfJOq1EJKcBO8C8I8Dp0QUWoKDPUvvJYe+xunVyBHq6YxfF2CAc6+rkniV25iaWl+6RK87c25n4lA==",
+      "path": "microsoft.aspnetcore.authentication.jwtbearer/10.0.7",
+      "hashPath": "microsoft.aspnetcore.authentication.jwtbearer.10.0.7.nupkg.sha512"
     },
     "Microsoft.AspNetCore.OpenApi/10.0.5": {
       "type": "package",
@@ -564,19 +591,19 @@
       "path": "microsoft.aspnetcore.openapi/10.0.5",
       "hashPath": "microsoft.aspnetcore.openapi.10.0.5.nupkg.sha512"
     },
-    "Microsoft.EntityFrameworkCore/10.0.5": {
+    "Microsoft.EntityFrameworkCore/10.0.7": {
       "type": "package",
       "serviceable": true,
-      "sha512": "sha512-9tNBmK3EpYVGRQLiqP+bqK2m+TD0Gv//4vCzR7ZOgl4FWzCFyOpYdIVka13M4kcBdPdSJcs3wbHr3rmzOqbIMA==",
-      "path": "microsoft.entityframeworkcore/10.0.5",
-      "hashPath": "microsoft.entityframeworkcore.10.0.5.nupkg.sha512"
+      "sha512": "sha512-G6yclVO5/csPzzsymV0SemY2NDqE31CP5M3jprF5IuO9wJsh4aUOfYD8HCLuDmM1D1CfReegVic48O2r79d46Q==",
+      "path": "microsoft.entityframeworkcore/10.0.7",
+      "hashPath": "microsoft.entityframeworkcore.10.0.7.nupkg.sha512"
     },
-    "Microsoft.EntityFrameworkCore.Abstractions/10.0.5": {
+    "Microsoft.EntityFrameworkCore.Abstractions/10.0.7": {
       "type": "package",
       "serviceable": true,
-      "sha512": "sha512-32c58Rnm47Qvhimawf67KO9PytgPz3QoWye7Abapt0Yocw/JnzMiSNj/pRoIKyn8Jxypkv86zxKD4Q/zNTc0Ag==",
-      "path": "microsoft.entityframeworkcore.abstractions/10.0.5",
-      "hashPath": "microsoft.entityframeworkcore.abstractions.10.0.5.nupkg.sha512"
+      "sha512": "sha512-TuxExnfIS/bSq3z2CbH0LwZH1oyj9iHhSGneU4fpxl3ikjZGZdSae9gcfnImV1rufH8f/ab1NnHwyL2BLyeZOg==",
+      "path": "microsoft.entityframeworkcore.abstractions/10.0.7",
+      "hashPath": "microsoft.entityframeworkcore.abstractions.10.0.7.nupkg.sha512"
     },
     "Microsoft.EntityFrameworkCore.Relational/10.0.4": {
       "type": "package",
@@ -592,12 +619,12 @@
       "path": "microsoft.extensions.caching.hybrid/10.4.0",
       "hashPath": "microsoft.extensions.caching.hybrid.10.4.0.nupkg.sha512"
     },
-    "Microsoft.Extensions.Caching.StackExchangeRedis/10.0.5": {
+    "Microsoft.Extensions.Caching.StackExchangeRedis/10.0.7": {
       "type": "package",
       "serviceable": true,
-      "sha512": "sha512-zXb143/TpEKOLQuWGw2CkJgb9F4XXh2XbevMvppzsIHr1/pjML0zjc+vzXcpCV8YUwpW5NIaScZhzFSm621B3Q==",
-      "path": "microsoft.extensions.caching.stackexchangeredis/10.0.5",
-      "hashPath": "microsoft.extensions.caching.stackexchangeredis.10.0.5.nupkg.sha512"
+      "sha512": "sha512-TvD0totA8qeyrZ2YeY/qRNgYBy4BvO6dG59ziJDLVnLH4s2jeLUFEFcgA3xzqPhCMMbuz9bJTRwHxkZ/7c87jQ==",
+      "path": "microsoft.extensions.caching.stackexchangeredis/10.0.7",
+      "hashPath": "microsoft.extensions.caching.stackexchangeredis.10.0.7.nupkg.sha512"
     },
     "Microsoft.IdentityModel.Abstractions/8.17.0": {
       "type": "package",
@@ -648,19 +675,19 @@
       "path": "microsoft.openapi/2.0.0",
       "hashPath": "microsoft.openapi.2.0.0.nupkg.sha512"
     },
-    "MongoDB.Bson/3.7.1": {
+    "MongoDB.Bson/3.8.0": {
       "type": "package",
       "serviceable": true,
-      "sha512": "sha512-ZhCFCN64iZNaV6TDVNpjQ6p8M8tQvLda6ABbfrqd6XEZ3qn0pwwDJi6+DZ3xySadUwGzKR0CV3IzmHEWe/wI4Q==",
-      "path": "mongodb.bson/3.7.1",
-      "hashPath": "mongodb.bson.3.7.1.nupkg.sha512"
+      "sha512": "sha512-HeiOJUylam5nIB7b1EfzlnJbf6A9te79WO6CtsKfp8M/2EeL4SoSQFjmUpJ6/vvuaNKGENXMaX9oUJp9KpHlqw==",
+      "path": "mongodb.bson/3.8.0",
+      "hashPath": "mongodb.bson.3.8.0.nupkg.sha512"
     },
-    "MongoDB.Driver/3.7.1": {
+    "MongoDB.Driver/3.8.0": {
       "type": "package",
       "serviceable": true,
-      "sha512": "sha512-p1Od3F5/lQUiYKF+o7+ommuVwK/71gbw5tu28toO1mID91cMPmdCL6EhX0K0+HwpytmMSfciI8j4688K//QcQA==",
-      "path": "mongodb.driver/3.7.1",
-      "hashPath": "mongodb.driver.3.7.1.nupkg.sha512"
+      "sha512": "sha512-BQ6bTaZCuSThmxS4vXu71a1jFGNMht2/+rjx2Uaw3AweIqRKFbPuyFoVsDnoLN935tvdC5OxwwAqrMY9eWBUng==",
+      "path": "mongodb.driver/3.8.0",
+      "hashPath": "mongodb.driver.3.8.0.nupkg.sha512"
     },
     "MongoDB.Driver.Core/2.30.0": {
       "type": "package",
@@ -697,6 +724,13 @@
       "path": "npgsql.entityframeworkcore.postgresql/10.0.1",
       "hashPath": "npgsql.entityframeworkcore.postgresql.10.0.1.nupkg.sha512"
     },
+    "OpenGraph-Net/4.0.1": {
+      "type": "package",
+      "serviceable": true,
+      "sha512": "sha512-vaz0tc1nsbt4jLpeNq70vNc9O7v3hOklK9DZ9NCuRMrokULA8+DojgPu3+oj4J8jR0wXRqKwSm36utJKhOVuqg==",
+      "path": "opengraph-net/4.0.1",
+      "hashPath": "opengraph-net.4.0.1.nupkg.sha512"
+    },
     "Pipelines.Sockets.Unofficial/2.2.8": {
       "type": "package",
       "serviceable": true,
@@ -704,12 +738,12 @@
       "path": "pipelines.sockets.unofficial/2.2.8",
       "hashPath": "pipelines.sockets.unofficial.2.2.8.nupkg.sha512"
     },
-    "Scalar.AspNetCore/2.13.22": {
+    "Scalar.AspNetCore/2.14.6": {
       "type": "package",
       "serviceable": true,
-      "sha512": "sha512-MN267boY7T3AEHW1mTFDpg4KHF/oiKbox7ue5Orz6/2OeqZHYF1ZQcjBHXGSwxN+lyGSYGL9/i0IRorCYyqw3Q==",
-      "path": "scalar.aspnetcore/2.13.22",
-      "hashPath": "scalar.aspnetcore.2.13.22.nupkg.sha512"
+      "sha512": "sha512-Q2JlF4FNSa3ooMbelv8WmP0rJCZHuQ6AJIB4tQfubcqbH3pgKIpsYBhXRzVECZ3erOZD8FmussrUpdbyVCNXYw==",
+      "path": "scalar.aspnetcore/2.14.6",
+      "hashPath": "scalar.aspnetcore.2.14.6.nupkg.sha512"
     },
     "SharpCompress/0.30.1": {
       "type": "package",
@@ -725,19 +759,19 @@
       "path": "snappier/1.0.0",
       "hashPath": "snappier.1.0.0.nupkg.sha512"
     },
-    "Sprache/2.3.1": {
-      "type": "package",
-      "serviceable": true,
-      "sha512": "sha512-Q+mXeiTxiUYG3lKYF6TS82/SyB4F2613Q1yXTMwg4jWGHEEVC3yrzHtNcI4B3qnDI0+eJsezGJ0V+cToUytHWw==",
-      "path": "sprache/2.3.1",
-      "hashPath": "sprache.2.3.1.nupkg.sha512"
-    },
     "StackExchange.Redis/2.7.27": {
       "type": "package",
       "serviceable": true,
       "sha512": "sha512-Uqc2OQHglqj9/FfGQ6RkKFkZfHySfZlfmbCl+hc+u2I/IqunfelQ7QJi7ZhvAJxUtu80pildVX6NPLdDaUffOw==",
       "path": "stackexchange.redis/2.7.27",
       "hashPath": "stackexchange.redis.2.7.27.nupkg.sha512"
+    },
+    "Superpower/3.0.0": {
+      "type": "package",
+      "serviceable": true,
+      "sha512": "sha512-bjKbAYWePooCAvPxQq+3KnmcLfRggMyRoXmtBMlmCG71bdwBHrO6rmRJ2DRIodg5aztNcxeZXBUVWT+H+MZUhw==",
+      "path": "superpower/3.0.0",
+      "hashPath": "superpower.3.0.0.nupkg.sha512"
     },
     "System.IdentityModel.Tokens.Jwt/8.16.0": {
       "type": "package",

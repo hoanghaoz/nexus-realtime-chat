@@ -1,5 +1,6 @@
 using ErrorOr;
 using NexusChat.Application.DTOs;
+using NexusChat.Application.DTOs.FriendRequests;
 
 namespace NexusChat.Application.Interfaces.FriendService;
 
