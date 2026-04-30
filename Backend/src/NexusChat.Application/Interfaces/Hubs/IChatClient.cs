@@ -1,5 +1,6 @@
 using NexusChat.Application.DTOs.FriendRequests;
 using NexusChat.Application.DTOs.Message;
+using NexusChat.Application.DTOs.Rooms;
 
 namespace NexusChat.Application.Interfaces.Hubs;
 
@@ -70,17 +71,14 @@ public interface IChatClient
     /// <param name="conversationId">The conversation ID containing the edited message.</param>
     /// <param name="messageId">The ID of the edited message.</param>
     /// <param name="newContent">The updated message content.</param>
-    /// <param name="token">Cancellation token for the operation.</param>
-    public Task MessageUpdateNotify(string conversationId, string messageId, string newContent,
-        CancellationToken token);
+    public Task MessageUpdateNotify(string conversationId, string messageId, string newContent);
 
     /// <summary>
     ///     Notifies that a message has been deleted.
     /// </summary>
     /// <param name="conversationId">The conversation ID containing the deleted message.</param>
     /// <param name="messageId">The ID of the deleted message.</param>
-    /// <param name="token">Cancellation token for the operation.</param>
-    public Task MessageDeleteNotify(string conversationId, string messageId, CancellationToken token);
+    public Task MessageDeleteNotify(string conversationId, string messageId);
 
     /// <summary>
     ///     Notifies that a reaction was added to a message.
@@ -89,9 +87,7 @@ public interface IChatClient
     /// <param name="messageId">The ID of the message that received the reaction.</param>
     /// <param name="emoji">The emoji or reaction type.</param>
     /// <param name="fromUserId">The ID of the user who reacted.</param>
-    /// <param name="token">Cancellation token for the operation.</param>
-    public Task MessageReactNotify(string conversationId, string messageId, string emoji, string fromUserId,
-        CancellationToken token);
+    public Task MessageReactNotify(string conversationId, string messageId, string emoji, string fromUserId);
 
     /// <summary>
     ///     Sends a toast notification to the message owner when someone reacts to their message.
@@ -99,6 +95,9 @@ public interface IChatClient
     /// <param name="fromUserId">The ID of the user who reacted.</param>
     /// <param name="messageId">The ID of the message that received the reaction.</param>
     /// <param name="emoji">The emoji or reaction type.</param>
-    /// <param name="token">Cancellation token for the operation.</param>
-    public Task ReceiveToastNotification(string fromUserId, string messageId, string emoji, CancellationToken token);
+    public Task ReceiveToastNotification(string fromUserId, string messageId, string emoji);
+
+    Task ReceiveAddedToGroupNotification(GroupResponseDto group);
+
+    Task UpdateLinkPreview(object payload);
 }

@@ -1,0 +1,16 @@
+E:\Hao\RealtimeChat1\Backend\src\NexusChat.Application\bin\Debug\net10.0\NexusChat.Application.deps.json
+E:\Hao\RealtimeChat1\Backend\src\NexusChat.Application\bin\Debug\net10.0\NexusChat.Application.dll
+E:\Hao\RealtimeChat1\Backend\src\NexusChat.Application\bin\Debug\net10.0\NexusChat.Application.pdb
+E:\Hao\RealtimeChat1\Backend\src\NexusChat.Application\bin\Debug\net10.0\NexusChat.Domain.dll
+E:\Hao\RealtimeChat1\Backend\src\NexusChat.Application\bin\Debug\net10.0\NexusChat.Domain.pdb
+E:\Hao\RealtimeChat1\Backend\src\NexusChat.Application\obj\Debug\net10.0\NexusChat.Application.csproj.AssemblyReference.cache
+E:\Hao\RealtimeChat1\Backend\src\NexusChat.Application\obj\Debug\net10.0\NexusChat.Application.GeneratedMSBuildEditorConfig.editorconfig
+E:\Hao\RealtimeChat1\Backend\src\NexusChat.Application\obj\Debug\net10.0\NexusChat.Application.AssemblyInfoInputs.cache
+E:\Hao\RealtimeChat1\Backend\src\NexusChat.Application\obj\Debug\net10.0\NexusChat.Application.AssemblyInfo.cs
+E:\Hao\RealtimeChat1\Backend\src\NexusChat.Application\obj\Debug\net10.0\NexusChat.Application.csproj.CoreCompileInputs.cache
+E:\Hao\RealtimeChat1\Backend\src\NexusChat.Application\obj\Debug\net10.0\NexusChat.Application.sourcelink.json
+E:\Hao\RealtimeChat1\Backend\src\NexusChat.Application\obj\Debug\net10.0\NexusCha.3C503434.Up2Date
+E:\Hao\RealtimeChat1\Backend\src\NexusChat.Application\obj\Debug\net10.0\NexusChat.Application.dll
+E:\Hao\RealtimeChat1\Backend\src\NexusChat.Application\obj\Debug\net10.0\refint\NexusChat.Application.dll
+E:\Hao\RealtimeChat1\Backend\src\NexusChat.Application\obj\Debug\net10.0\NexusChat.Application.pdb
+E:\Hao\RealtimeChat1\Backend\src\NexusChat.Application\obj\Debug\net10.0\ref\NexusChat.Application.dll

@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.SignalR;
+using NexusChat.Application.DTOs.Rooms;
 using NexusChat.Application.Interfaces.Hubs;
 
 namespace NexusChat.Api.Hubs;
@@ -23,7 +24,7 @@ public class SignalRNotificationService(IHubContext<ChatHub, IChatClient> hubCon
         CancellationToken token)
     {
         await hubContext.Clients.Group(conversationId)
-            .MessageUpdateNotify(conversationId, messageId, newContent, token);
+            .MessageUpdateNotify(conversationId, messageId, newContent);
     }
 
     /// <summary>
@@ -38,7 +39,7 @@ public class SignalRNotificationService(IHubContext<ChatHub, IChatClient> hubCon
     /// </remarks>
     public async Task NotifyMessageDeletedAsync(string conversationId, string messageId, CancellationToken token)
     {
-        await hubContext.Clients.Group(conversationId).MessageDeleteNotify(conversationId, messageId, token);
+        await hubContext.Clients.Group(conversationId).MessageDeleteNotify(conversationId, messageId);
     }
 
     /// <summary>
@@ -61,8 +62,19 @@ public class SignalRNotificationService(IHubContext<ChatHub, IChatClient> hubCon
         string toUserId, CancellationToken token)
     {
         await hubContext.Clients.Group(conversationId)
-            .MessageReactNotify(conversationId, messageId, emoji, fromUserId, token);
+            .MessageReactNotify(conversationId, messageId, emoji, fromUserId);
         if (fromUserId != toUserId)
-            await hubContext.Clients.User(toUserId).ReceiveToastNotification(fromUserId,messageId, emoji, token);
+            await hubContext.Clients.User(toUserId).ReceiveToastNotification(fromUserId, messageId, emoji);
+    }
+
+    /// <summary>
+    /// Notifies users that they were added to a group.
+    /// </summary>
+    /// <param name="userIds">User ids to notify.</param>
+    /// <param name="group">Group payload.</param>
+    /// <param name="token">Request cancellation token.</param>
+    public async Task NotifyAddedToGroupAsync(List<string> userIds, GroupResponseDto group, CancellationToken token)
+    {
+        await hubContext.Clients.Users(userIds).ReceiveAddedToGroupNotification(group);
     }
 }

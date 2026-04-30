@@ -1,3 +1,5 @@
+@import url("https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800;900&display=swap");
+@import url("https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap");
 @import "tailwindcss";
 @import "tw-animate-css";
 @import "shadcn/tailwind.css";
@@ -5,9 +7,31 @@
 
 @custom-variant dark (&:is(.dark *));
 
+@keyframes aurora {
+  0% {
+    background-position:
+      0% 50%,
+      0% 0%,
+      50% 50%;
+  }
+  50% {
+    background-position:
+      100% 50%,
+      40px 40px,
+      55% 45%;
+  }
+  100% {
+    background-position:
+      0% 50%,
+      80px 80px,
+      50% 50%;
+  }
+}
+
 @theme inline {
   --font-heading: var(--font-sans);
   --font-sans: "Geist Variable", sans-serif;
+
   --color-sidebar-ring: var(--sidebar-ring);
   --color-sidebar-border: var(--sidebar-border);
   --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
@@ -16,6 +40,7 @@
   --color-sidebar-primary: var(--sidebar-primary);
   --color-sidebar-foreground: var(--sidebar-foreground);
   --color-sidebar: var(--sidebar);
+
   --color-chart-5: var(--chart-5);
   --color-chart-4: var(--chart-4);
   --color-chart-3: var(--chart-3);
@@ -39,6 +64,7 @@
   --color-card: var(--card);
   --color-foreground: var(--foreground);
   --color-background: var(--background);
+
   --radius-sm: calc(var(--radius) * 0.6);
   --radius-md: calc(var(--radius) * 0.8);
   --radius-lg: var(--radius);
@@ -48,107 +74,173 @@
   --radius-4xl: calc(var(--radius) * 2.6);
 }
 
-:root {
-  --background: oklch(1 0 0);
-  --foreground: oklch(0.145 0 0);
-  --card: oklch(1 0 0);
-  --card-foreground: oklch(0.145 0 0);
-  --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.145 0 0);
-  --primary: oklch(0.205 0 0);
-  --primary-foreground: oklch(0.985 0 0);
-  --secondary: oklch(0.97 0 0);
-  --secondary-foreground: oklch(0.205 0 0);
-  --muted: oklch(0.97 0 0);
-  --muted-foreground: oklch(0.556 0 0);
-  --accent: oklch(0.97 0 0);
-  --accent-foreground: oklch(0.205 0 0);
-  --destructive: oklch(0.577 0.245 27.325);
-  --border: oklch(0.922 0 0);
-  --input: oklch(0.922 0 0);
-  --ring: oklch(0.708 0 0);
-  --chart-1: oklch(0.87 0 0);
-  --chart-2: oklch(0.556 0 0);
-  --chart-3: oklch(0.439 0 0);
-  --chart-4: oklch(0.371 0 0);
-  --chart-5: oklch(0.269 0 0);
-  --radius: 0.625rem;
-  --sidebar: oklch(0.985 0 0);
-  --sidebar-foreground: oklch(0.145 0 0);
-  --sidebar-primary: oklch(0.205 0 0);
-  --sidebar-primary-foreground: oklch(0.985 0 0);
-  --sidebar-accent: oklch(0.97 0 0);
-  --sidebar-accent-foreground: oklch(0.205 0 0);
-  --sidebar-border: oklch(0.922 0 0);
-  --sidebar-ring: oklch(0.708 0 0);
-  --site-bg: #ffffff
-    radial-gradient(
-      circle at top center,
-      rgba(59, 130, 246, 0.5),
-      transparent 70%
-    );
-}
-
-.dark {
-  --background: oklch(0.145 0 0);
-  --foreground: oklch(0.985 0 0);
-  --card: oklch(0.205 0 0);
-  --card-foreground: oklch(0.985 0 0);
-  --popover: oklch(0.205 0 0);
-  --popover-foreground: oklch(0.985 0 0);
-  --primary: oklch(0.922 0 0);
-  --primary-foreground: oklch(0.205 0 0);
-  --secondary: oklch(0.269 0 0);
-  --secondary-foreground: oklch(0.985 0 0);
-  --muted: oklch(0.269 0 0);
-  --muted-foreground: oklch(0.708 0 0);
-  --accent: oklch(0.269 0 0);
-  --accent-foreground: oklch(0.985 0 0);
-  --destructive: oklch(0.704 0.191 22.216);
-  --border: oklch(1 0 0 / 10%);
-  --input: oklch(1 0 0 / 15%);
-  --ring: oklch(0.556 0 0);
-  --chart-1: oklch(0.87 0 0);
-  --chart-2: oklch(0.556 0 0);
-  --chart-3: oklch(0.439 0 0);
-  --chart-4: oklch(0.371 0 0);
-  --chart-5: oklch(0.269 0 0);
-  --sidebar: oklch(0.205 0 0);
-  --sidebar-foreground: oklch(0.985 0 0);
-  --sidebar-primary: oklch(0.488 0.243 264.376);
-  --sidebar-primary-foreground: oklch(0.985 0 0);
-  --sidebar-accent: oklch(0.269 0 0);
-  --sidebar-accent-foreground: oklch(0.985 0 0);
-  --sidebar-border: oklch(1 0 0 / 10%);
-  --sidebar-ring: oklch(0.556 0 0);
-  --site-bg:
-    radial-gradient(
-      70% 55% at 50% 50%,
-      #2a5d77 0%,
-      #184058 18%,
-      #0f2a43 34%,
-      #0a1b30 50%,
-      #071226 66%,
-      #040d1c 80%,
-      #020814 92%,
-      #01040d 97%,
-      #000309 100%
-    ),
-    radial-gradient(
-      160% 130% at 10% 10%,
-      rgba(0, 0, 0, 0) 38%,
-      #000309 76%,
-      #000208 100%
-    ),
-    radial-gradient(
-      160% 130% at 90% 90%,
-      rgba(0, 0, 0, 0) 38%,
-      #000309 76%,
-      #000208 100%
-    );
-}
-
 @layer base {
+  :root {
+    /* Base Shadcn OKLCH */
+    --background: oklch(1 0 0);
+    --foreground: oklch(0.145 0 0);
+    --card: oklch(1 0 0);
+    --card-foreground: oklch(0.145 0 0);
+    --popover: oklch(1 0 0);
+    --popover-foreground: oklch(0.145 0 0);
+    --primary: oklch(0.205 0 0);
+    --primary-foreground: oklch(0.985 0 0);
+    --secondary: oklch(0.97 0 0);
+    --secondary-foreground: oklch(0.205 0 0);
+    --muted: oklch(0.97 0 0);
+    --muted-foreground: oklch(0.556 0 0);
+    --accent: oklch(0.97 0 0);
+    --accent-foreground: oklch(0.205 0 0);
+    --destructive: oklch(0.577 0.245 27.325);
+    --border: oklch(0.922 0 0);
+    --input: oklch(0.922 0 0);
+    --ring: oklch(0.708 0 0);
+
+    /* Charts & Radius */
+    --chart-1: oklch(0.87 0 0);
+    --chart-2: oklch(0.556 0 0);
+    --chart-3: oklch(0.439 0 0);
+    --chart-4: oklch(0.371 0 0);
+    --chart-5: oklch(0.269 0 0);
+    --radius: 0.625rem;
+
+    /* Sidebar */
+    --sidebar: oklch(0.985 0 0);
+    --sidebar-foreground: oklch(0.145 0 0);
+    --sidebar-primary: oklch(0.205 0 0);
+    --sidebar-primary-foreground: oklch(0.985 0 0);
+    --sidebar-accent: oklch(0.97 0 0);
+    --sidebar-accent-foreground: oklch(0.205 0 0);
+    --sidebar-border: oklch(0.922 0 0);
+    --sidebar-ring: oklch(0.708 0 0);
+
+    /* Dynamic Ocean Backgrounds */
+    --site-bg: radial-gradient(125% 125% at 50% 10%, #ffffff 40%, #14b8a6 100%);
+
+    /* --- ADDED: Chat App System (Ocean Theme - Light) --- */
+    --chat-bubble-sent: #14b8a6; /* Teal to match site-bg */
+    --chat-bubble-sent-foreground: #ffffff;
+    --chat-bubble-received: oklch(0.97 0 0);
+    --chat-bubble-received-foreground: oklch(0.145 0 0);
+
+    --online: #10b981;
+    --offline: #94a3b8;
+    --away: #f59e0b;
+
+    /* Gradients matching Dynamic Ocean */
+    --gradient-primary: linear-gradient(135deg, #0d9488, #2dd4bf);
+    --gradient-chat: linear-gradient(135deg, #14b8a6, #0ea5e9);
+    --gradient-glass: linear-gradient(
+      135deg,
+      rgba(255, 255, 255, 0.9) 0%,
+      rgba(240, 253, 250, 0.6) 100%
+    );
+    --gradient-ocean-accent: radial-gradient(
+      125% 125% at 50% 10%,
+      rgba(255, 255, 255, 1) 40%,
+      rgba(20, 184, 166, 0.3) 100%
+    );
+
+    /* Shadows matching Ocean tone */
+    --shadow-soft: 0 8px 32px -8px rgba(20, 184, 166, 0.15);
+    --shadow-glow: 0 0 40px rgba(20, 184, 166, 0.3);
+    --shadow-bubble: 0 4px 20px -4px rgba(13, 148, 136, 0.2);
+
+    --transition-smooth: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    --transition-bounce: all 0.4s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+  }
+
+  .dark {
+    /* Base Shadcn OKLCH */
+    --background: oklch(0.145 0 0);
+    --foreground: oklch(0.985 0 0);
+    --card: oklch(0.205 0 0);
+    --card-foreground: oklch(0.985 0 0);
+    --popover: oklch(0.205 0 0);
+    --popover-foreground: oklch(0.985 0 0);
+    --primary: oklch(0.922 0 0);
+    --primary-foreground: oklch(0.205 0 0);
+    --secondary: oklch(0.269 0 0);
+    --secondary-foreground: oklch(0.985 0 0);
+    --muted: oklch(0.269 0 0);
+    --muted-foreground: oklch(0.708 0 0);
+    --accent: oklch(0.269 0 0);
+    --accent-foreground: oklch(0.985 0 0);
+    --destructive: oklch(0.704 0.191 22.216);
+    --border: oklch(1 0 0 / 10%);
+    --input: oklch(1 0 0 / 15%);
+    --ring: oklch(0.556 0 0);
+
+    /* Charts */
+    --chart-1: oklch(0.87 0 0);
+    --chart-2: oklch(0.556 0 0);
+    --chart-3: oklch(0.439 0 0);
+    --chart-4: oklch(0.371 0 0);
+    --chart-5: oklch(0.269 0 0);
+
+    /* Sidebar */
+    --sidebar: oklch(0.205 0 0);
+    --sidebar-foreground: oklch(0.985 0 0);
+    --sidebar-primary: oklch(0.488 0.243 264.376);
+    --sidebar-primary-foreground: oklch(0.985 0 0);
+    --sidebar-accent: oklch(0.269 0 0);
+    --sidebar-accent-foreground: oklch(0.985 0 0);
+    --sidebar-border: oklch(1 0 0 / 10%);
+    --sidebar-ring: oklch(0.556 0 0);
+
+    /* Dynamic Ocean Backgrounds */
+    --site-bg:
+      radial-gradient(
+        70% 55% at 50% 50%,
+        #2a5d77 0%,
+        #184058 18%,
+        #0f2a43 34%,
+        #0a1b30 50%,
+        #071226 66%,
+        #040d1c 80%,
+        #020814 92%,
+        #01040d 97%,
+        #000309 100%
+      ),
+      radial-gradient(
+        160% 130% at 10% 10%,
+        rgba(0, 0, 0, 0) 38%,
+        #000309 76%,
+        #000208 100%
+      ),
+      radial-gradient(
+        160% 130% at 90% 90%,
+        rgba(0, 0, 0, 0) 38%,
+        #000309 76%,
+        #000208 100%
+      );
+
+    /* --- ADDED: Chat App System (Ocean Theme - Dark) --- */
+    --chat-bubble-sent: #374151; /* Dark gray in dark mode */
+    --chat-bubble-sent-foreground: #ffffff;
+    --chat-bubble-received: oklch(0.205 0 0);
+    --chat-bubble-received-foreground: oklch(0.985 0 0);
+
+    /* Dark Mode Gradients */
+    --gradient-primary: linear-gradient(135deg, #0284c7, #38bdf8);
+    --gradient-chat: linear-gradient(135deg, #0284c7, #0ea5e9);
+    --gradient-glass: linear-gradient(
+      45deg,
+      rgba(15, 42, 67, 0.8) 0%,
+      rgba(10, 27, 48, 0.6) 100%
+    );
+    --gradient-ocean-accent: radial-gradient(
+      125% 125% at 50% 10%,
+      rgba(0, 0, 0, 1) 40%,
+      rgba(2, 132, 199, 0.4) 100%
+    );
+
+    /* Dark Shadows with Cyan/Blue glow */
+    --shadow-soft: 0 8px 32px -8px rgba(56, 189, 248, 0.2);
+    --shadow-glow: 0 0 40px rgba(2, 132, 199, 0.4);
+    --shadow-bubble: 0 4px 20px -4px rgba(2, 132, 199, 0.3);
+  }
+
   * {
     @apply border-border outline-ring/50;
   }
@@ -166,4 +258,194 @@
     background-size: cover;
     background-attachment: fixed;
   }
+
+  .sidebar-menu-button-aurora {
+    background:
+      linear-gradient(45deg, #1a1a1a 0%, #003366 100%),
+      repeating-linear-gradient(
+        45deg,
+        rgba(0, 255, 255, 0.1) 0px,
+        rgba(0, 255, 255, 0.1) 20px,
+        rgba(0, 255, 0, 0.1) 20px,
+        rgba(0, 255, 0, 0.1) 40px
+      ),
+      radial-gradient(
+        circle at 50% 50%,
+        rgba(32, 196, 232, 0.3) 0%,
+        rgba(76, 201, 240, 0.1) 100%
+      );
+    background-size:
+      200% 200%,
+      auto,
+      120% 120%;
+    background-blend-mode: normal, overlay, overlay;
+    animation: aurora 8s linear infinite;
+  }
+}
+
+/* --- ADDED: Chat App Utility Classes --- */
+@layer components {
+  .glass {
+    @apply bg-linear-to-br border-teal-300/30 dark:border-sky-500/20 backdrop-blur-md;
+    background: var(--gradient-glass);
+  }
+
+  .glass-strong {
+    @apply backdrop-blur-2xl border border-border/70;
+    background: var(--gradient-glass);
+  }
+
+  .chat-bubble-sent {
+    @apply bg-(--chat-bubble-sent) text-(--chat-bubble-sent-foreground) shadow-md;
+    box-shadow: var(--shadow-bubble);
+  }
+
+  .chat-bubble-received {
+    @apply bg-(--chat-bubble-received) text-(--chat-bubble-received-foreground) border border-border/50;
+  }
+
+  .status-online {
+    @apply bg-(--online);
+    box-shadow: 0 0 8px rgba(16, 185, 129, 0.5);
+  }
+
+  .status-offline {
+    @apply bg-(--offline);
+  }
+
+  .status-away {
+    @apply bg-(--away);
+  }
+
+  .bg-gradient-primary {
+    background: var(--gradient-primary);
+  }
+  .bg-gradient-chat {
+    background: var(--gradient-chat);
+  }
+  .bg-gradient-ocean-accent {
+    background: var(--gradient-ocean-accent);
+  }
+
+  .shadow-soft {
+    box-shadow: var(--shadow-soft);
+  }
+  .shadow-glow {
+    box-shadow: var(--shadow-glow);
+  }
+  .shadow-bubble {
+    box-shadow: var(--shadow-bubble);
+  }
+
+  /* Mượt mà với thanh cuộn (Đồng bộ màu Teal/Ocean) - Code thuần không cần Plugin */
+  .beautiful-scrollbar {
+    /* Hỗ trợ Firefox */
+    scrollbar-width: thin;
+    scrollbar-color: rgba(45, 212, 191, 0.5) transparent;
+  }
+
+  .dark .beautiful-scrollbar {
+    scrollbar-color: rgba(3, 105, 161, 0.5) transparent;
+  }
+
+  /* Hỗ trợ Chrome, Edge, Safari */
+  .beautiful-scrollbar::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+
+  .beautiful-scrollbar::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  .beautiful-scrollbar::-webkit-scrollbar-thumb {
+    background-color: rgba(45, 212, 191, 0.5); /* teal-400/50 */
+    border-radius: 9999px;
+  }
+
+  .beautiful-scrollbar:hover::-webkit-scrollbar-thumb {
+    background-color: rgba(20, 184, 166, 1); /* hover: teal-500 */
+  }
+
+  .dark .beautiful-scrollbar::-webkit-scrollbar-thumb {
+    background-color: rgba(3, 105, 161, 0.5); /* sky-700/50 */
+  }
+
+  .dark .beautiful-scrollbar:hover::-webkit-scrollbar-thumb {
+    background-color: rgba(2, 132, 199, 1); /* hover: sky-600 */
+  }
+
+  .transition-bounce {
+    transition: var(--transition-bounce);
+  }
+  .transition-smooth {
+    transition: var(--transition-smooth);
+  }
+
+  .pulse-ring {
+    @apply relative;
+  }
+
+  .pulse-ring::before {
+    content: "";
+    @apply absolute inset-0 rounded-full bg-teal-500/30 dark:bg-sky-500/30 animate-ping duration-2000;
+  }
+
+  .message-bounce {
+    animation: messageSlideIn 0.4s cubic-bezier(0.68, -0.55, 0.265, 1.55)
+      forwards;
+  }
+
+  @keyframes messageSlideIn {
+    0% {
+      opacity: 0;
+      transform: translateY(20px) scale(0.95);
+    }
+    100% {
+      opacity: 1;
+      transform: translateY(0) scale(1);
+    }
+  }
+}
+
+/* Converted from the source HTML styles for icon font and custom scrollbar behavior. */
+.material-symbols-outlined {
+  font-variation-settings:
+    "FILL" 0,
+    "wght" 400,
+    "GRAD" 0,
+    "opsz" 24;
+}
+
+.icon-fill {
+  font-variation-settings: "FILL" 1;
+}
+
+.font-manrope {
+  font-family: "Manrope", sans-serif;
+}
+
+::-webkit-scrollbar {
+  width: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 10px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.2);
+}
+
+.light-scrollbar::-webkit-scrollbar-thumb {
+  background: rgba(0, 0, 0, 0.1);
+}
+
+.light-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: rgba(0, 0, 0, 0.2);
 }

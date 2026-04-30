@@ -5,6 +5,8 @@
       context: .
       dockerfile: src/NexusChat.Api/Dockerfile
       
+    container_name: backend_nexuschat
+      
     environment:
         - ConnectionStrings__DefaultConnection=${DEFAULT_CONNECTION}
         - Jwt__Key=${JWT_KEY}
