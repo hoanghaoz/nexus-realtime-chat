@@ -13,7 +13,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("NexusChat.Application")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+7c4013c8a47bbaa8f42e9477e0024202e982ee9b")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+21944ee9f87349260df5080d513db13d8f50aec8")]
 [assembly: System.Reflection.AssemblyProductAttribute("NexusChat.Application")]
 [assembly: System.Reflection.AssemblyTitleAttribute("NexusChat.Application")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]
