@@ -1,8 +1,7 @@
-
 using NexusChat.Application.DTOs.Media;
 using NexusChat.Application.Interfaces.Media;
 
-namespace NexusChat.Infrastructure.Media;
+namespace NexusChat.Application.Services;
 
 public class MediaService : IMediaService
 {
