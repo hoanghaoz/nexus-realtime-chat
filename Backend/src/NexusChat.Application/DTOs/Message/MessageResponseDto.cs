@@ -11,5 +11,6 @@ public sealed record MessageResponseDto(
     List<string> MentionUser,
     bool IsDeleted,
     bool IsEdited,
+    bool IsPending,
     DateTime? DeletedAt,
     DateTime? EditedAt);

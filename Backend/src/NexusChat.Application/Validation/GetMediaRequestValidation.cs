@@ -17,7 +17,9 @@ public class GetMediaRequestValidator : AbstractValidator<GetMediaRequestDto>
 
         // Validate Type Media
         RuleFor(x => x.Type)
-            .Must(t => string.IsNullOrEmpty(t) || new[] { "image", "video", "file" }.Contains(t))
-            .WithMessage("Type is not valid. Allowed values are 'image', 'video', 'file' or empty.");
+            .Must(t => string.IsNullOrWhiteSpace(t)
+                       || new[] { "image", "video", "audio", "document", "file" }
+                           .Contains(t.Trim().ToLowerInvariant()))
+            .WithMessage("Type is not valid. Allowed values are 'image', 'video', 'audio', 'document', 'file' or empty.");
     }
 }
