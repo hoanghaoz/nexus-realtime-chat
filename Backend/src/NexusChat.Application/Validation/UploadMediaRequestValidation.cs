@@ -38,7 +38,7 @@ public class UploadMediaRequestValidator : AbstractValidator<UploadMediaRequestD
             .WithMessage(dto => GetSizeErrorMessage(dto.FileName));
     }
 
-    private bool BeAValidExtension(string fileName)
+    private static bool BeAValidExtension(string fileName)
     {
         var ext = Path.GetExtension(fileName).ToLowerInvariant();
         return ext is ".jpg" or ".jpeg" or ".png" or ".gif" or ".bmp" or ".webp" // image 
@@ -48,7 +48,7 @@ public class UploadMediaRequestValidator : AbstractValidator<UploadMediaRequestD
             or ".pptx" or ".txt" or ".zip" or ".rar"; // document
     }
 
-    private bool HaveValidSizeForItsType(string fileName, long fileSize)
+    private static bool HaveValidSizeForItsType(string fileName, long fileSize)
     {
         var ext = Path.GetExtension(fileName).ToLowerInvariant();
 
@@ -64,7 +64,7 @@ public class UploadMediaRequestValidator : AbstractValidator<UploadMediaRequestD
         };
     }
 
-    private string GetSizeErrorMessage(string fileName)
+    private static string GetSizeErrorMessage(string fileName)
     {
         var ext = Path.GetExtension(fileName).ToLowerInvariant();
 
