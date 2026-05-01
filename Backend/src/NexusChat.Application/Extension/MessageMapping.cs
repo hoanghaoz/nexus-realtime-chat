@@ -23,6 +23,7 @@ public static class MessageMapping
             message.MentionedUsersId,
             message.IsDeleted,
             message.IsEdited,
+            message.IsPending,
             message.DeletedAt,
             message.EditedAt
         );

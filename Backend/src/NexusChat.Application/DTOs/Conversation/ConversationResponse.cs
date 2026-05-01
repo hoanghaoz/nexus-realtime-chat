@@ -3,6 +3,7 @@ using NexusChat.Domain.Enum;
 namespace NexusChat.Application.DTOs.Conversation;
 
 public sealed record ConversationResponse(
+    string ConversationId,
     RoomType TypeRoom,
     string DisplayName,
     string? DisplayAvatar,

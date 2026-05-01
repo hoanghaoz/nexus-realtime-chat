@@ -10,6 +10,7 @@ using NexusChat.Application.Interfaces.FriendRepository;
 using NexusChat.Application.Interfaces.Media;
 using NexusChat.Application.Interfaces.Message;
 using NexusChat.Application.Interfaces.UserRepository;
+using NexusChat.Application.Services;
 using NexusChat.Infrastructure.Authentication;
 using NexusChat.Infrastructure.Data.Configuration;
 using NexusChat.Infrastructure.Data.Interface;

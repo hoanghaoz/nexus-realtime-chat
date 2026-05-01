@@ -130,7 +130,7 @@ builder.Services.AddRateLimiter(options =>
 
     options.AddPolicy("limit-per-user", httpContext =>
     {
-        var userId = httpContext.User.FindFirstValue("userId");
+        var userId = httpContext.User.FindFirstValue(ClaimTypes.NameIdentifier);
         if (!string.IsNullOrEmpty(userId))
             return RateLimitPartition.GetTokenBucketLimiter(
                 userId,
@@ -175,4 +175,4 @@ app.MapScalarApiReference();
 app.MapControllers(); // use Scalar for API docs
 app.MapHub<ChatHub>("/hubs/chat");
 app.MapHub<PresenceHub>("/hubs/presence");
-app.Run();
+await app.RunAsync();

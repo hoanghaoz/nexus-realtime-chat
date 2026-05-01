@@ -26,7 +26,9 @@ public class MessageService(
         var isValidUser = await conversationRepository.IsUserInConversationAsync(dto.ConversationId, fromUserId, token);
         if (!isValidUser) return Error.Unauthorized("User.Unauthorized", "You are not a member of this conversation.");
         var messages = await messageRepository.GetMessageInConversationAsync(dto.ConversationId, dto.Cursor, token);
-        return messages;
+        return messages
+            .Where(message => !message.IsPending || message.UserId == fromUserId)
+            .ToList();
     }
 
     /// <summary>
@@ -116,6 +118,23 @@ public class MessageService(
             );
             await linkPreviewService.EnqueueAsync(linkRequest, token);
         }
+
+        return message.MapMessageDto();
+    }
+    public async Task<ErrorOr<MessageResponseDto>> CompletePendingMessageAsync(string messageId, string fromUserId,
+        CancellationToken token)
+    {
+        var message = await messageRepository.GetByIdAsync(messageId, token);
+        if (message is null) return Error.NotFound("Message.NotFound", "The message was not found.");
+
+        if (message.FromUserId != fromUserId)
+            return Error.Forbidden("Message.Forbidden", "You can only complete your own pending message.");
+
+        if (!message.IsPending)
+            return Error.Conflict("Message.NotPending", "The message is already completed.");
+
+        message.IsPending = false;
+        await messageRepository.UpdateAsync(message, token);
 
         return message.MapMessageDto();
     }

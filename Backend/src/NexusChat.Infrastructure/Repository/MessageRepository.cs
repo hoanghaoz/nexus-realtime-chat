@@ -6,6 +6,7 @@ using NexusChat.Application.Extension;
 using NexusChat.Application.Interfaces.Message;
 using NexusChat.Domain.Entity;
 using NexusChat.Domain.Entity.EmbeddedObject;
+using NexusChat.Domain.Enum;
 using NexusChat.Infrastructure.Data.Interface;
 using NexusChat.Infrastructure.Repository.Common;
 
@@ -69,6 +70,7 @@ public class MessageRepository(
             m.MentionedUsersId,
             m.IsDeleted,
             m.IsEdited,
+            m.IsPending,
             m.DeletedAt,
             m.EditedAt
         )).ToList();
@@ -90,8 +92,42 @@ public class MessageRepository(
         return entity.MapMessageDto();
     }
 
-    public Task<List<MediaResponseDto>> GetMediaByConversationIdAsync(string conversationId, string? type, int skip, int limit, CancellationToken token)
+    public async Task<List<GetMediaResponseDto>> GetMediaByConversationIdAsync(string conversationId, string? type, int skip, int limit, CancellationToken token)
     {
-        throw new NotImplementedException();
+        var requestedType = ResolveMediaType(type);
+        var messages = await DbSet.AsQueryable()
+            .Where(message => message.ConversationId == conversationId
+                              && !message.IsDeleted
+                              && !message.IsPending // get only message upload successfully, skip messages is loading or error
+                              && message.Attachments.Any())
+            .OrderByDescending(message => message.CreatedAt)
+            .ToListAsync(token);
+
+        return messages
+            .SelectMany(message => message.Attachments.OfType<FileAttachment>()
+                .Select(attachment => new { Message = message, Attachment = attachment }))
+            .Where(item => requestedType is null || item.Attachment.FileType == requestedType)
+            .OrderByDescending(item => item.Attachment.CreatedAt)
+            .Skip(skip)
+            .Take(limit)
+            .Select(item => new GetMediaResponseDto(
+                item.Message.Id,
+                item.Attachment.FileUrl ?? string.Empty,
+                item.Attachment.FileType?.ToString() ?? string.Empty,
+                item.Attachment.CreatedAt
+            ))
+            .ToList();
+    }
+
+    private static FileType? ResolveMediaType(string? type)
+    {
+        return type?.Trim().ToLowerInvariant() switch
+        {
+            "image" => FileType.Image,
+            "video" => FileType.Video,
+            "audio" => FileType.Audio,
+            "document" or "file" => FileType.Document,
+            _ => null
+        };
     }
 }

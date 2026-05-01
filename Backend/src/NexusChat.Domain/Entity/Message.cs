@@ -18,6 +18,8 @@ public class Message : Entity<string>
     public bool IsDeleted { get; set; } = false;
 
     public bool IsEdited { get; set; } = false;
+
+    public bool IsPending { get; set; } = false;
     
     public DateTime? DeletedAt { get; set; }
     
