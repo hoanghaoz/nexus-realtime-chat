@@ -121,7 +121,6 @@ public class MessageService(
 
         return message.MapMessageDto();
     }
-    //  
     public async Task<ErrorOr<MessageResponseDto>> CompletePendingMessageAsync(string messageId, string fromUserId,
         CancellationToken token)
     {
