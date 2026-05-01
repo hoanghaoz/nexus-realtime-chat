@@ -175,4 +175,4 @@ app.MapScalarApiReference();
 app.MapControllers(); // use Scalar for API docs
 app.MapHub<ChatHub>("/hubs/chat");
 app.MapHub<PresenceHub>("/hubs/presence");
-app.Run();
+await app.RunAsync();
