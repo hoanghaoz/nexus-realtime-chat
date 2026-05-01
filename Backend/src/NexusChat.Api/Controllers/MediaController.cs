@@ -2,6 +2,7 @@ using System.Security.Claims;
 using ErrorOr;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 using NexusChat.Application.DTOs.Media;
 using NexusChat.Application.Interfaces.Media;
 
@@ -55,7 +56,8 @@ public class MediaController(IMediaService mediaService) : ControllerBase
     /// <response code="400">The file is missing, exceeds the size limit, or has an unsupported extension.</response>
     /// <response code="401">Unauthorized access or the user is not a member of this conversation.</response>
     [HttpPost("conversation/{conversationId}/upload")]
-    [RequestSizeLimit(100_000_000)] // Limit to ~100MB at Controller level (Detailed validation handled by FluentValidation)
+    [RequestSizeLimit(57_671_680)] // Limit to ~55MB at Controller level (Detailed validation handled by FluentValidation)
+    [EnableRateLimiting("limit-per-user")] // Limit per user
     [ProducesResponseType(typeof(UploadMediaResponseDto), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]

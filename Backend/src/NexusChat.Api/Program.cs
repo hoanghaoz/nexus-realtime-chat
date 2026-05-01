@@ -130,7 +130,7 @@ builder.Services.AddRateLimiter(options =>
 
     options.AddPolicy("limit-per-user", httpContext =>
     {
-        var userId = httpContext.User.FindFirstValue("userId");
+        var userId = httpContext.User.FindFirstValue(ClaimTypes.NameIdentifier);
         if (!string.IsNullOrEmpty(userId))
             return RateLimitPartition.GetTokenBucketLimiter(
                 userId,
