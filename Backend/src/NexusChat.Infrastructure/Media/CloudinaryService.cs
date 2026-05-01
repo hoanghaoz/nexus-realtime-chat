@@ -39,7 +39,6 @@ public class CloudinaryService(ICloudinary cloudinary) : IUploadService
         var uploadParams = new AutoUploadParams
         {
             File = new FileDescription(filename, stream),
-            UploadPreset = "nexus_chat_preset",
             Folder = folder
         };
         

@@ -61,12 +61,15 @@ public class MediaController(IMediaService mediaService) : ControllerBase
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     public async Task<IActionResult> UploadMedia(
         string conversationId,
-        IFormFile file,
+        IFormFile? file,
         CancellationToken token)
     {
         var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
         if (string.IsNullOrWhiteSpace(userId)) return Unauthorized("Invalid token or user not logged in.");
-        if (file.Length == 0) return BadRequest("File is required.");
+        if (file == null || file.Length == 0) 
+        {
+            return BadRequest("No file uploaded or file is empty.");
+        }
 
         await using var stream = file.OpenReadStream();
         var result = await mediaService.UploadMediaAsync(
