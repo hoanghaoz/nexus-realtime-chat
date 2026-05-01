@@ -1,3 +1,4 @@
+using MongoDB.Bson;
 using MongoDB.Driver;
 using MongoDB.Driver.Linq;
 using NexusChat.Application.DTOs.Media;
@@ -90,8 +91,46 @@ public class MessageRepository(
         return entity.MapMessageDto();
     }
 
-    public Task<List<MediaResponseDto>> GetMediaByConversationIdAsync(string conversationId, string? type, int skip, int limit, CancellationToken token)
+    public async Task<List<MediaResponseDto>> GetMediaByConversationIdAsync(string conversationId, string? type, int skip, int limit, CancellationToken token)
     {
-        throw new NotImplementedException();
+        //Filter messages by conversationId and attachments exist,
+        //then unwind attachments to get each attachment as a separate document,
+        //then filter by type if provided,
+        //then skip and limit for pagination
+        var documentPipeline = DbSet.Aggregate()
+            .Match(m => m.ConversationId == conversationId
+                        && m.IsDeleted == false
+                        && m.Attachments.Any())
+            .Unwind(m => m.Attachments)
+            .As<BsonDocument>();
+        
+        //Get only FileAttachment , discard LinkPreviewAttachment
+        // Because we only want to get media,
+        // and LinkPreviewAttachment is not media,
+        // it's just a preview of a link
+        var onlyFilesFilter = Builders<BsonDocument>.Filter.Exists("Attachments.FileUrl");
+         documentPipeline = documentPipeline.Match(onlyFilesFilter);
+         
+         // Continue filter by type if type is provided from FE 
+         if (!string.IsNullOrEmpty(type))
+         {
+             var typeFilter = Builders<BsonDocument>.Filter.Eq("Attachments.FileType", type);
+             documentPipeline = documentPipeline.Match(typeFilter);
+         }
+         
+         // Sort , Paging and map to MediaResponseDto
+         var result = await documentPipeline
+             .Sort(Builders<BsonDocument>.Sort.Descending("CreatedAt"))
+             .Skip(skip)
+             .Limit(limit)
+             .Project(bson => new MediaResponseDto(
+                 bson["_id"].AsString,
+                 bson["Attachments"]["FileUrl"].AsString,  
+                 bson["Attachments"]["FileType"].AsString,
+                 bson["CreatedAt"].ToUniversalTime()
+             ))
+             .ToListAsync(token);
+
+         return result;
     }
 }
