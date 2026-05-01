@@ -106,4 +106,19 @@ public class ChatHub(IMessageService messageService) : Hub<IChatClient>
         var senderId = Context.UserIdentifier;
         await Clients.OthersInGroup(conversationId).UserTypingNotify(senderId ?? "Unknown", conversationId, isTyping);
     }
+
+    public async Task CompletePendingMessage(string messageId)
+    {
+        var senderId = Context.UserIdentifier;
+        if (string.IsNullOrEmpty(senderId)) throw new HubException("User is not authenticated.");
+
+        var result = await messageService.CompletePendingMessageAsync(messageId, senderId, Context.ConnectionAborted);
+        if (result.IsError)
+        {
+            await Clients.Caller.ReceiveErrorMessage(result.Errors[0].Description);
+            return;
+        }
+
+        await Clients.Group(result.Value.ConversationId).ReceiveMessage(result.Value);
+    }
 }
