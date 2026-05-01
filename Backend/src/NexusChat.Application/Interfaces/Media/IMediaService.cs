@@ -1,8 +1,8 @@
-using ErrorOr;
+using NexusChat.Application.DTOs.Media;
 
 namespace NexusChat.Application.Interfaces.Media;
 
 public interface IMediaService
 {
-    Task<ErrorOr<string>> UploadMediaAsync(Stream stream, string filename,long fileSize, CancellationToken token);
+    Task<List<MediaResponseDto>> GetConversationMediaAsync(string conversationId, string userId, GetMediaRequestDto request, CancellationToken token);
 }

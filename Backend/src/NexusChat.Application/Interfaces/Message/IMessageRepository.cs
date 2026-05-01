@@ -1,3 +1,4 @@
+using NexusChat.Application.DTOs.Media;
 using NexusChat.Application.DTOs.Message;
 using NexusChat.Application.Interfaces.Common;
 using NexusChat.Domain.Entity.EmbeddedObject;
@@ -11,4 +12,8 @@ public interface IMessageRepository : IGenericRepository<Domain.Entity.Message, 
 
     Task<MessageResponseDto> UpdateAttachmentAsync(string messageId, LinkPreviewAttachment linkPreviewAttachment,
         CancellationToken token);
+    
+    // Media
+    Task<List<MediaResponseDto>> GetMediaByConversationIdAsync(
+        string conversationId, string? type, int skip, int limit, CancellationToken token);
 }
