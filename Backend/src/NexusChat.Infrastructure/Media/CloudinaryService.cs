@@ -1,6 +1,7 @@
 using CloudinaryDotNet;
 using CloudinaryDotNet.Actions;
 using ErrorOr;
+using NexusChat.Application.DTOs.Media;
 using NexusChat.Application.Interfaces.Media;
 using Error = ErrorOr.Error;
 
