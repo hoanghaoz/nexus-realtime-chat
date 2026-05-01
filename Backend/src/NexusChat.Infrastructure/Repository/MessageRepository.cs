@@ -1,4 +1,3 @@
-using MongoDB.Bson;
 using MongoDB.Driver;
 using MongoDB.Driver.Linq;
 using NexusChat.Application.DTOs.Media;
@@ -7,6 +6,7 @@ using NexusChat.Application.Extension;
 using NexusChat.Application.Interfaces.Message;
 using NexusChat.Domain.Entity;
 using NexusChat.Domain.Entity.EmbeddedObject;
+using NexusChat.Domain.Enum;
 using NexusChat.Infrastructure.Data.Interface;
 using NexusChat.Infrastructure.Repository.Common;
 
@@ -70,6 +70,7 @@ public class MessageRepository(
             m.MentionedUsersId,
             m.IsDeleted,
             m.IsEdited,
+            m.IsPending,
             m.DeletedAt,
             m.EditedAt
         )).ToList();
@@ -91,46 +92,42 @@ public class MessageRepository(
         return entity.MapMessageDto();
     }
 
-    public async Task<List<MediaResponseDto>> GetMediaByConversationIdAsync(string conversationId, string? type, int skip, int limit, CancellationToken token)
+    public async Task<List<GetMediaResponseDto>> GetMediaByConversationIdAsync(string conversationId, string? type, int skip, int limit, CancellationToken token)
     {
-        //Filter messages by conversationId and attachments exist,
-        //then unwind attachments to get each attachment as a separate document,
-        //then filter by type if provided,
-        //then skip and limit for pagination
-        var documentPipeline = DbSet.Aggregate()
-            .Match(m => m.ConversationId == conversationId
-                        && m.IsDeleted == false
-                        && m.Attachments.Any())
-            .Unwind(m => m.Attachments)
-            .As<BsonDocument>();
-        
-        //Get only FileAttachment , discard LinkPreviewAttachment
-        // Because we only want to get media,
-        // and LinkPreviewAttachment is not media,
-        // it's just a preview of a link
-        var onlyFilesFilter = Builders<BsonDocument>.Filter.Exists("Attachments.FileUrl");
-         documentPipeline = documentPipeline.Match(onlyFilesFilter);
-         
-         // Continue filter by type if type is provided from FE 
-         if (!string.IsNullOrEmpty(type))
-         {
-             var typeFilter = Builders<BsonDocument>.Filter.Eq("Attachments.FileType", type);
-             documentPipeline = documentPipeline.Match(typeFilter);
-         }
-         
-         // Sort , Paging and map to MediaResponseDto
-         var result = await documentPipeline
-             .Sort(Builders<BsonDocument>.Sort.Descending("CreatedAt"))
-             .Skip(skip)
-             .Limit(limit)
-             .Project(bson => new MediaResponseDto(
-                 bson["_id"].AsString,
-                 bson["Attachments"]["FileUrl"].AsString,  
-                 bson["Attachments"]["FileType"].AsString,
-                 bson["CreatedAt"].ToUniversalTime()
-             ))
-             .ToListAsync(token);
+        var requestedType = ResolveMediaType(type);
+        var messages = await DbSet.AsQueryable()
+            .Where(message => message.ConversationId == conversationId
+                              && !message.IsDeleted
+                              && !message.IsPending // get only message upload successfully, skip messages is loading or error
+                              && message.Attachments.Any())
+            .OrderByDescending(message => message.CreatedAt)
+            .ToListAsync(token);
 
-         return result;
+        return messages
+            .SelectMany(message => message.Attachments.OfType<FileAttachment>()
+                .Select(attachment => new { Message = message, Attachment = attachment }))
+            .Where(item => requestedType is null || item.Attachment.FileType == requestedType)
+            .OrderByDescending(item => item.Attachment.CreatedAt)
+            .Skip(skip)
+            .Take(limit)
+            .Select(item => new GetMediaResponseDto(
+                item.Message.Id,
+                item.Attachment.FileUrl ?? string.Empty,
+                item.Attachment.FileType?.ToString() ?? string.Empty,
+                item.Attachment.CreatedAt
+            ))
+            .ToList();
+    }
+
+    private static FileType? ResolveMediaType(string? type)
+    {
+        return type?.Trim().ToLowerInvariant() switch
+        {
+            "image" => FileType.Image,
+            "video" => FileType.Video,
+            "audio" => FileType.Audio,
+            "document" or "file" => FileType.Document,
+            _ => null
+        };
     }
 }

@@ -19,4 +19,7 @@ public interface IMessageService
 
     Task<ErrorOr<MessageResponseDto>> CreateMessageAsync(SendMessageRequestDto dto, string fromUserId,
         CancellationToken token);
+
+    Task<ErrorOr<MessageResponseDto>> CompletePendingMessageAsync(string messageId, string fromUserId,
+        CancellationToken token);
 }

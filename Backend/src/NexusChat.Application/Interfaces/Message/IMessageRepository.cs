@@ -14,6 +14,6 @@ public interface IMessageRepository : IGenericRepository<Domain.Entity.Message, 
         CancellationToken token);
     
     // Media
-    Task<List<MediaResponseDto>> GetMediaByConversationIdAsync(
+    Task<List<GetMediaResponseDto>> GetMediaByConversationIdAsync(
         string conversationId, string? type, int skip, int limit, CancellationToken token);
 }
