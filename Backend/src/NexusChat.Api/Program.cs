@@ -158,6 +158,7 @@ builder.Services.AddScoped<IFriendListService, FriendListService>();
 builder.Services.AddSingleton<IPresenceTracker, PresenceTracker>(); // check status user is online or offline 
 builder.Services.AddHostedService<LinkPreviewWorker>();
 builder.Services.AddSingleton<INotifyLinkPreviewed, LinkPreviewedNotifyService>();
+builder.Services.AddAiServices(builder.Configuration);
 var app = builder.Build();
 using (var scope = app.Services.CreateScope())
 {
