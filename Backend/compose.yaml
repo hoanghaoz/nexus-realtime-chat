@@ -15,13 +15,19 @@
         - Cloudinary__CloudName=${CLOUDINARY_CLOUDNAME}
         - Cloudinary__ApiKey=${CLOUDINARY_APIKEY}
         - Cloudinary__ApiSecret=${CLOUDINARY_APISECRET}
+        - Chatbot__Ollama__ApiKey=${CHATBOT_OLLAMA_APIKEY}
+        - Chatbot__Ollama__Url=${CHATBOT_OLLAMA_URL}
+        - Chatbot__Ollama__Model=${CHATBOT_OLLAMA_MODEL}
+        - Chatbot__Gemini__ApiKey=${CHATBOT_GEMINI_APIKEY}
+        - Chatbot__Gemini__Model=${CHATBOT_GEMINI_MODEL}
+        - Chatbot__ActiveProvider=${CHATBOT_PROVIDER}
       
         - ASPNETCORE_ENVIRONMENT=Development
     ports:
       - "8080:8080"
     networks:
-      - backend
-      - frontend
+      - nexus-backend
+      - nexus-frontend
         
   cache:
     image: redis:8.6.1-alpine
@@ -29,14 +35,11 @@
     ports:
       - "6379:6379"
     networks:
-      - backend
+      - nexus-backend
     
 networks:
-  backend:
+  nexus-backend:
     driver: bridge
-  frontend:
+  nexus-frontend:
     driver: bridge
-      
-
-
 
