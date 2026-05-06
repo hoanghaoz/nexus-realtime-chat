@@ -1,31 +1,77 @@
+import { useAuthStore } from "@/stores/useAuthStore";
+import { useSignalRStore } from "@/stores/useSignalRStore";
+import { useChatStore } from "@/stores/useChatStore";
+import { useState } from "react";
+import EditProfileDialog from "./EditProfileDialog";
+
 export default function UserProfile() {
+  const { user, signOut } = useAuthStore();
+  const { disconnectChat } = useSignalRStore();
+  const { reset } = useChatStore();
+  const [showEdit, setShowEdit] = useState(false);
+
+  const handleSignOut = () => {
+    disconnectChat();
+    reset();
+    signOut();
+  };
+
+  const initials = (user?.displayName || user?.username || "?")
+    .split(" ")
+    .map((w) => w[0])
+    .join("")
+    .slice(0, 2)
+    .toUpperCase();
+
   return (
-    <div className="mt-auto border-t border-slate-200 dark:border-slate-700 bg-white/80 dark:bg-slate-900/85 backdrop-blur-sm p-4 sticky bottom-0">
-      <div className="flex items-center justify-between group">
-        <div className="flex items-center gap-3">
-          <div className="relative">
-            <img
-              alt="User avatar"
-              className="w-11.5 h-11.5 rounded-full object-cover shadow-sm border-2 border-white dark:border-slate-700 bg-indigo-100 dark:bg-slate-700"
-              src="https://lh3.googleusercontent.com/aida-public/AB6AXuBhdohSQixQb0_g2QHWuSjJA9BVRoSYDXNtAVblJFt41U_XFe3qsht6jW2kgRG2Nj_mGvdoMLNOMjeDqtkAJmuCMOgnHgZk3Z8EZFvjpNtEE_dzqj5fbaIIhatNNyIo27VhGofWsWIJtskkiYRPBEFwP1vyTGsrSnCgE2v1ssbEyCnhBayfj0NdRWL8aV_CQpNad5AXaKw7FnpPOBQFuor-1HOLiNU0lDip4uImly68rzLJNX-IvnOUzXetIwUTNSFpNOG0d1yYsmXM"
-            />
-            <div className="absolute bottom-0 right-0 w-3.5 h-3.5 rounded-full border-[2.5px] border-white bg-green-500"></div>
-          </div>
-          <div className="flex flex-col justify-center">
-            <span className="font-bold text-slate-800 dark:text-slate-100 text-[15px] leading-tight">
-              Alex Johnson
-            </span>
-            <span className="text-[12px] text-slate-500 dark:text-slate-400 mt-0.5 font-medium">
-              Online
-            </span>
-          </div>
+    <>
+      <div className="mt-auto border-t border-slate-200 dark:border-slate-700 bg-white/80 dark:bg-slate-900/85 backdrop-blur-sm p-4 sticky bottom-0">
+        <div className="flex items-center justify-between group">
+          {/* Avatar + info */}
+          <button
+            className="flex items-center gap-3 min-w-0 hover:opacity-80 transition-opacity text-left"
+            onClick={() => setShowEdit(true)}
+            title="Chỉnh sửa thông tin"
+            type="button"
+          >
+            <div className="relative shrink-0">
+              {user?.avatarUrl ? (
+                <img
+                  alt="User avatar"
+                  className="w-11 h-11 rounded-full object-cover shadow-sm border-2 border-white dark:border-slate-700"
+                  src={user.avatarUrl}
+                />
+              ) : (
+                <div className="w-11 h-11 rounded-full bg-gradient-to-br from-blue-600 to-cyan-400 flex items-center justify-center text-white font-bold shadow-sm border-2 border-white dark:border-slate-700">
+                  {initials}
+                </div>
+              )}
+              <div className="absolute bottom-0 right-0 w-3 h-3 rounded-full border-2 border-white dark:border-slate-700 bg-green-500" />
+            </div>
+            <div className="flex flex-col justify-center min-w-0">
+              <span className="font-bold text-slate-800 dark:text-slate-100 text-[15px] leading-tight truncate">
+                {user?.displayName || user?.username || "Người dùng"}
+              </span>
+              <span className="text-[12px] text-slate-500 dark:text-slate-400 mt-0.5 font-medium truncate">
+                @{user?.username || "..."}
+              </span>
+            </div>
+          </button>
+
+          {/* Logout button */}
+          <button
+            id="logout-btn"
+            className="p-2 hover:bg-red-50 dark:hover:bg-red-950/40 rounded-full transition-colors text-slate-400 dark:text-slate-500 hover:text-red-500 shrink-0"
+            onClick={handleSignOut}
+            title="Đăng xuất"
+            type="button"
+          >
+            <span className="material-symbols-outlined text-[20px]">logout</span>
+          </button>
         </div>
-        <button className="p-2 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-full transition-colors text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-300">
-          <span className="material-symbols-outlined text-[20px]">
-            settings
-          </span>
-        </button>
       </div>
-    </div>
+
+      <EditProfileDialog open={showEdit} onClose={() => setShowEdit(false)} />
+    </>
   );
 }
