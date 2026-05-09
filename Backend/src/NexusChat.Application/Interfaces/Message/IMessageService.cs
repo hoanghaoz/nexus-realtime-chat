@@ -22,4 +22,14 @@ public interface IMessageService
 
     Task<ErrorOr<MessageResponseDto>> CompletePendingMessageAsync(string messageId, string fromUserId,
         CancellationToken token);
+    
+    Task<ErrorOr<List<MessageResponseDto>>> SearchMessagesByKeywordAsync(
+        MessageSearchRequestDto dto,
+        string fromUserId,
+        CancellationToken token);
+
+    Task<ErrorOr<MessageThreadResponseDto>> GetMessageThreadAsync(
+        string messageId,
+        string fromUserId,
+        CancellationToken token);
 }

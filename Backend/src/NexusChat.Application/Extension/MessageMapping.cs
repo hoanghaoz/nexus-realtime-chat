@@ -39,6 +39,7 @@ public static class MessageMapping
             Content = dto.Content,
             Reactions = [],
             Attachments = dto.Attachments?.Select(MapDtoToAttachment).ToList() ?? [],
+            ReplyToMessageId = dto.ReplyToMessageId,
             CreatedAt = DateTime.UtcNow
         };
     }

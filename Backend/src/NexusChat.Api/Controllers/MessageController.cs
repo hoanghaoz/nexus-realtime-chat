@@ -230,4 +230,101 @@ public class MessageController(
             });
         return response;
     }
+    
+    
+    /// <summary>
+    ///     Searches messages in a conversation by keyword.
+    /// </summary>
+    /// <remarks>
+    ///     Uses MongoDB Text Index to search keyword in message Content.
+    ///     User must be a member of the conversation to search its messages.
+    ///     Deleted and pending messages are excluded from the result.
+    /// </remarks>
+    /// <param name="request">Request containing conversation ID, keyword, skip and limit.</param>
+    /// <param name="token">Cancellation token for the request.</param>
+    /// <response code="200">Success; returns matched messages.</response>
+    /// <response code="400">Bad request; keyword is missing or invalid.</response>
+    /// <response code="401">Unauthorized; invalid token or user is not a member of the conversation.</response>
+    /// <response code="500">Internal server error; failed to search messages.</response>
+    /// <returns>An action result containing matched messages on success, or an error message on failure.</returns>
+    [HttpGet("search")]
+public async Task<IActionResult> SearchMessages(
+    [FromQuery] MessageSearchRequestDto request,
+    CancellationToken token)
+{
+    var fromUserId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+    if (string.IsNullOrEmpty(fromUserId))
+        return Unauthorized(new { message = "Invalid token or user not logged in." });
+
+    var result = await messageService.SearchMessagesByKeywordAsync(request, fromUserId, token);
+
+    return result.Match<IActionResult>(
+        messages => Ok(messages),
+        errors => errors[0].Code switch
+        {
+            "User.Unauthorized" => Unauthorized(new
+            {
+                message = "You are not authorized to access this conversation.",
+                description = errors[0].Description
+            }),
+            "Message.KeywordRequired" => BadRequest(new
+            {
+                message = "Keyword is required.",
+                description = errors[0].Description
+            }),
+            _ => StatusCode(StatusCodes.Status500InternalServerError, new
+            {
+                message = "An error occurred while searching messages.",
+                description = errors[0].Description
+            })
+        });
+}
+
+    
+    /// <summary>
+    ///     Retrieves original message and all direct replies of that message.
+    /// </summary>
+    /// <remarks>
+    ///     Finds the original message by message ID, validates that the current user
+    ///     is a member of the conversation, then returns all messages that reply to it.
+    /// </remarks>
+    /// <param name="messageId">The unique identifier of the original message.</param>
+    /// <param name="token">Cancellation token for the request.</param>
+    /// <response code="200">Success; returns original message and its replies.</response>
+    /// <response code="401">Unauthorized; invalid token or user is not a member of the conversation.</response>
+    /// <response code="404">Not found; original message does not exist.</response>
+    /// <response code="500">Internal server error; failed to retrieve message thread.</response>
+    /// <returns>An action result containing the message thread on success, or an error message on failure.</returns>
+[HttpGet("{messageId}/thread")]
+public async Task<IActionResult> GetMessageThread(
+    string messageId,
+    CancellationToken token)
+{
+    var fromUserId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+    if (string.IsNullOrEmpty(fromUserId))
+        return Unauthorized(new { message = "Invalid token or user not logged in." });
+
+    var result = await messageService.GetMessageThreadAsync(messageId, fromUserId, token);
+
+    return result.Match<IActionResult>(
+        thread => Ok(thread),
+        errors => errors[0].Code switch
+        {
+            "Message.NotFound" => NotFound(new
+            {
+                message = "Message not found.",
+                description = errors[0].Description
+            }),
+            "User.Unauthorized" => Unauthorized(new
+            {
+                message = "You are not authorized to access this conversation.",
+                description = errors[0].Description
+            }),
+            _ => StatusCode(StatusCodes.Status500InternalServerError, new
+            {
+                message = "An error occurred while retrieving message thread.",
+                description = errors[0].Description
+            })
+        });
+}
 }

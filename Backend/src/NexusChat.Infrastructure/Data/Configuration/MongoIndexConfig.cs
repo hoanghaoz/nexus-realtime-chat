@@ -26,6 +26,8 @@ public static class MongoIndexConfig
         
         // Schema Message index
         var message = database.GetCollection<Message>("Message");
+        
+        // Text index for searching message content by keyword.
         var messageIndexKeys = Builders<Message>.IndexKeys
             .Ascending(ms => ms.ConversationId)
             .Ascending(ms => ms.IsDeleted)
@@ -37,9 +39,39 @@ public static class MongoIndexConfig
             Name = "idx_conversationId_CreatedAt_IsDeleted"
         };
         
-        var messageIndexModel = new CreateIndexModel<Message>(messageIndexKeys,indexMessageOptions);
-        await message.Indexes.CreateOneAsync(messageIndexModel);
+        var messageTextIndexOptions = new CreateIndexOptions
+        {
+            Background = true,
+            Name = "idx_message_content_text"
+        };
+
         
+        var messageTextIndexKeys = Builders<Message>.IndexKeys
+            .Text(ms => ms.Content);
+
+        
+        var messageIndexModel = new CreateIndexModel<Message>(messageIndexKeys,indexMessageOptions);
+        var messageTextIndexModel = new CreateIndexModel<Message>(
+            messageTextIndexKeys,
+            messageTextIndexOptions);
+        await message.Indexes.CreateOneAsync(messageIndexModel);
+        await message.Indexes.CreateOneAsync(messageTextIndexModel);
+        
+        // Index for retrieving all replies of a specific message.
+        var messageReplyIndexKeys = Builders<Message>.IndexKeys
+            .Ascending(ms => ms.ReplyToMessageId)
+            .Ascending(ms => ms.ConversationId)
+            .Ascending(ms => ms.IsDeleted)
+            .Ascending(ms => ms.CreatedAt);
+
+        var messageReplyIndexOptions = new CreateIndexOptions
+        {
+            Background = true,
+            Name = "idx_replyToMessageId_conversationId_isDeleted_createdAt"
+        };
+
+        await message.Indexes.CreateOneAsync(
+            new CreateIndexModel<Message>(messageReplyIndexKeys, messageReplyIndexOptions));
         // User index
         var user = database.GetCollection<User>("User");
         var userIndexKeys = Builders<User>.IndexKeys
