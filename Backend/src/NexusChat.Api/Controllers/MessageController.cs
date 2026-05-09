@@ -264,17 +264,17 @@ public async Task<IActionResult> SearchMessages(
         {
             "User.Unauthorized" => Unauthorized(new
             {
-                message = "You are not authorized to access this conversation.",
+                message = "Bạn không thuộc nhóm này",
                 description = errors[0].Description
             }),
             "Message.KeywordRequired" => BadRequest(new
             {
-                message = "Keyword is required.",
+                message = "Hãy nhập từ khóa",
                 description = errors[0].Description
             }),
             _ => StatusCode(StatusCodes.Status500InternalServerError, new
             {
-                message = "An error occurred while searching messages.",
+                message = "Đã xảy ra lỗi trong quá trình tìm kiếm tin nhắn",
                 description = errors[0].Description
             })
         });
@@ -312,17 +312,17 @@ public async Task<IActionResult> GetMessageThread(
         {
             "Message.NotFound" => NotFound(new
             {
-                message = "Message not found.",
+                message = "Không tìm thấy tin nhắn",
                 description = errors[0].Description
             }),
             "User.Unauthorized" => Unauthorized(new
             {
-                message = "You are not authorized to access this conversation.",
+                message = "Bạn không thuộc nhóm này",
                 description = errors[0].Description
             }),
             _ => StatusCode(StatusCodes.Status500InternalServerError, new
             {
-                message = "An error occurred while retrieving message thread.",
+                message = "Đã xảy ra lỗi trong quá trình tìm kiếm tin nhắn",
                 description = errors[0].Description
             })
         });
