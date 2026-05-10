@@ -39,7 +39,12 @@ public class UserRepository(
 
     public async Task<List<User>> GetUsersByIdsAsync(IEnumerable<string> userIds, CancellationToken token)
     {
-        var filter = Builders<User>.Filter.In(u => u.Id, userIds);
+        var enumerable = userIds.ToList();
+        if (!enumerable.Any())
+        {
+            return []; 
+        }
+        var filter = Builders<User>.Filter.In(u => u.Id, enumerable);
         return await DbSet.Find(filter).ToListAsync(token);
     }
 }
