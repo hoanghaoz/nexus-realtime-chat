@@ -1,4 +1,3 @@
-using Microsoft.EntityFrameworkCore;
 using MongoDB.Bson;
 using MongoDB.Driver;
 using NexusChat.Application.Interfaces.UserRepository;
@@ -38,11 +37,25 @@ public class UserRepository(
         return await DbSet.Find(filter).ToListAsync(token);
     }
 
-    public async Task<Dictionary<string,User>> GetListUserAsync(List<string> userIds, CancellationToken token,bool isTracking = false)
+    public async Task<Dictionary<string,User>> GetListUserAsync(List<string> userIds, CancellationToken token)
     {
-        var query = DbSet.AsQueryable();
-        if (!isTracking) query = query.AsNoTracking();
-        var users = await query.Where(us => userIds.Contains(us.Id)).ToListAsync(token);
+        if (userIds.Count == 0)
+        {
+            return new Dictionary<string, User>();
+        }
+        var filter = Builders<User>.Filter.In(u => u.Id, userIds);
+        var users = await DbSet.Find(filter).ToListAsync(token);
         return users.ToDictionary(u => u.Id);
+    }
+
+    public async Task<List<User>> GetUsersByIdsAsync(IEnumerable<string> userIds, CancellationToken token)
+    {
+        var enumerable = userIds.ToList();
+        if (enumerable.Count == 0)
+        {
+            return []; 
+        }
+        var filter = Builders<User>.Filter.In(u => u.Id, enumerable);
+        return await DbSet.Find(filter).ToListAsync(token);
     }
 }

@@ -13,8 +13,7 @@ import { z } from "zod";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Link, useNavigate } from "react-router-dom";
-import { useContext } from "react";
-import { AuthContext } from "@/contexts/AuthContext";
+import { useAuthStore } from "@/stores/useAuthStore";
 
 // Định nghĩa schema cho form đăng nhập (sử dụng username)
 const signInSchema = z.object({
@@ -26,7 +25,9 @@ export function SignInForm({
   className,
   ...props
 }: React.ComponentProps<"div">) {
-  // Tạo useForm
+  const { signIn } = useAuthStore();
+  const navigate = useNavigate();
+
   const {
     register,
     handleSubmit,
@@ -39,19 +40,14 @@ export function SignInForm({
     },
   });
 
-  // Hàm xử lý khi dữ liệu đã SẠCH
- const auth = useContext(AuthContext);
- const navigate = useNavigate();
-
   const onSubmit = async (values: z.infer<typeof signInSchema>) => {
-  try {
-    await auth.login({ username: values.username, password: values.password });
-    navigate("/"); // điều hướng sau khi đăng nhập
-  } catch (err: any) {
-    // hiển thị lỗi đơn giản
-    alert(err?.response?.data || err.message || "Đăng nhập thất bại");
-  }
-};
+    try {
+      await signIn(values.username, values.password);
+      navigate("/"); // điều hướng sau khi đăng nhập thành công
+    } catch {
+      // Lỗi đã được xử lý bởi toast bên trong useAuthStore
+    }
+  };
 
   return (
     <div className={cn("flex flex-col gap-6", className)} {...props}>
