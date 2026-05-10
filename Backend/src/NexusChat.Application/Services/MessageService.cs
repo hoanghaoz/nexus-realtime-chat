@@ -5,7 +5,7 @@ using NexusChat.Application.Extension;
 using NexusChat.Application.Interfaces.ConversationRepository;
 using NexusChat.Application.Interfaces.Hubs;
 using NexusChat.Application.Interfaces.Media;
-using NexusChat.Application.Interfaces.Message;
+using NexusChat.Application.Interfaces.MessageInterface;
 using NexusChat.Domain.Entity.EmbeddedObject;
 
 namespace NexusChat.Application.Services;

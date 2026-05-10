@@ -9,4 +9,6 @@ public interface IConversationService
 
     public Task<ErrorOr<List<ConversationResponse>>> SearchConversationAsync(string userId, string keyword,
         CancellationToken token);
+    
+    Task<ErrorOr<ConversationDetailResponse>> GetConversationDetailAsync(string conversationId,CancellationToken token);
 }

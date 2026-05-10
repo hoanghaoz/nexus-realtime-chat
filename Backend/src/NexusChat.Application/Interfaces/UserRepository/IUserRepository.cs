@@ -1,4 +1,3 @@
-using NexusChat.Application.DTOs;
 using NexusChat.Application.Interfaces.Common;
 using NexusChat.Domain.Entity;
 
@@ -13,4 +12,6 @@ public interface IUserRepository : IGenericRepository<User,string>
     Task<List<User>> GetFriendsByUserIdAsync(string userId, CancellationToken token);
 
     Task<List<User>> SearchUsersByNameAsync(string name, CancellationToken token);
+    
+    Task<Dictionary<string,User>> GetListUserAsync(List<string> userIds, CancellationToken token,bool isTracking = false);
 }

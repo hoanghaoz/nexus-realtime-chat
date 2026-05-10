@@ -1,9 +1,10 @@
 using NexusChat.Application.DTOs.Media;
 using NexusChat.Application.DTOs.Message;
 using NexusChat.Application.Interfaces.Common;
+using NexusChat.Domain.Entity;
 using NexusChat.Domain.Entity.EmbeddedObject;
 
-namespace NexusChat.Application.Interfaces.Message;
+namespace NexusChat.Application.Interfaces.MessageInterface;
 
 public interface IMessageRepository : IGenericRepository<Domain.Entity.Message, string>
 {
@@ -12,6 +13,8 @@ public interface IMessageRepository : IGenericRepository<Domain.Entity.Message, 
 
     Task<MessageResponseDto> UpdateAttachmentAsync(string messageId, LinkPreviewAttachment linkPreviewAttachment,
         CancellationToken token);
+
+    Task<List<Message>> GetMessagesForSummaryAsync(string conversationId, CancellationToken token);
     
     // Media
     Task<List<GetMediaResponseDto>> GetMediaByConversationIdAsync(

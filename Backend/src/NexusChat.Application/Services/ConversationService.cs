@@ -58,6 +58,37 @@ public class ConversationService(
             .ToList();
     }
 
+    public async Task<ErrorOr<ConversationDetailResponse>> GetConversationDetailAsync(string conversationId, CancellationToken token)
+    {
+        var conversation = await conversationRepository.GetByIdAsync(conversationId, token);
+        if(conversation is null) return Error.NotFound("Conversation.NotFound", "Conversation was not found.");
+        var participantIds = conversation.Participants.Select(p => p.UserId).ToList();
+        var participants = await MapParticipantResponses(participantIds, conversation, token);
+        var lastMessage = conversation.LastMessage is null
+            ? null
+            : new LastMessagePreviewResponse(conversation.LastMessage.Content, conversation.LastMessage.CreatedAt);
+        if (conversation.RoomType == RoomType.Direct)
+        {
+            return new ConversationDetailResponse(
+                conversationId,
+                conversation.RoomType,
+                conversation.Name,
+                participants[0].DisplayAvatar,
+                lastMessage,
+                participants[0].IsOnline,
+                participants);
+        }
+
+        return new ConversationDetailResponse(
+            conversationId,
+            conversation.RoomType,
+            conversation.Name,
+            null,
+            lastMessage,
+            participants.Any(p => p.IsOnline),
+            participants);
+    }
+
     private async Task<ConversationResponse> MapConversationResponseAsync(
         Conversation conversation,
         string currentUserId,
@@ -119,5 +150,23 @@ public class ConversationService(
         return string.Equals(conversation.CreatedBy, currentUserId, StringComparison.Ordinal)
             ? "admin"
             : "member";
+    }
+
+    private async Task<List<ParticipantResponse>> MapParticipantResponses(List<string> userIds,Conversation conversation,CancellationToken token)
+    {
+       var userDictionary = await userRepository.GetListUserAsync(userIds, token);
+       var onlineUserIds = await presenceTracker.GetOnlineUsers();
+
+       var response = userIds.Select(u =>
+       {
+            var user = userDictionary.GetValueOrDefault(u);
+            return new ParticipantResponse(
+                UserId: u,
+                DisplayName: user?.UserName ?? "Unknown",
+                DisplayAvatar: user?.Avatar ?? "",
+                IsOnline: onlineUserIds.Contains(u),
+                Role: GetCurrentUserRole(conversation, u));
+       }).ToList();
+       return response;
     }
 }

@@ -2,7 +2,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.SignalR;
 using NexusChat.Application.DTOs.Message;
 using NexusChat.Application.Interfaces.Hubs;
-using NexusChat.Application.Interfaces.Message;
+using NexusChat.Application.Interfaces.MessageInterface;
 
 namespace NexusChat.Api.Hubs;
 

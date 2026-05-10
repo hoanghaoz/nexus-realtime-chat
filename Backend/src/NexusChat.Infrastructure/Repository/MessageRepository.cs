@@ -1,9 +1,10 @@
 using MongoDB.Driver;
 using MongoDB.Driver.Linq;
+using NexusChat.Application.DTOs.ChatBot;
 using NexusChat.Application.DTOs.Media;
 using NexusChat.Application.DTOs.Message;
 using NexusChat.Application.Extension;
-using NexusChat.Application.Interfaces.Message;
+using NexusChat.Application.Interfaces.MessageInterface;
 using NexusChat.Domain.Entity;
 using NexusChat.Domain.Entity.EmbeddedObject;
 using NexusChat.Domain.Enum;
@@ -71,6 +72,8 @@ public class MessageRepository(
             m.IsDeleted,
             m.IsEdited,
             m.IsPending,
+            m.ParentMessageId,
+            m.ReplyAt,
             m.DeletedAt,
             m.EditedAt
         )).ToList();
@@ -90,6 +93,14 @@ public class MessageRepository(
         await UpdateAsync(entity, token);
 
         return entity.MapMessageDto();
+    }
+
+    public async Task<List<Message>> GetMessagesForSummaryAsync(string conversationId, CancellationToken token)
+    {
+        var query = DbSet.AsQueryable();
+        query = query.Where(message => message.ConversationId.Equals(conversationId)).OrderByDescending(message => message.CreatedAt);
+        var messages = await query.Take(25).ToListAsync(token);
+        return messages;
     }
 
     public async Task<List<GetMediaResponseDto>> GetMediaByConversationIdAsync(string conversationId, string? type, int skip, int limit, CancellationToken token)
