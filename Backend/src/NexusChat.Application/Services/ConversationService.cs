@@ -39,15 +39,12 @@ public class ConversationService(
             .Distinct()
             .ToList();
         
-        // Get all information of users in direct conversations in
-        // one query to avoid multiple database calls in the mapping function.
+        // Fetch users in direct conversations with a single query to avoid N+1 lookups.
         var usersData = await userRepository.GetUsersByIdsAsync(directChatUserIds, token);
-        // Save list Dictionary chat of user
         var userDictionary = usersData.ToDictionary(u => u.Id);
         var response = new List<ConversationResponse>(conversations.Count);
         foreach (var conversation in conversations)
         {
-            // Return data into RAM ,so we dont need await from Database 
             response.Add(MapConversationResponse(conversation, userId, onlineUserIds, userDictionary));
         }
         return response;
