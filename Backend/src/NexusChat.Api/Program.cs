@@ -21,6 +21,7 @@ using NexusChat.Application.Services;
 using NexusChat.Infrastructure.Data.Configuration;
 using NexusChat.Infrastructure.DependencyInjection;
 using NexusChat.Infrastructure.Media;
+using NexusChat.Infrastructure.Worker;
 using Scalar.AspNetCore;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -48,7 +49,7 @@ builder.Services.AddHybridCache(options =>
         Expiration = TimeSpan.FromMinutes(10)
     };
 });
-builder.Services.AddSignalR();
+builder.Services.AddSignalR(opt => { opt.EnableDetailedErrors = true; });
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowAll", policy =>
@@ -86,9 +87,11 @@ builder.Services.AddAuthentication(options =>
         {
             var accessToken = context.Request.Query["access_token"];
             var path = context.HttpContext.Request.Path;
-            if (!string.IsNullOrEmpty(accessToken) && path.StartsWithSegments("/hubs/chat"))
+            if (!string.IsNullOrEmpty(accessToken) 
+                && path.StartsWithSegments("/hubs/chat") || path.StartsWithSegments("/hubs/presence"))
+            {
                 context.Token = accessToken;
-
+            }   
             return Task.CompletedTask;
         }
     };
@@ -127,7 +130,7 @@ builder.Services.AddRateLimiter(options =>
 
     options.AddPolicy("limit-per-user", httpContext =>
     {
-        var userId = httpContext.User.FindFirstValue("userId");
+        var userId = httpContext.User.FindFirstValue(ClaimTypes.NameIdentifier);
         if (!string.IsNullOrEmpty(userId))
             return RateLimitPartition.GetTokenBucketLimiter(
                 userId,
@@ -149,10 +152,13 @@ builder.Services.AddRateLimiter(options =>
             });
     });
 });
-// Connect between Interface and Impliment of Notification
+// Connect between Interface and Implement of Notification
 builder.Services.AddScoped<INotificationService, NotificationService>();
-builder.Services.AddScoped<IFriendListService, FriendListService>(); 
+builder.Services.AddScoped<IFriendListService, FriendListService>();
 builder.Services.AddSingleton<IPresenceTracker, PresenceTracker>(); // check status user is online or offline 
+builder.Services.AddHostedService<LinkPreviewWorker>();
+builder.Services.AddSingleton<INotifyLinkPreviewed, LinkPreviewedNotifyService>();
+builder.Services.AddAiServices(builder.Configuration);
 var app = builder.Build();
 using (var scope = app.Services.CreateScope())
 {
@@ -170,4 +176,4 @@ app.MapScalarApiReference();
 app.MapControllers(); // use Scalar for API docs
 app.MapHub<ChatHub>("/hubs/chat");
 app.MapHub<PresenceHub>("/hubs/presence");
-app.Run();
+await app.RunAsync();

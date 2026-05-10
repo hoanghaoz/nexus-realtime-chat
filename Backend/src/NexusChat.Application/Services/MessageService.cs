@@ -1,23 +1,34 @@
 using ErrorOr;
+using NexusChat.Application.DTOs.Media;
 using NexusChat.Application.DTOs.Message;
 using NexusChat.Application.Extension;
+using NexusChat.Application.Interfaces.ConversationRepository;
 using NexusChat.Application.Interfaces.Hubs;
+using NexusChat.Application.Interfaces.Media;
 using NexusChat.Application.Interfaces.Message;
 using NexusChat.Domain.Entity.EmbeddedObject;
 
 namespace NexusChat.Application.Services;
 
-public class MessageService(IMessageRepository messageRepository, IRealtimeNotification notify) : IMessageService
+public class MessageService(
+    IMessageRepository messageRepository,
+    IRealtimeNotification notify,
+    IConversationRepository conversationRepository,
+    ILinkPreviewService linkPreviewService) : IMessageService
 {
     /// <summary>
     ///     Retrieves messages from a conversation with cursor-based pagination.
     /// </summary>
     public async Task<ErrorOr<List<MessageResponseDto>>> GetMessageInConversationAsync(MessageRequestDto dto,
+        string fromUserId,
         CancellationToken token)
     {
-        // TODO: implement ConversationRepository to check ConversationId valid and user in conversation
+        var isValidUser = await conversationRepository.IsUserInConversationAsync(dto.ConversationId, fromUserId, token);
+        if (!isValidUser) return Error.Unauthorized("User.Unauthorized", "You are not a member of this conversation.");
         var messages = await messageRepository.GetMessageInConversationAsync(dto.ConversationId, dto.Cursor, token);
-        return messages;
+        return messages
+            .Where(message => !message.IsPending || message.UserId == fromUserId)
+            .ToList();
     }
 
     /// <summary>
@@ -91,9 +102,40 @@ public class MessageService(IMessageRepository messageRepository, IRealtimeNotif
     public async Task<ErrorOr<MessageResponseDto>> CreateMessageAsync(SendMessageRequestDto dto, string fromUserId,
         CancellationToken token)
     {
-        // TODO: Implement ConversationRepository to check fromUserId and ConversationId valid
+        var validUser = await conversationRepository.IsUserInConversationAsync(dto.ConversationId, fromUserId, token);
+        if (!validUser) return Error.Unauthorized("User.Unauthorized", "You are not a member of this conversation.");
+
         var message = dto.MapToEntity(fromUserId);
         await messageRepository.AddAsync(message, token);
+        // handle link preview if content had
+        var link = dto.Content.GetFirstLink();
+        if (link != null)
+        {
+            var linkRequest = new LinkPreviewRequestDto(
+                message.Id,
+                message.ConversationId,
+                link
+            );
+            await linkPreviewService.EnqueueAsync(linkRequest, token);
+        }
+
+        return message.MapMessageDto();
+    }
+    public async Task<ErrorOr<MessageResponseDto>> CompletePendingMessageAsync(string messageId, string fromUserId,
+        CancellationToken token)
+    {
+        var message = await messageRepository.GetByIdAsync(messageId, token);
+        if (message is null) return Error.NotFound("Message.NotFound", "The message was not found.");
+
+        if (message.FromUserId != fromUserId)
+            return Error.Forbidden("Message.Forbidden", "You can only complete your own pending message.");
+
+        if (!message.IsPending)
+            return Error.Conflict("Message.NotPending", "The message is already completed.");
+
+        message.IsPending = false;
+        await messageRepository.UpdateAsync(message, token);
+
         return message.MapMessageDto();
     }
 }

@@ -75,6 +75,7 @@ public class ConversationService(
             if (otherParticipant is null)
             {
                 return new ConversationResponse(
+                    ConversationId: conversation.Id,
                     TypeRoom: conversation.RoomType,
                     DisplayName: conversation.Name,
                     DisplayAvatar: null,
@@ -85,6 +86,7 @@ public class ConversationService(
             // Get Information of the other participant to display in the conversation list (e.g., their name and avatar)
             var otherUser = await userRepository.GetByIdAsync(otherParticipant.UserId, token);
             return new ConversationResponse(
+                ConversationId: conversation.Id,
                 TypeRoom: conversation.RoomType,
                 DisplayName: otherUser?.UserName ?? conversation.Name,
                 DisplayAvatar: otherUser?.Avatar,
@@ -98,6 +100,7 @@ public class ConversationService(
             .Any(p => onlineUserIds.Contains(p.UserId));
 
         return new ConversationResponse(
+            ConversationId: conversation.Id,
             TypeRoom: conversation.RoomType,
             DisplayName: conversation.Name,
             DisplayAvatar: null,

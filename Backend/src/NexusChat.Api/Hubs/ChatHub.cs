@@ -51,13 +51,13 @@ public class ChatHub(IMessageService messageService) : Hub<IChatClient>
     ///     It sends the message to all users in the conversation, including the sender
     /// </summary>
     /// <param name="sendMessageRequestDto"></param>
-    /// <param name="token"></param>
-    public async Task SendMessage(SendMessageRequestDto sendMessageRequestDto, CancellationToken token)
+    public async Task SendMessage(SendMessageRequestDto sendMessageRequestDto)
     {
         var senderId = Context.UserIdentifier;
         if (string.IsNullOrEmpty(senderId)) throw new HubException("User is not authenticated.");
 
-        var result = await messageService.CreateMessageAsync(sendMessageRequestDto, senderId, token);
+        var result =
+            await messageService.CreateMessageAsync(sendMessageRequestDto, senderId, Context.ConnectionAborted);
         if (result.IsError)
         {
             await Clients.Caller.ReceiveErrorMessage(result.Errors[0].Description);
@@ -77,12 +77,13 @@ public class ChatHub(IMessageService messageService) : Hub<IChatClient>
     /// </summary>
     /// <param name="sendMessageRequestDto"></param>
     /// <param name="token"></param>
-    public async Task TagAllMemberInGroup(SendMessageRequestDto sendMessageRequestDto, CancellationToken token)
+    public async Task TagAllMemberInGroup(SendMessageRequestDto sendMessageRequestDto)
     {
         var senderId = Context.UserIdentifier;
         if (string.IsNullOrEmpty(senderId)) throw new HubException("User is not authenticated.");
 
-        var result = await messageService.CreateMessageAsync(sendMessageRequestDto, senderId, token);
+        var result =
+            await messageService.CreateMessageAsync(sendMessageRequestDto, senderId, Context.ConnectionAborted);
         if (result.IsError)
         {
             await Clients.Caller.ReceiveErrorMessage(result.Errors[0].Description);
@@ -104,5 +105,20 @@ public class ChatHub(IMessageService messageService) : Hub<IChatClient>
     {
         var senderId = Context.UserIdentifier;
         await Clients.OthersInGroup(conversationId).UserTypingNotify(senderId ?? "Unknown", conversationId, isTyping);
+    }
+
+    public async Task CompletePendingMessage(string messageId)
+    {
+        var senderId = Context.UserIdentifier;
+        if (string.IsNullOrEmpty(senderId)) throw new HubException("User is not authenticated.");
+
+        var result = await messageService.CompletePendingMessageAsync(messageId, senderId, Context.ConnectionAborted);
+        if (result.IsError)
+        {
+            await Clients.Caller.ReceiveErrorMessage(result.Errors[0].Description);
+            return;
+        }
+
+        await Clients.Group(result.Value.ConversationId).ReceiveMessage(result.Value);
     }
 }

@@ -1,5 +1,4 @@
 import { cn } from "@/lib/utils";
-import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
@@ -13,10 +12,12 @@ import { Input } from "@/components/ui/input";
 import { z } from "zod";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
+import { Link, useNavigate } from "react-router-dom";
+import { useAuthStore } from "@/stores/useAuthStore";
 
-// Định nghĩa schema cho form đăng nhập
+// Định nghĩa schema cho form đăng nhập (sử dụng username)
 const signInSchema = z.object({
-  email: z.string().email("Email không đúng định dạng"),
+  username: z.string().min(1, "Username không được để trống"),
   password: z.string().min(8, "Mật khẩu phải có ít nhất 8 kí tự."),
 });
 
@@ -24,7 +25,9 @@ export function SignInForm({
   className,
   ...props
 }: React.ComponentProps<"div">) {
-  // Tạo useForm
+  const { signIn } = useAuthStore();
+  const navigate = useNavigate();
+
   const {
     register,
     handleSubmit,
@@ -32,14 +35,18 @@ export function SignInForm({
   } = useForm<z.infer<typeof signInSchema>>({
     resolver: zodResolver(signInSchema),
     defaultValues: {
-      email: "",
+      username: "",
       password: "",
     },
   });
 
-  // Hàm xử lý khi dữ liệu đã SẠCH
-  const onSubmit = (values: z.infer<typeof signInSchema>) => {
-    // Gọi API Backend
+  const onSubmit = async (values: z.infer<typeof signInSchema>) => {
+    try {
+      await signIn(values.username, values.password);
+      navigate("/"); // điều hướng sau khi đăng nhập thành công
+    } catch {
+      // Lỗi đã được xử lý bởi toast bên trong useAuthStore
+    }
   };
 
   return (
@@ -52,11 +59,11 @@ export function SignInForm({
           <form onSubmit={handleSubmit(onSubmit)}>
             <FieldGroup className="gap-6">
               <Field>
-                <FieldLabel htmlFor="email">Email</FieldLabel>
-                <Input id="email" type="email" {...register("email")} />
-                {errors.email && (
+                <FieldLabel htmlFor="username">Username</FieldLabel>
+                <Input id="username" type="text" {...register("username")} />
+                {errors.username && (
                   <p className="text-sm font-medium text-destructive">
-                    {errors.email.message}
+                    {errors.username.message}
                   </p>
                 )}
               </Field>
