@@ -97,9 +97,10 @@ public class MessageRepository(
 
     public async Task<List<Message>> GetMessagesForSummaryAsync(string conversationId, CancellationToken token)
     {
-        var query = DbSet.AsQueryable();
-        query = query.Where(message => message.ConversationId.Equals(conversationId)).OrderByDescending(message => message.CreatedAt);
-        var messages = await query.Take(25).ToListAsync(token);
+        var filter = Builders<Message>.Filter.Eq(x => x.ConversationId, conversationId);
+        var sort = Builders<Message>.Sort.Descending(x => x.CreatedAt);
+        var messages = await DbSet.Find(filter).Sort(sort).Limit(25).ToListAsync(token);
+        messages.Reverse();
         return messages;
     }
 

@@ -4,7 +4,7 @@ namespace NexusChat.Application.DTOs.ChatBot;
 
 public sealed record MessageDataDto(
     string SenderName,
-    string Content,
+    string? Content,
     DateTime CreatedAt,
-    List<AttachmentBaseDto> Attachments,
+    List<string> AttachmentData,
     Guid? ParentMessageId);

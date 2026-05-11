@@ -3,7 +3,7 @@ using NexusChat.Application.DTOs.ChatBot;
 
 namespace NexusChat.Application.Validation;
 
-public class ChatRequestDtoValidation : AbstractValidator<ChatRequestDto>
+public class ChatRequestDtoValidation : AbstractValidator<ChatBotRequestDto>
 {
     public ChatRequestDtoValidation()
     {

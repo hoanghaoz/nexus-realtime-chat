@@ -1,7 +1,9 @@
 using ErrorOr;
+using NexusChat.Application.DTOs.ChatBot;
 using NexusChat.Application.DTOs.Media;
 using NexusChat.Application.DTOs.Message;
 using NexusChat.Application.Extension;
+using NexusChat.Application.Interfaces.ChatBot;
 using NexusChat.Application.Interfaces.ConversationRepository;
 using NexusChat.Application.Interfaces.Hubs;
 using NexusChat.Application.Interfaces.Media;
@@ -14,7 +16,8 @@ public class MessageService(
     IMessageRepository messageRepository,
     IRealtimeNotification notify,
     IConversationRepository conversationRepository,
-    ILinkPreviewService linkPreviewService) : IMessageService
+    ILinkPreviewService linkPreviewService,
+    IChatBotQueue chatBotQueue) : IMessageService
 {
     /// <summary>
     ///     Retrieves messages from a conversation with cursor-based pagination.
@@ -119,6 +122,27 @@ public class MessageService(
             await linkPreviewService.EnqueueAsync(linkRequest, token);
         }
 
+        if (dto.Content == null || !dto.Content.Contains("@Bot")) return message.MapMessageDto();
+        var mission = dto.Content.DetectBotMission();
+        switch (mission)
+        {
+            case ChatBotRegex.MissionSummarize:
+                await chatBotQueue.EnqueueAsync(new ChatBotRequestDto(
+                    message.ConversationId,
+                    fromUserId,
+                    dto.Content,
+                    ChatBotRegex.MissionSummarize
+                ), token);
+                break;
+            default:
+                await chatBotQueue.EnqueueAsync(new ChatBotRequestDto(
+                    message.ConversationId,
+                    fromUserId,
+                    dto.Content,
+                    string.Empty
+                ), token);
+                break;
+        }
         return message.MapMessageDto();
     }
     public async Task<ErrorOr<MessageResponseDto>> CompletePendingMessageAsync(string messageId, string fromUserId,

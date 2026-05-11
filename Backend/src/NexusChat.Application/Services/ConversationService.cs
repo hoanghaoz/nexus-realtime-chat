@@ -40,8 +40,7 @@ public class ConversationService(
             .ToList();
         
         // Fetch users in direct conversations with a single query to avoid N+1 lookups.
-        var usersData = await userRepository.GetUsersByIdsAsync(directChatUserIds, token);
-        var userDictionary = usersData.ToDictionary(u => u.Id);
+        var userDictionary = await userRepository.GetListUserAsync(directChatUserIds, token);
         var response = new List<ConversationResponse>(conversations.Count);
         foreach (var conversation in conversations)
         {
@@ -71,26 +70,31 @@ public class ConversationService(
             .ToList();
     }
     
-    public async Task<ErrorOr<ConversationDetailResponse>> GetConversationDetailAsync(string conversationId, CancellationToken token)
+    public async Task<ErrorOr<ConversationDetailResponse>> GetConversationDetailAsync(string conversationId,string currentUserId ,CancellationToken token)
     {
         var conversation = await conversationRepository.GetByIdAsync(conversationId, token);
         if(conversation is null) return Error.NotFound("Conversation.NotFound", "Conversation was not found.");
         var participantIds = conversation.Participants.Select(p => p.UserId).ToList();
         var participants = await MapParticipantResponses(participantIds, conversation, token);
+        var onlineUserIds = await presenceTracker.GetOnlineUsers();
         var lastMessage = conversation.LastMessage is null
             ? null
             : new LastMessagePreviewResponse(conversation.LastMessage.Content, conversation.LastMessage.CreatedAt);
         if (conversation.RoomType == RoomType.Direct)
         {
+            var otherParticipants = participants.FirstOrDefault(p => p.UserId != currentUserId);
             return new ConversationDetailResponse(
                 conversationId,
                 conversation.RoomType,
                 conversation.Name,
-                participants[0].DisplayAvatar,
+                otherParticipants?.DisplayAvatar ?? "",
                 lastMessage,
-                participants[0].IsOnline,
+                otherParticipants?.IsOnline ?? false,
                 participants);
         }
+        var hasAnyOtherParticipantOnline = conversation.Participants
+            .Where(p => p.UserId != currentUserId)
+            .Any(p => onlineUserIds.Contains(p.UserId));
 
         return new ConversationDetailResponse(
             conversationId,
@@ -98,7 +102,7 @@ public class ConversationService(
             conversation.Name,
             null,
             lastMessage,
-            participants.Any(p => p.IsOnline),
+            hasAnyOtherParticipantOnline,
             participants);
     }
     

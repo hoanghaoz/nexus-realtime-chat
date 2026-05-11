@@ -1,6 +1,8 @@
+using ErrorOr;
+
 namespace NexusChat.Application.Interfaces.ChatBot;
 
 public interface IChatBotService
 {
-    Task<IAsyncEnumerable<string>> SummarizeMessageInConversationAsync(CancellationToken token);
+    Task<ErrorOr<IAsyncEnumerable<string>>> SummarizeMessageInConversationAsync(string conversationId,string userId,CancellationToken token);
 }
