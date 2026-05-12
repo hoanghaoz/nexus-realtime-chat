@@ -17,7 +17,7 @@
         <PackageReference Include="Microsoft.Extensions.Caching.StackExchangeRedis" Version="10.0.7" />
         <PackageReference Include="Microsoft.Extensions.Hosting.Abstractions" Version="10.0.7" />
         <PackageReference Include="Microsoft.IdentityModel.Tokens" Version="8.18.0" />
-        <PackageReference Include="Microsoft.SemanticKernel" Version="1.75.0" />
+        <PackageReference Include="Microsoft.SemanticKernel" Version="1.76.0" />
         <PackageReference Include="Microsoft.SemanticKernel.Connectors.Google" Version="1.75.0-alpha" />
         <PackageReference Include="Microsoft.SemanticKernel.Connectors.OpenAI" Version="1.76.0" />
         <PackageReference Include="MongoDB.Bson" Version="3.8.0" />
