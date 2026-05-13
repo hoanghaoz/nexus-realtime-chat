@@ -36,4 +36,15 @@ public class UserRepository(
         var filter = Builders<User>.Filter.Regex(u => u.UserName, new BsonRegularExpression(name, "i"));
         return await DbSet.Find(filter).ToListAsync(token);
     }
+
+    public async Task<List<User>> GetUsersByIdsAsync(IEnumerable<string> userIds, CancellationToken token)
+    {
+        var enumerable = userIds.ToList();
+        if (!enumerable.Any())
+        {
+            return []; 
+        }
+        var filter = Builders<User>.Filter.In(u => u.Id, enumerable);
+        return await DbSet.Find(filter).ToListAsync(token);
+    }
 }

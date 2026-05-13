@@ -13,4 +13,6 @@ public interface IUserRepository : IGenericRepository<User,string>
     Task<List<User>> GetFriendsByUserIdAsync(string userId, CancellationToken token);
 
     Task<List<User>> SearchUsersByNameAsync(string name, CancellationToken token);
+    
+    Task<List<User>> GetUsersByIdsAsync(IEnumerable<string> userIds, CancellationToken token);
 }
