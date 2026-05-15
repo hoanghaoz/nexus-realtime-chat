@@ -6,7 +6,7 @@ using NexusChat.Domain.Entity.EmbeddedObject;
 
 namespace NexusChat.Application.Interfaces.MessageInterface;
 
-public interface IMessageRepository : IGenericRepository<Domain.Entity.Message, string>
+public interface IMessageRepository : IGenericRepository<Message, string>
 {
     Task<List<MessageResponseDto>> GetMessageInConversationAsync(string conversationId, DateTime? cursor,
         CancellationToken token);

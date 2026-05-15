@@ -12,7 +12,7 @@ public sealed record MessageResponseDto(
     bool IsDeleted,
     bool IsEdited,
     bool IsPending,
-    Guid? ParentMessageId,
+    string? ParentMessageId,
     DateTime? ReplyAt,
     DateTime? DeletedAt,
     DateTime? EditedAt);

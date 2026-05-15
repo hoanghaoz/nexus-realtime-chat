@@ -3,6 +3,7 @@ using System.Xml.Xsl;
 
 namespace NexusChat.Application.Extension;
 
+// TODO: implement llm layer to detect bot mission when regex collision
 public static partial class ChatBotRegex
 {
     public const string MissionSummarize = "Summarize";
@@ -11,10 +12,15 @@ public static partial class ChatBotRegex
     {
         if (string.IsNullOrEmpty(message)) return null;
         
-        return MyRegex().IsMatch(message) ? MissionSummarize : null;
+        if(SummaryRegex().IsMatch(message)) return MissionSummarize;
+        return RemindRegex().IsMatch(message) ? MissionRemind : null;
     }
     
-    [GeneratedRegex(@"(tóm tắt|tổng hợp|review lại|chốt lại|có chuyện gì)", 
+    [GeneratedRegex(@"(tóm tắt|tổng hợp|review lại|chốt lại|có chuyện gì|summarize|review)", 
         RegexOptions.IgnoreCase | RegexOptions.CultureInvariant,5000)]
-    private static partial Regex MyRegex();
+    private static partial Regex SummaryRegex();
+
+    [GeneratedRegex(@"(nhắc|báo|gọi|remind|ping)\s+(tao|mình|anh em|mọi người|@\w+)\s+(lúc|vào|sau|chiều nay|mai)",
+        RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, 5000)]
+    private static partial Regex RemindRegex();
 }

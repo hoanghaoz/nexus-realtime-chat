@@ -130,6 +130,7 @@ public class MessageService(
                 await chatBotQueue.EnqueueAsync(new ChatBotRequestDto(
                     message.ConversationId,
                     fromUserId,
+                    message.Id,
                     dto.Content,
                     ChatBotRegex.MissionSummarize
                 ), token);
@@ -138,6 +139,7 @@ public class MessageService(
                 await chatBotQueue.EnqueueAsync(new ChatBotRequestDto(
                     message.ConversationId,
                     fromUserId,
+                    message.Id,
                     dto.Content,
                     string.Empty
                 ), token);

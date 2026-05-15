@@ -31,13 +31,24 @@ public static class MongoIndexConfig
             .Ascending(ms => ms.IsDeleted)
             .Descending(ms => ms.CreatedAt);
         
+        var parentMessageIndexKeys = Builders<Message>.IndexKeys
+            .Ascending(ms => ms.ParentMessageId)
+            .Descending(ms => ms.CreatedAt);
+        
         var indexMessageOptions = new CreateIndexOptions 
         { 
             Background = true, 
             Name = "idx_conversationId_CreatedAt_IsDeleted"
         };
         
-        var messageIndexModel = new CreateIndexModel<Message>(messageIndexKeys,indexMessageOptions);
+        var indexParentMessageOptions = new CreateIndexOptions 
+        { 
+            Background = true, 
+            Name = "idx_parentMessageId_CreatedAt"
+        };
+
+        var messageIndexModel = new CreateIndexModel<Message>(messageIndexKeys, indexMessageOptions);
+        var parentMessageIndexModel = new CreateIndexModel<Message>(parentMessageIndexKeys, indexParentMessageOptions);
         await message.Indexes.CreateOneAsync(messageIndexModel);
         
         // User index

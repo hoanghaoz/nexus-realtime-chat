@@ -25,7 +25,7 @@ public class Message : Entity<string>
     
     public DateTime? EditedAt { get; set; }
     
-    public Guid? ParentMessageId { get; set; }
+    public string? ParentMessageId { get; set; }
     
     public int ReplyCount { get; set; } = 0;
     

@@ -1,5 +1,3 @@
-using NexusChat.Application.DTOs.Message;
-
 namespace NexusChat.Application.DTOs.ChatBot;
 
 public sealed record MessageDataDto(
@@ -7,4 +5,4 @@ public sealed record MessageDataDto(
     string? Content,
     DateTime CreatedAt,
     List<string> AttachmentData,
-    Guid? ParentMessageId);
+    string? ParentMessageId);

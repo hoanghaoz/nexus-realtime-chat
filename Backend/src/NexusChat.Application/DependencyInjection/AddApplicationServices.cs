@@ -29,6 +29,7 @@ public static class DependencyInjection
         services.AddScoped<IGroupService, GroupService>();
         services.AddScoped<IMessageService, MessageService>();
         services.AddScoped<IChatBotService, ChatBotService>();
+        services.AddSingleton<IChatBotQueue,ChatBotQueue>();
         return services;
     }
 }

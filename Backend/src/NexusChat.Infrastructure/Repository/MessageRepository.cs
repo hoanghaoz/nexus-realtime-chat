@@ -37,7 +37,7 @@ public class MessageRepository(
             ? query.Where(x => x.ConversationId.Equals(conversationId))
             : query.Where(x => x.ConversationId.Equals(conversationId) && x.CreatedAt < cursor);
 
-        var messages = await query.OrderByDescending(x => x.CreatedAt).Take(20).ToListAsync(token);
+        var messages = await query.OrderByDescending(x => x.CreatedAt).ThenByDescending(x => x.Id).Take(20).ToListAsync(token);
 
         var response = messages.Select(m => new MessageResponseDto
         (

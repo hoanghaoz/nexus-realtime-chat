@@ -1,3 +1,4 @@
+using NexusChat.Application.DTOs.ChatBot;
 using NexusChat.Application.DTOs.FriendRequests;
 using NexusChat.Application.DTOs.Message;
 using NexusChat.Application.DTOs.Rooms;
@@ -100,4 +101,6 @@ public interface IChatClient
     Task ReceiveAddedToGroupNotification(GroupResponseDto group);
 
     Task UpdateLinkPreview(object payload);
+    
+    Task ReceiveBotReply(BotResponseDto response);
 }

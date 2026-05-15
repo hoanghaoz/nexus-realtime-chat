@@ -76,7 +76,6 @@ public class ChatHub(IMessageService messageService) : Hub<IChatClient>
     ///     It sends a notification to all members in group excepts the sender
     /// </summary>
     /// <param name="sendMessageRequestDto"></param>
-    /// <param name="token"></param>
     public async Task TagAllMemberInGroup(SendMessageRequestDto sendMessageRequestDto)
     {
         var senderId = Context.UserIdentifier;
