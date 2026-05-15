@@ -14,7 +14,7 @@ public interface IMessageRepository : IGenericRepository<Message, string>
     Task<MessageResponseDto> UpdateAttachmentAsync(string messageId, LinkPreviewAttachment linkPreviewAttachment,
         CancellationToken token);
 
-    Task<List<Message>> GetMessagesForSummaryAsync(string conversationId, CancellationToken token);
+    Task<List<Message>> GetMessagesForBotDataAsync(string conversationId,int messageCount ,CancellationToken token);
     
     // Media
     Task<List<GetMediaResponseDto>> GetMediaByConversationIdAsync(

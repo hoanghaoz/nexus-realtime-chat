@@ -95,11 +95,11 @@ public class MessageRepository(
         return entity.MapMessageDto();
     }
 
-    public async Task<List<Message>> GetMessagesForSummaryAsync(string conversationId, CancellationToken token)
+    public async Task<List<Message>> GetMessagesForBotDataAsync(string conversationId,int messageCount ,CancellationToken token)
     {
         var filter = Builders<Message>.Filter.Eq(x => x.ConversationId, conversationId);
         var sort = Builders<Message>.Sort.Descending(x => x.CreatedAt);
-        var messages = await DbSet.Find(filter).Sort(sort).Limit(25).ToListAsync(token);
+        var messages = await DbSet.Find(filter).Sort(sort).Limit(messageCount).ToListAsync(token);
         messages.Reverse();
         return messages;
     }

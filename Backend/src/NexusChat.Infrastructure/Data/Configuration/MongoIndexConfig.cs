@@ -100,5 +100,19 @@ public static class MongoIndexConfig
         };
         var indexParticipantModel = new CreateIndexModel<Participant>(participantIndexKeys,indexParticipantOptions);
         await participant.Indexes.CreateOneAsync(indexParticipantModel);
+        
+        // Reminder index
+        var reminder = database.GetCollection<Reminder>("Reminder");
+        var reminderIndexKeys = Builders<Reminder>.IndexKeys
+            .Ascending(ms => ms.IsSent)
+            .Ascending(ms => ms.ExecuteAt);
+
+        var indexReminderOptions = new CreateIndexOptions
+        {
+            Background = true,
+            Name = "idx_ConversationId_CreatedAt"
+        };
+        var indexReminderModel = new CreateIndexModel<Reminder>(reminderIndexKeys,indexReminderOptions);
+        await reminder.Indexes.CreateOneAsync(indexReminderModel);
     }
 }

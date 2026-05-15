@@ -1,6 +1,7 @@
 using System.Text;
 using System.Text.Json;
 using ErrorOr;
+using Microsoft.Extensions.Configuration;
 using Microsoft.SemanticKernel;
 using Microsoft.SemanticKernel.ChatCompletion;
 using Microsoft.SemanticKernel.Connectors.OpenAI;
@@ -16,7 +17,8 @@ namespace NexusChat.Application.Services;
 public class ChatBotService(
     IChatCompletionService chatCompletionService,
     IMessageRepository messageRepository,
-    IConversationService conversationService) : IChatBotService
+    IConversationService conversationService,
+    IConfiguration configuration) : IChatBotService
 {
     public async Task<ErrorOr<ChatMessageContent>> SummarizeMessageInConversationAsync(string conversationId,
         string userId, CancellationToken token)
@@ -25,7 +27,7 @@ public class ChatBotService(
         if (conversationDetail.IsError)
             return conversationDetail.Errors;
 
-        var messages = await messageRepository.GetMessagesForSummaryAsync(conversationId, token);
+        var messages = await messageRepository.GetMessagesForBotDataAsync(conversationId,25 ,token);
 
         var executionSettings = BuildSetting();
         ChatMessageContent response;
@@ -108,8 +110,17 @@ public class ChatBotService(
         if (message == null) return Error.NotFound("Message.NotFound", "The message was not found.");
         var systemPrompt = SystemPrompt.RemindMessagePrompt(DateTime.UtcNow);
         var executionSettings = BuildRemindSetting();
+        var historyChat = await messageRepository.GetMessagesForBotDataAsync(conversationId, 5, token);
+        
         var chat = new ChatHistory(systemPrompt);
         var content = message.Content ?? "";
+        var botId = configuration["Chatbot:BotId"];
+        foreach (var item in historyChat)
+        {
+            if(string.IsNullOrWhiteSpace(item.Content)) continue;
+            if(item.FromUserId == botId) chat.AddAssistantMessage(item.Content ?? "");
+            else chat.AddUserMessage(item.Content ?? " ");
+        }
         chat.AddUserMessage(content);
 
         var response = await chatCompletionService.GetChatMessageContentAsync(
@@ -126,7 +137,7 @@ public class ChatBotService(
             var remindData = new RemindDataDto(remindTasks, mentionUserId);
             return remindData;
         }
-        catch (FormatException ex)
+        catch (JsonException ex)
         {
             return Error.Unexpected("RemindData.InvalidFormat",
                 $"The format of the extracted reminder data is invalid: {ex.Message}");
