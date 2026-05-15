@@ -1,6 +1,5 @@
 using MongoDB.Driver;
 using MongoDB.Driver.Linq;
-using NexusChat.Application.DTOs.ChatBot;
 using NexusChat.Application.DTOs.Media;
 using NexusChat.Application.DTOs.Message;
 using NexusChat.Application.Extension;
@@ -37,7 +36,8 @@ public class MessageRepository(
             ? query.Where(x => x.ConversationId.Equals(conversationId))
             : query.Where(x => x.ConversationId.Equals(conversationId) && x.CreatedAt < cursor);
 
-        var messages = await query.OrderByDescending(x => x.CreatedAt).ThenByDescending(x => x.Id).Take(20).ToListAsync(token);
+        var messages = await query.OrderByDescending(x => x.CreatedAt).ThenByDescending(x => x.Id).Take(20)
+            .ToListAsync(token);
 
         var response = messages.Select(m => new MessageResponseDto
         (
@@ -95,7 +95,8 @@ public class MessageRepository(
         return entity.MapMessageDto();
     }
 
-    public async Task<List<Message>> GetMessagesForBotDataAsync(string conversationId,int messageCount ,CancellationToken token)
+    public async Task<List<Message>> GetMessagesForBotDataAsync(string conversationId, int messageCount,
+        CancellationToken token)
     {
         var filter = Builders<Message>.Filter.Eq(x => x.ConversationId, conversationId);
         var sort = Builders<Message>.Sort.Descending(x => x.CreatedAt);
@@ -104,13 +105,21 @@ public class MessageRepository(
         return messages;
     }
 
-    public async Task<List<GetMediaResponseDto>> GetMediaByConversationIdAsync(string conversationId, string? type, int skip, int limit, CancellationToken token)
+    public async Task AddListMessageAsync(List<Message> messages, CancellationToken cancellationToken)
+    {
+        await DbSet.InsertManyAsync(messages, cancellationToken: cancellationToken);
+    }
+
+    public async Task<List<GetMediaResponseDto>> GetMediaByConversationIdAsync(string conversationId, string? type,
+        int skip, int limit, CancellationToken token)
     {
         var requestedType = ResolveMediaType(type);
         var messages = await DbSet.AsQueryable()
             .Where(message => message.ConversationId == conversationId
                               && !message.IsDeleted
-                              && !message.IsPending // get only message upload successfully, skip messages is loading or error
+                              &&
+                              !message
+                                  .IsPending // get only message upload successfully, skip messages is loading or error
                               && message.Attachments.Any())
             .OrderByDescending(message => message.CreatedAt)
             .ToListAsync(token);

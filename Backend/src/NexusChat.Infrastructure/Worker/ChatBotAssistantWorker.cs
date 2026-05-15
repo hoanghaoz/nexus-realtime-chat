@@ -9,7 +9,7 @@ using NexusChat.Application.DTOs.ChatBot;
 using NexusChat.Application.Extension;
 using NexusChat.Application.Interfaces.ChatBot;
 using NexusChat.Application.Interfaces.MessageInterface;
-using NexusChat.Application.Interfaces.UserRepository;
+using NexusChat.Application.Interfaces.ReminderInterface;
 using NexusChat.Domain.Entity;
 
 namespace NexusChat.Infrastructure.Worker;
@@ -33,7 +33,7 @@ public class ChatBotAssistantWorker(
                 using var scope = scopeFactory.CreateScope();
                 var chatBotService = scope.ServiceProvider.GetRequiredService<IChatBotService>();
                 var messageRepository = scope.ServiceProvider.GetRequiredService<IMessageRepository>();
-                var userRepository = scope.ServiceProvider.GetRequiredService<IUserRepository>();
+                var reminderRepository = scope.ServiceProvider.GetRequiredService<IReminderRepository>();
                 var parentMessage = await messageRepository.GetByIdAsync(requestBot.ParentMessageId, stoppingToken);
                 if (parentMessage == null)
                 {
@@ -54,8 +54,8 @@ public class ChatBotAssistantWorker(
                     case ChatBotRegex.MissionRemind:
                         var response = await chatBotService.RemindInConversationAsync(requestBot.ConversationId,
                             requestBot.ParentMessageId, stoppingToken);
-                        await SendBotRemind(response, userRepository, messageRepository, requestBot, botId,
-                            parentMessage, messageError, stoppingToken);
+                        await SendBotRemind(response, messageRepository, reminderRepository, requestBot, botId,
+                            messageError, stoppingToken);
                         break;
                 }
 
@@ -100,13 +100,14 @@ public class ChatBotAssistantWorker(
             };
             await messageRepository.AddAsync(newMessage, stoppingToken);
             var botReply = new BotResponseDto(newMessage.Id, requestBot.ParentMessageId, requestBot.ConversationId,
-                result.Value.Content ?? "I will support you later", newMessage.ReplyAt);
+                result.Value.Content ?? "I will support you later", newMessage.ReplyAt, newMessage.CreatedAt);
             await botReplyService.SendBotReplyAsync(botReply, stoppingToken);
         }
     }
 
-    private async Task SendBotRemind(ErrorOr<RemindDataDto> response, IUserRepository userRepository,
-        IMessageRepository messageRepository, ChatBotRequestDto requestBot, string botId, Message parentMessage,
+    private async Task SendBotRemind(ErrorOr<RemindDataDto> response,
+        IMessageRepository messageRepository, IReminderRepository reminderRepository, ChatBotRequestDto requestBot,
+        string botId,
         string messageError,
         CancellationToken stoppingToken)
     {
@@ -135,45 +136,50 @@ public class ChatBotAssistantWorker(
         else
         {
             var invalidExecuteTime = response.Value.RemindTasks
-                .Where(t => t.ExecuteAt == null || t.ExecuteAt.Value.AddHours(7) <= DateTime.UtcNow)
+                .Where(t => t.ExecuteAt == null || t.ExecuteAt.Value <= DateTime.UtcNow)
                 .Select(t => new
                 {
-                    t.Task,
+                    t.Task
                 }).ToList();
-            
+
             // edge-case: if any task has executed-time = null
             // bot will reply an answer to ask user more information about time
             if (invalidExecuteTime.Count > 0)
             {
                 var reply = new StringBuilder("Please provide time of below tasks: \n");
-                foreach (var task in invalidExecuteTime)
-                {
-                    reply.Append($"- {task.Task} \n");
-                }
+                foreach (var task in invalidExecuteTime) reply.Append($"- {task.Task} \n");
                 newMessage.Content = reply.ToString();
-                await botReplyService.SendBotReplyErrorMessageAsync(reply.ToString(), requestBot.ConversationId, stoppingToken);
+                await botReplyService.SendBotReplyErrorMessageAsync(reply.ToString(), requestBot.ConversationId,
+                    stoppingToken);
                 await messageRepository.AddAsync(newMessage, stoppingToken);
                 return;
             }
-            var userDictionary = await userRepository.GetListUserAsync(parentMessage.MentionedUsersId, stoppingToken);
-            var mentionedName = response.Value.MentionUserId.Select(u =>
-            {
-                var userName = userDictionary.GetValueOrDefault(u)?.UserName ?? "Unknown";
-                return $"@{userName}";
-            }).ToList();
-            var username = mentionedName.Count > 0 ? string.Join(", ", mentionedName) : "you";
+
+            var reminders = new List<Reminder>();
+            var username = response.Value.MentionUserId.Count > 0
+                ? string.Join(" ", response.Value.MentionUserId.Select(id => $"<@{id}>"))
+                : "you";
             var content = new StringBuilder($"I will remind {username} to do \n");
             foreach (var remindTask in response.Value.RemindTasks)
             {
-                var utcTime = remindTask.ExecuteAt!.Value.AddHours(7);
-                var data = $"- Task: {remindTask.Task}, time: {utcTime} \n";
+                var vnTime = remindTask.ExecuteAt!.Value.AddHours(7);
+                var data = $"- Task: {remindTask.Task}, time: {vnTime} \n";
                 content.Append(data);
+                var reminder = new Reminder
+                {
+                    ConversationId = requestBot.ConversationId,
+                    Task = remindTask.Task,
+                    ExecuteAt = remindTask.ExecuteAt.Value,
+                    MentionUserIds = response.Value.MentionUserId
+                };
+                reminders.Add(reminder);
             }
 
             newMessage.Content = content.ToString();
             var botReply = new BotResponseDto(newMessage.Id, requestBot.ParentMessageId, requestBot.ConversationId,
-                content.ToString(), newMessage.ReplyAt);
+                content.ToString(), newMessage.ReplyAt, newMessage.CreatedAt);
             await botReplyService.SendBotReplyAsync(botReply, stoppingToken);
+            await reminderRepository.AddListReminderAsync(reminders, stoppingToken);
         }
 
         await messageRepository.AddAsync(newMessage, stoppingToken);
