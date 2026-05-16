@@ -54,21 +54,9 @@ public static class MongoIndexConfig
             Background = true, 
             Name = "idx_parentMessageId_CreatedAt"
         };
-
-        var messageIndexModel = new CreateIndexModel<Message>(messageIndexKeys, indexMessageOptions);
-        var parentMessageIndexModel = new CreateIndexModel<Message>(parentMessageIndexKeys, indexParentMessageOptions);
-        await message.Indexes.CreateManyAsync([messageIndexModel,parentMessageIndexModel]);
         
         var messageTextIndexKeys = Builders<Message>.IndexKeys
             .Text(ms => ms.Content);
-
-        
-        var messageIndexModel = new CreateIndexModel<Message>(messageIndexKeys,indexMessageOptions);
-        var messageTextIndexModel = new CreateIndexModel<Message>(
-            messageTextIndexKeys,
-            messageTextIndexOptions);
-        await message.Indexes.CreateOneAsync(messageIndexModel);
-        await message.Indexes.CreateOneAsync(messageTextIndexModel);
         
         // Index for retrieving all replies of a specific message.
         var messageReplyIndexKeys = Builders<Message>.IndexKeys
@@ -83,8 +71,18 @@ public static class MongoIndexConfig
             Name = "idx_replyToMessageId_conversationId_isDeleted_createdAt"
         };
 
-        await message.Indexes.CreateOneAsync(
-            new CreateIndexModel<Message>(messageReplyIndexKeys, messageReplyIndexOptions));
+        // GOM LẠI TẠO 1 LẦN DUY NHẤT (Không bị trùng lặp biến)
+        var messageIndexModel = new CreateIndexModel<Message>(messageIndexKeys, indexMessageOptions);
+        var parentMessageIndexModel = new CreateIndexModel<Message>(parentMessageIndexKeys, indexParentMessageOptions);
+        var messageTextIndexModel = new CreateIndexModel<Message>(messageTextIndexKeys, messageTextIndexOptions);
+        var messageReplyIndexModel = new CreateIndexModel<Message>(messageReplyIndexKeys, messageReplyIndexOptions);
+
+        await message.Indexes.CreateManyAsync([
+            messageIndexModel, 
+            parentMessageIndexModel,
+            messageTextIndexModel,
+            messageReplyIndexModel
+        ]);
         // User index
         var user = database.GetCollection<User>("User");
         var userIndexKeys = Builders<User>.IndexKeys
