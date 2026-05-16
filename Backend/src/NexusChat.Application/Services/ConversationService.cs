@@ -40,13 +40,13 @@ public class ConversationService(
             .ToList();
         
         // Fetch users in direct conversations with a single query to avoid N+1 lookups.
-        var usersData = await userRepository.GetUsersByIdsAsync(directChatUserIds, token);
-        var userDictionary = usersData.ToDictionary(u => u.Id);
+        var userDictionary = await userRepository.GetListUserAsync(directChatUserIds, token);
         var response = new List<ConversationResponse>(conversations.Count);
         foreach (var conversation in conversations)
         {
             response.Add(MapConversationResponse(conversation, userId, onlineUserIds, userDictionary));
         }
+
         return response;
     }
 
@@ -69,8 +69,45 @@ public class ConversationService(
             .Where(c => c.DisplayName.Contains(keyword, StringComparison.OrdinalIgnoreCase))
             .ToList();
     }
+    
+    public async Task<ErrorOr<ConversationDetailResponse>> GetConversationDetailAsync(string conversationId,string currentUserId ,CancellationToken token)
+    {
+        var conversation = await conversationRepository.GetByIdAsync(conversationId, token);
+        if(conversation is null) return Error.NotFound("Conversation.NotFound", "Conversation was not found.");
+        var participantIds = conversation.Participants.Select(p => p.UserId).ToList();
+        var participants = await MapParticipantResponses(participantIds, conversation, token);
+        var onlineUserIds = await presenceTracker.GetOnlineUsers();
+        var lastMessage = conversation.LastMessage is null
+            ? null
+            : new LastMessagePreviewResponse(conversation.LastMessage.Content, conversation.LastMessage.CreatedAt);
+        if (conversation.RoomType == RoomType.Direct)
+        {
+            var otherParticipants = participants.FirstOrDefault(p => p.UserId != currentUserId);
+            return new ConversationDetailResponse(
+                conversationId,
+                conversation.RoomType,
+                conversation.Name,
+                otherParticipants?.DisplayAvatar ?? "",
+                lastMessage,
+                otherParticipants?.IsOnline ?? false,
+                participants);
+        }
+        var hasAnyOtherParticipantOnline = conversation.Participants
+            .Where(p => p.UserId != currentUserId)
+            .Any(p => onlineUserIds.Contains(p.UserId));
 
-    private  ConversationResponse MapConversationResponse(
+        return new ConversationDetailResponse(
+            conversationId,
+            conversation.RoomType,
+            conversation.Name,
+            null,
+            lastMessage,
+            hasAnyOtherParticipantOnline,
+            participants);
+    }
+    
+
+    private static ConversationResponse MapConversationResponse(
         Conversation conversation,
         string currentUserId,
         IReadOnlyCollection<string> onlineUserIds,
@@ -132,5 +169,23 @@ public class ConversationService(
         return string.Equals(conversation.CreatedBy, currentUserId, StringComparison.Ordinal)
             ? "admin"
             : "member";
+    }
+
+    private async Task<List<ParticipantResponse>> MapParticipantResponses(List<string> userIds,Conversation conversation,CancellationToken token)
+    {
+       var userDictionary = await userRepository.GetListUserAsync(userIds, token);
+       var onlineUserIds = await presenceTracker.GetOnlineUsers();
+
+       var response = userIds.Select(u =>
+       {
+            var user = userDictionary.GetValueOrDefault(u);
+            return new ParticipantResponse(
+                UserId: u,
+                DisplayName: user?.UserName ?? "Unknown",
+                DisplayAvatar: user?.Avatar ?? "",
+                IsOnline: onlineUserIds.Contains(u),
+                Role: GetCurrentUserRole(conversation, u));
+       }).ToList();
+       return response;
     }
 }
