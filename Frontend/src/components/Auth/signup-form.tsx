@@ -22,7 +22,7 @@ const signUpSchema = z
     name: z.string().min(1, "Tên không được để trống"),
     username: z.string().min(4, "Username phải có ít nhất 4 kí tự."),
     email: z.string().email("Email không đúng định dạng"),
-    password: z.string().min(8, "Mật khẩu phải có ít nhất 8 kí tự."),
+    password: z.string().min(6, "Mật khẩu phải có ít nhất 6 kí tự."),
     confirmPassword: z.string(),
   })
   .refine((data) => data.password === data.confirmPassword, {
