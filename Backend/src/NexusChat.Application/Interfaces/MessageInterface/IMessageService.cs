@@ -1,7 +1,7 @@
 using ErrorOr;
 using NexusChat.Application.DTOs.Message;
 
-namespace NexusChat.Application.Interfaces.Message;
+namespace NexusChat.Application.Interfaces.MessageInterface;
 
 public interface IMessageService
 {

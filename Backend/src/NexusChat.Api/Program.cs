@@ -14,6 +14,7 @@ using NexusChat.Api.Hubs;
 using NexusChat.Api.Middlewares;
 using NexusChat.Api.Services;
 using NexusChat.Application.DependencyInjection;
+using NexusChat.Application.Interfaces.ChatBot;
 using NexusChat.Application.Interfaces.FriendRequests;
 using NexusChat.Application.Interfaces.FriendService;
 using NexusChat.Application.Interfaces.Hubs;
@@ -158,7 +159,9 @@ builder.Services.AddScoped<IFriendListService, FriendListService>();
 builder.Services.AddSingleton<IPresenceTracker, PresenceTracker>(); // check status user is online or offline 
 builder.Services.AddHostedService<LinkPreviewWorker>();
 builder.Services.AddSingleton<INotifyLinkPreviewed, LinkPreviewedNotifyService>();
+builder.Services.AddSingleton<IBotReplyService, BotReplyService>();
 builder.Services.AddAiServices(builder.Configuration);
+builder.Services.AddHostedService<ChatBotAssistantWorker>();
 var app = builder.Build();
 using (var scope = app.Services.CreateScope())
 {

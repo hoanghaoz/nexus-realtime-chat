@@ -25,6 +25,11 @@ public class Message : Entity<string>
     
     public DateTime? EditedAt { get; set; }
     
+    public string? ParentMessageId { get; set; }
+    
+    public int ReplyCount { get; set; } = 0;
+    
+    public DateTime? ReplyAt { get; set; }
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
     
     public string? ReplyToMessageId { get; set; }

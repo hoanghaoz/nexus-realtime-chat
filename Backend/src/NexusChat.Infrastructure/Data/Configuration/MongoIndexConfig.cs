@@ -33,6 +33,10 @@ public static class MongoIndexConfig
             .Ascending(ms => ms.IsDeleted)
             .Descending(ms => ms.CreatedAt);
         
+        var parentMessageIndexKeys = Builders<Message>.IndexKeys
+            .Ascending(ms => ms.ParentMessageId)
+            .Descending(ms => ms.CreatedAt);
+        
         var indexMessageOptions = new CreateIndexOptions 
         { 
             Background = true, 
@@ -45,6 +49,15 @@ public static class MongoIndexConfig
             Name = "idx_message_content_text"
         };
 
+        var indexParentMessageOptions = new CreateIndexOptions 
+        { 
+            Background = true, 
+            Name = "idx_parentMessageId_CreatedAt"
+        };
+
+        var messageIndexModel = new CreateIndexModel<Message>(messageIndexKeys, indexMessageOptions);
+        var parentMessageIndexModel = new CreateIndexModel<Message>(parentMessageIndexKeys, indexParentMessageOptions);
+        await message.Indexes.CreateManyAsync([messageIndexModel,parentMessageIndexModel]);
         
         var messageTextIndexKeys = Builders<Message>.IndexKeys
             .Text(ms => ms.Content);
@@ -121,5 +134,19 @@ public static class MongoIndexConfig
         };
         var indexParticipantModel = new CreateIndexModel<Participant>(participantIndexKeys,indexParticipantOptions);
         await participant.Indexes.CreateOneAsync(indexParticipantModel);
+        
+        // Reminder index
+        var reminder = database.GetCollection<Reminder>("Reminder");
+        var reminderIndexKeys = Builders<Reminder>.IndexKeys
+            .Ascending(ms => ms.IsSent)
+            .Ascending(ms => ms.ExecuteAt);
+
+        var indexReminderOptions = new CreateIndexOptions
+        {
+            Background = true,
+            Name = "idx_ConversationId_CreatedAt"
+        };
+        var indexReminderModel = new CreateIndexModel<Reminder>(reminderIndexKeys,indexReminderOptions);
+        await reminder.Indexes.CreateOneAsync(indexReminderModel);
     }
 }

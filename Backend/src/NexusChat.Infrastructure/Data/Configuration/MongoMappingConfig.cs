@@ -25,6 +25,11 @@ public static class MongoMappingConfig
             cm.MapProperty(c => c.FromUserId).SetSerializer(new StringSerializer(BsonType.String));
 
             cm.MapProperty(c => c.ConversationId).SetSerializer(new StringSerializer(BsonType.String));
+            
+            cm.MapProperty(c => c.MentionedUsersId).SetSerializer(
+                new EnumerableInterfaceImplementerSerializer<List<string>, string>(
+                    new StringSerializer(BsonType.String)));
+            
         });
 
         BsonClassMap.RegisterClassMap<User>(cm =>
@@ -86,6 +91,18 @@ public static class MongoMappingConfig
         {
             cm.AutoMap();
             cm.SetDiscriminator("LinkPreview");
+        });
+        
+        BsonSerializer.RegisterSerializer(new DateTimeSerializer(DateTimeKind.Utc));
+
+        BsonClassMap.RegisterClassMap<Reminder>(cm =>
+        {
+            cm.AutoMap();
+            cm.MapProperty(c => c.ConversationId).SetSerializer(new StringSerializer(BsonType.String));
+
+            cm.MapProperty(c => c.MentionUserIds).SetSerializer(
+                new EnumerableInterfaceImplementerSerializer<List<string>, string>(
+                    new StringSerializer(BsonType.String)));
         });
     }
 }
