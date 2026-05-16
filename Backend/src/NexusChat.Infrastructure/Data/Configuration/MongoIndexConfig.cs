@@ -49,7 +49,7 @@ public static class MongoIndexConfig
 
         var messageIndexModel = new CreateIndexModel<Message>(messageIndexKeys, indexMessageOptions);
         var parentMessageIndexModel = new CreateIndexModel<Message>(parentMessageIndexKeys, indexParentMessageOptions);
-        await message.Indexes.CreateOneAsync(messageIndexModel);
+        await message.Indexes.CreateManyAsync([messageIndexModel,parentMessageIndexModel]);
         
         // User index
         var user = database.GetCollection<User>("User");

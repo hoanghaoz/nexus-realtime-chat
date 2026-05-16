@@ -37,7 +37,7 @@
     networks:
       - nexus-backend
     command:
-      redis-server --requirepass ${REDIS_PASSWORD}
+      redis-server --requirepass ${ConnectionStrings__RedisPassword}
     
 networks:
   nexus-backend:
