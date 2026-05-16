@@ -11,5 +11,8 @@ public sealed record MessageResponseDto(
     List<string> MentionUser,
     bool IsDeleted,
     bool IsEdited,
+    bool IsPending,
+    string? ParentMessageId,
+    DateTime? ReplyAt,
     DateTime? DeletedAt,
     DateTime? EditedAt);

@@ -1,7 +1,7 @@
 using ErrorOr;
 using NexusChat.Application.DTOs.Message;
 
-namespace NexusChat.Application.Interfaces.Message;
+namespace NexusChat.Application.Interfaces.MessageInterface;
 
 public interface IMessageService
 {
@@ -18,5 +18,8 @@ public interface IMessageService
     Task<ErrorOr<Success>> DeleteMessageContentAsync(string messageId, string fromUserId, CancellationToken token);
 
     Task<ErrorOr<MessageResponseDto>> CreateMessageAsync(SendMessageRequestDto dto, string fromUserId,
+        CancellationToken token);
+
+    Task<ErrorOr<MessageResponseDto>> CompletePendingMessageAsync(string messageId, string fromUserId,
         CancellationToken token);
 }

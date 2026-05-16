@@ -13,16 +13,15 @@ import { z } from "zod";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Link, useNavigate } from "react-router-dom";
-import { useContext } from "react";
-import { AuthContext } from "@/contexts/AuthContext";
+import { useAuthStore } from "@/stores/useAuthStore";
 
 // Định nghĩa schema cho form đăng ký
+// Lưu ý: Backend Nexus chỉ nhận { username, password }
+// các field còn lại (name, email) chỉ dùng trên UI để cải thiện UX
 const signUpSchema = z
   .object({
-    name: z.string().min(1, "Tên không được để trống"),
     username: z.string().min(4, "Username phải có ít nhất 4 kí tự."),
-    email: z.string().email("Email không đúng định dạng"),
-    password: z.string().min(6, "Mật khẩu phải có ít nhất 6 kí tự."),
+    password: z.string().min(8, "Mật khẩu phải có ít nhất 8 kí tự."),
     confirmPassword: z.string(),
   })
   .refine((data) => data.password === data.confirmPassword, {
@@ -34,7 +33,9 @@ export function SignupForm({
   className,
   ...props
 }: React.ComponentProps<"div">) {
-  // Tạo useForm
+  const { signUp } = useAuthStore();
+  const navigate = useNavigate();
+
   const {
     register,
     handleSubmit,
@@ -42,29 +43,18 @@ export function SignupForm({
   } = useForm<z.infer<typeof signUpSchema>>({
     resolver: zodResolver(signUpSchema),
     defaultValues: {
-      name: "",
       username: "",
-      email: "",
       password: "",
       confirmPassword: "",
     },
   });
 
-  // Hàm xử lý khi dữ liệu đã SẠCH
-  const auth = useContext(AuthContext);
-  const navigate = useNavigate();
-
   const onSubmit = async (values: z.infer<typeof signUpSchema>) => {
     try {
-      await auth.register({
-        username: values.username,
-        email: values.email,
-        password: values.password,
-      });
-      navigate("/");
-    } catch (err: any) {
-      const message = err?.response?.data || err?.message || "Đăng ký thất bại";
-      alert(message);
+      await signUp(values.username, values.password);
+      navigate("/sign-in"); // đăng ký xong → chuyển tới trang đăng nhập
+    } catch {
+      // Lỗi đã được xử lý bởi toast bên trong useAuthStore
     }
   };
 
@@ -78,20 +68,6 @@ export function SignupForm({
           <form onSubmit={handleSubmit(onSubmit)}>
             <FieldGroup>
               <Field>
-                <FieldLabel htmlFor="name">Họ và Tên</FieldLabel>
-                <Input
-                  id="name"
-                  type="text"
-                  placeholder="Nguyễn Văn A"
-                  {...register("name")}
-                />
-                {errors.name && (
-                  <p className="text-sm font-medium text-destructive">
-                    {errors.name.message}
-                  </p>
-                )}
-              </Field>
-              <Field>
                 <FieldLabel htmlFor="username">Username</FieldLabel>
                 <Input
                   id="username"
@@ -102,20 +78,6 @@ export function SignupForm({
                 {errors.username && (
                   <p className="text-sm font-medium text-destructive">
                     {errors.username.message}
-                  </p>
-                )}
-              </Field>
-              <Field>
-                <FieldLabel htmlFor="email">Email</FieldLabel>
-                <Input
-                  id="email"
-                  type="email"
-                  placeholder="m@example.com"
-                  {...register("email")}
-                />
-                {errors.email && (
-                  <p className="text-sm font-medium text-destructive">
-                    {errors.email.message}
                   </p>
                 )}
               </Field>

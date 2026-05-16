@@ -2,7 +2,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.SignalR;
 using NexusChat.Application.DTOs.Message;
 using NexusChat.Application.Interfaces.Hubs;
-using NexusChat.Application.Interfaces.Message;
+using NexusChat.Application.Interfaces.MessageInterface;
 
 namespace NexusChat.Api.Hubs;
 
@@ -76,7 +76,6 @@ public class ChatHub(IMessageService messageService) : Hub<IChatClient>
     ///     It sends a notification to all members in group excepts the sender
     /// </summary>
     /// <param name="sendMessageRequestDto"></param>
-    /// <param name="token"></param>
     public async Task TagAllMemberInGroup(SendMessageRequestDto sendMessageRequestDto)
     {
         var senderId = Context.UserIdentifier;
@@ -105,5 +104,20 @@ public class ChatHub(IMessageService messageService) : Hub<IChatClient>
     {
         var senderId = Context.UserIdentifier;
         await Clients.OthersInGroup(conversationId).UserTypingNotify(senderId ?? "Unknown", conversationId, isTyping);
+    }
+
+    public async Task CompletePendingMessage(string messageId)
+    {
+        var senderId = Context.UserIdentifier;
+        if (string.IsNullOrEmpty(senderId)) throw new HubException("User is not authenticated.");
+
+        var result = await messageService.CompletePendingMessageAsync(messageId, senderId, Context.ConnectionAborted);
+        if (result.IsError)
+        {
+            await Clients.Caller.ReceiveErrorMessage(result.Errors[0].Description);
+            return;
+        }
+
+        await Clients.Group(result.Value.ConversationId).ReceiveMessage(result.Value);
     }
 }

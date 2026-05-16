@@ -8,8 +8,10 @@ using NexusChat.Application.Interfaces.Common;
 using NexusChat.Application.Interfaces.ConversationRepository;
 using NexusChat.Application.Interfaces.FriendRepository;
 using NexusChat.Application.Interfaces.Media;
-using NexusChat.Application.Interfaces.Message;
+using NexusChat.Application.Interfaces.MessageInterface;
+using NexusChat.Application.Interfaces.ReminderInterface;
 using NexusChat.Application.Interfaces.UserRepository;
+using NexusChat.Application.Services;
 using NexusChat.Infrastructure.Authentication;
 using NexusChat.Infrastructure.Data.Configuration;
 using NexusChat.Infrastructure.Data.Interface;
@@ -51,8 +53,11 @@ public static class DependencyInjection
             var account = new Account(config.CloudName, config.ApiKey, config.ApiSecret);
             return new Cloudinary(account);
         });
-        services.AddScoped<IMediaService, CloudinaryService>();
+        services.AddScoped<IUploadService, CloudinaryService>();
         services.AddSingleton<ILinkPreviewService, LinkPreviewService>();
+        services.AddScoped<IMediaService, MediaService>();
+        services.AddScoped<IReminderRepository, ReminderRepository>();
+        services.AddHostedService<ChatBotReminderWorker>();
         return services;
     }
 }

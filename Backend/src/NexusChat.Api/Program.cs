@@ -14,6 +14,7 @@ using NexusChat.Api.Hubs;
 using NexusChat.Api.Middlewares;
 using NexusChat.Api.Services;
 using NexusChat.Application.DependencyInjection;
+using NexusChat.Application.Interfaces.ChatBot;
 using NexusChat.Application.Interfaces.FriendRequests;
 using NexusChat.Application.Interfaces.FriendService;
 using NexusChat.Application.Interfaces.Hubs;
@@ -87,9 +88,11 @@ builder.Services.AddAuthentication(options =>
         {
             var accessToken = context.Request.Query["access_token"];
             var path = context.HttpContext.Request.Path;
-            if (!string.IsNullOrEmpty(accessToken) && path.StartsWithSegments("/hubs/chat"))
+            if (!string.IsNullOrEmpty(accessToken) 
+                && path.StartsWithSegments("/hubs/chat") || path.StartsWithSegments("/hubs/presence"))
+            {
                 context.Token = accessToken;
-
+            }   
             return Task.CompletedTask;
         }
     };
@@ -128,7 +131,7 @@ builder.Services.AddRateLimiter(options =>
 
     options.AddPolicy("limit-per-user", httpContext =>
     {
-        var userId = httpContext.User.FindFirstValue("userId");
+        var userId = httpContext.User.FindFirstValue(ClaimTypes.NameIdentifier);
         if (!string.IsNullOrEmpty(userId))
             return RateLimitPartition.GetTokenBucketLimiter(
                 userId,
@@ -156,6 +159,9 @@ builder.Services.AddScoped<IFriendListService, FriendListService>();
 builder.Services.AddSingleton<IPresenceTracker, PresenceTracker>(); // check status user is online or offline 
 builder.Services.AddHostedService<LinkPreviewWorker>();
 builder.Services.AddSingleton<INotifyLinkPreviewed, LinkPreviewedNotifyService>();
+builder.Services.AddSingleton<IBotReplyService, BotReplyService>();
+builder.Services.AddAiServices(builder.Configuration);
+builder.Services.AddHostedService<ChatBotAssistantWorker>();
 var app = builder.Build();
 using (var scope = app.Services.CreateScope())
 {
@@ -173,4 +179,4 @@ app.MapScalarApiReference();
 app.MapControllers(); // use Scalar for API docs
 app.MapHub<ChatHub>("/hubs/chat");
 app.MapHub<PresenceHub>("/hubs/presence");
-app.Run();
+await app.RunAsync();

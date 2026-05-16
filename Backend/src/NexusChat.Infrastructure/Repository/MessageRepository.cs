@@ -1,10 +1,12 @@
 using MongoDB.Driver;
 using MongoDB.Driver.Linq;
+using NexusChat.Application.DTOs.Media;
 using NexusChat.Application.DTOs.Message;
 using NexusChat.Application.Extension;
-using NexusChat.Application.Interfaces.Message;
+using NexusChat.Application.Interfaces.MessageInterface;
 using NexusChat.Domain.Entity;
 using NexusChat.Domain.Entity.EmbeddedObject;
+using NexusChat.Domain.Enum;
 using NexusChat.Infrastructure.Data.Interface;
 using NexusChat.Infrastructure.Repository.Common;
 
@@ -34,7 +36,8 @@ public class MessageRepository(
             ? query.Where(x => x.ConversationId.Equals(conversationId))
             : query.Where(x => x.ConversationId.Equals(conversationId) && x.CreatedAt < cursor);
 
-        var messages = await query.OrderByDescending(x => x.CreatedAt).Take(20).ToListAsync(token);
+        var messages = await query.OrderByDescending(x => x.CreatedAt).ThenByDescending(x => x.Id).Take(20)
+            .ToListAsync(token);
 
         var response = messages.Select(m => new MessageResponseDto
         (
@@ -68,6 +71,9 @@ public class MessageRepository(
             m.MentionedUsersId,
             m.IsDeleted,
             m.IsEdited,
+            m.IsPending,
+            m.ParentMessageId,
+            m.ReplyAt,
             m.DeletedAt,
             m.EditedAt
         )).ToList();
@@ -87,5 +93,62 @@ public class MessageRepository(
         await UpdateAsync(entity, token);
 
         return entity.MapMessageDto();
+    }
+
+    public async Task<List<Message>> GetMessagesForBotDataAsync(string conversationId, int messageCount,
+        CancellationToken token)
+    {
+        var filter = Builders<Message>.Filter.Eq(x => x.ConversationId, conversationId);
+        var sort = Builders<Message>.Sort.Descending(x => x.CreatedAt);
+        var messages = await DbSet.Find(filter).Sort(sort).Limit(messageCount).ToListAsync(token);
+        messages.Reverse();
+        return messages;
+    }
+
+    public async Task AddListMessageAsync(List<Message> messages, CancellationToken cancellationToken)
+    {
+        await DbSet.InsertManyAsync(messages, cancellationToken: cancellationToken);
+    }
+
+    public async Task<List<GetMediaResponseDto>> GetMediaByConversationIdAsync(string conversationId, string? type,
+        int skip, int limit, CancellationToken token)
+    {
+        var requestedType = ResolveMediaType(type);
+        var messages = await DbSet.AsQueryable()
+            .Where(message => message.ConversationId == conversationId
+                              && !message.IsDeleted
+                              &&
+                              !message
+                                  .IsPending // get only message upload successfully, skip messages is loading or error
+                              && message.Attachments.Any())
+            .OrderByDescending(message => message.CreatedAt)
+            .ToListAsync(token);
+
+        return messages
+            .SelectMany(message => message.Attachments.OfType<FileAttachment>()
+                .Select(attachment => new { Message = message, Attachment = attachment }))
+            .Where(item => requestedType is null || item.Attachment.FileType == requestedType)
+            .OrderByDescending(item => item.Attachment.CreatedAt)
+            .Skip(skip)
+            .Take(limit)
+            .Select(item => new GetMediaResponseDto(
+                item.Message.Id,
+                item.Attachment.FileUrl ?? string.Empty,
+                item.Attachment.FileType?.ToString() ?? string.Empty,
+                item.Attachment.CreatedAt
+            ))
+            .ToList();
+    }
+
+    private static FileType? ResolveMediaType(string? type)
+    {
+        return type?.Trim().ToLowerInvariant() switch
+        {
+            "image" => FileType.Image,
+            "video" => FileType.Video,
+            "audio" => FileType.Audio,
+            "document" or "file" => FileType.Document,
+            _ => null
+        };
     }
 }

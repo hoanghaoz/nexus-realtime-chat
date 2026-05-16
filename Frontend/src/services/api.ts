@@ -34,6 +34,7 @@ api.interceptors.response.use(
     if (err?.response?.status === 401) {
       // token expired or unauthorized -> clear and redirect to sign-in
       globalThis.localStorage?.removeItem("accessToken");
+      globalThis.localStorage?.removeItem("auth-storage");
       if (globalThis.location) globalThis.location.href = "/sign-in";
     }
     return Promise.reject(err);
