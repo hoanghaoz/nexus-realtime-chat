@@ -1,12 +1,11 @@
 import { useChatStore } from "@/stores/useChatStore";
 import { useAuthStore } from "@/stores/useAuthStore";
 
-// 1. Thêm 2 props cho tính năng tìm kiếm
 interface Props {
-  onInfoClick?: () => void;
-  infoOpen?: boolean;
-  onSearchClick?: () => void;
-  searchOpen?: boolean;
+  readonly onInfoClick?: () => void;
+  readonly infoOpen?: boolean;
+  readonly onSearchClick?: () => void;
+  readonly searchOpen?: boolean;
 }
 
 export default function ChatHeader({

@@ -3,9 +3,9 @@ import { Search, X, ChevronRight } from "lucide-react";
 import type { Message } from "@/types/chat";
 
 interface SearchSidebarProps {
-  messages: Message[];
-  onClose: () => void;
-  onJumpToMessage: (messageId: string) => void;
+  readonly messages: Message[];
+  readonly onClose: () => void;
+  readonly onJumpToMessage: (messageId: string) => void;
 }
 
 export function SearchSidebar({
@@ -74,14 +74,15 @@ export function SearchSidebar({
             Không tìm thấy kết quả nào.
           </div>
         )}
-
         {results.map((msg) => (
-          <div
+          <button
             key={msg._id}
+            type="button"
             onClick={() => onJumpToMessage(msg._id)}
-            className="p-3 bg-transparent hover:bg-slate-200 dark:hover:bg-slate-800 rounded-xl cursor-pointer transition-colors group"
+            className="block w-full text-left p-3 bg-transparent hover:bg-slate-200 dark:hover:bg-slate-800 rounded-xl cursor-pointer transition-colors group"
           >
             <div className="flex justify-between items-start mb-1">
+              {/* Cac phan the span va ChevronRight giu nguyen */}
               <span className="text-[11px] font-medium text-slate-500">
                 {formatTime(msg.createdAt)}
               </span>
@@ -93,7 +94,7 @@ export function SearchSidebar({
             <p className="text-sm text-slate-700 dark:text-slate-200 line-clamp-2 leading-relaxed">
               {msg.content}
             </p>
-          </div>
+          </button>
         ))}
       </div>
     </div>

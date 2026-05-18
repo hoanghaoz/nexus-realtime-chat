@@ -30,16 +30,26 @@ export default function ChatArea() {
   }, [activeConversationId]);
 
   // Lang nghe UserTypingNotify tu SignalR
+  // 1. Tao mot ham xu ly rieng de giam do sau lach
+  const updateTypingList = (
+    prevList: string[],
+    typingUserId: string,
+    isTyping: boolean,
+  ) => {
+    if (isTyping) {
+      return [...new Set([...prevList, typingUserId])];
+    }
+    return prevList.filter((id) => id !== typingUserId);
+  };
+
+  // 2. Goi ham do trong useEffect
   useEffect(() => {
     if (!chatConnection) return;
 
     const handler = (userId: string, _convoId: string, isTyping: boolean) => {
       if (userId === user?._id) return;
-      setTypingUsers((prev) =>
-        isTyping
-          ? [...new Set([...prev, userId])]
-          : prev.filter((id) => id !== userId),
-      );
+
+      setTypingUsers((prev) => updateTypingList(prev, userId, isTyping));
     };
 
     chatConnection.on("UserTypingNotify", handler);
