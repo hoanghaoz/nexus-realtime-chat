@@ -29,24 +29,12 @@ public class ConversationService(
 
         var onlineUserIds = await presenceTracker.GetOnlineUsers();
 
-        // Get all user IDs that are in direct conversations with the current user,
-        // so we can check their online status when mapping the conversation response.
-        var directChatUserIds = conversations
-            .Where(c => c.RoomType == RoomType.Direct)
-            .SelectMany(c => c.Participants)
-            .Where(p => p.UserId != userId)
-            .Select(p => p.UserId)
-            .Distinct()
-            .ToList();
-        
-        // Fetch users in direct conversations with a single query to avoid N+1 lookups.
-        var usersData = await userRepository.GetUsersByIdsAsync(directChatUserIds, token);
-        var userDictionary = usersData.ToDictionary(u => u.Id);
         var response = new List<ConversationResponse>(conversations.Count);
         foreach (var conversation in conversations)
         {
-            response.Add(MapConversationResponse(conversation, userId, onlineUserIds, userDictionary));
+            response.Add(await MapConversationResponseAsync(conversation, userId, onlineUserIds, token));
         }
+
         return response;
     }
 
@@ -70,11 +58,11 @@ public class ConversationService(
             .ToList();
     }
 
-    private  ConversationResponse MapConversationResponse(
+    private async Task<ConversationResponse> MapConversationResponseAsync(
         Conversation conversation,
         string currentUserId,
         IReadOnlyCollection<string> onlineUserIds,
-        Dictionary<string, User> userDictionary)
+        CancellationToken token)
     {
         var lastMessage = conversation.LastMessage is null
             ? null
@@ -95,9 +83,8 @@ public class ConversationService(
                     IsOnline: false,
                     Role: GetCurrentUserRole(conversation, currentUserId));
             }
-           
-            userDictionary.TryGetValue(otherParticipant.UserId, out var otherUser);
-            
+            // Get Information of the other participant to display in the conversation list (e.g., their name and avatar)
+            var otherUser = await userRepository.GetByIdAsync(otherParticipant.UserId, token);
             return new ConversationResponse(
                 ConversationId: conversation.Id,
                 TypeRoom: conversation.RoomType,

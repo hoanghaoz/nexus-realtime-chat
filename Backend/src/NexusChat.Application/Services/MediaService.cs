@@ -3,7 +3,7 @@ using FluentValidation;
 using NexusChat.Application.DTOs.Media;
 using NexusChat.Application.Interfaces.ConversationRepository;
 using NexusChat.Application.Interfaces.Media;
-using NexusChat.Application.Interfaces.Message;
+using NexusChat.Application.Interfaces.MessageInterface;
 using NexusChat.Domain.Entity;
 using NexusChat.Domain.Entity.EmbeddedObject;
 using NexusChat.Domain.Enum;

@@ -3,9 +3,10 @@ using FluentValidation;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using NexusChat.Application.Interfaces.Authentication;
+using NexusChat.Application.Interfaces.ChatBot;
 using NexusChat.Application.Interfaces.ConversationService;
 using NexusChat.Application.Interfaces.FriendService;
-using NexusChat.Application.Interfaces.Message;
+using NexusChat.Application.Interfaces.MessageInterface;
 using NexusChat.Application.Interfaces.UserService;
 using NexusChat.Application.Services;
 
@@ -27,6 +28,8 @@ public static class DependencyInjection
         services.AddScoped<IConversationService, ConversationService>();
         services.AddScoped<IGroupService, GroupService>();
         services.AddScoped<IMessageService, MessageService>();
+        services.AddScoped<IChatBotService, ChatBotService>();
+        services.AddSingleton<IChatBotQueue,ChatBotQueue>();
         return services;
     }
 }
