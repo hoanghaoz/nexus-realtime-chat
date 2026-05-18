@@ -27,7 +27,6 @@ public static class MongoIndexConfig
         // Schema Message index
         var message = database.GetCollection<Message>("Message");
         
-        // Text index for searching message content by keyword.
         var messageIndexKeys = Builders<Message>.IndexKeys
             .Ascending(ms => ms.ConversationId)
             .Ascending(ms => ms.IsDeleted)
@@ -36,42 +35,20 @@ public static class MongoIndexConfig
         var parentMessageIndexKeys = Builders<Message>.IndexKeys
             .Ascending(ms => ms.ParentMessageId)
             .Descending(ms => ms.CreatedAt);
+            
+        var messageTextIndexKeys = Builders<Message>.IndexKeys.Text(ms => ms.Content);
         
-        var indexMessageOptions = new CreateIndexOptions 
-        { 
-            Background = true, 
-            Name = "idx_conversationId_CreatedAt_IsDeleted"
-        };
-        
-        var messageTextIndexOptions = new CreateIndexOptions
-        {
-            Background = true,
-            Name = "idx_message_content_text"
-        };
-
-        var indexParentMessageOptions = new CreateIndexOptions 
-        { 
-            Background = true, 
-            Name = "idx_parentMessageId_CreatedAt"
-        };
-        
-        var messageTextIndexKeys = Builders<Message>.IndexKeys
-            .Text(ms => ms.Content);
-        
-        // Index for retrieving all replies of a specific message.
         var messageReplyIndexKeys = Builders<Message>.IndexKeys
             .Ascending(ms => ms.ReplyToMessageId)
             .Ascending(ms => ms.ConversationId)
             .Ascending(ms => ms.IsDeleted)
             .Ascending(ms => ms.CreatedAt);
 
-        var messageReplyIndexOptions = new CreateIndexOptions
-        {
-            Background = true,
-            Name = "idx_replyToMessageId_conversationId_isDeleted_createdAt"
-        };
+        var indexMessageOptions = new CreateIndexOptions { Background = true, Name = "idx_conversationId_CreatedAt_IsDeleted" };
+        var indexParentMessageOptions = new CreateIndexOptions { Background = true, Name = "idx_parentMessageId_CreatedAt" };
+        var messageTextIndexOptions = new CreateIndexOptions { Background = true, Name = "idx_message_content_text" };
+        var messageReplyIndexOptions = new CreateIndexOptions { Background = true, Name = "idx_replyToMessageId_conversationId_isDeleted_createdAt" };
 
-        // GOM LẠI TẠO 1 LẦN DUY NHẤT (Không bị trùng lặp biến)
         var messageIndexModel = new CreateIndexModel<Message>(messageIndexKeys, indexMessageOptions);
         var parentMessageIndexModel = new CreateIndexModel<Message>(parentMessageIndexKeys, indexParentMessageOptions);
         var messageTextIndexModel = new CreateIndexModel<Message>(messageTextIndexKeys, messageTextIndexOptions);
