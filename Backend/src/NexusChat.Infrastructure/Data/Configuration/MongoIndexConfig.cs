@@ -49,6 +49,13 @@ public static class MongoIndexConfig
         var messageTextIndexOptions = new CreateIndexOptions { Background = true, Name = "idx_message_content_text" };
         var messageReplyIndexOptions = new CreateIndexOptions { Background = true, Name = "idx_replyToMessageId_conversationId_isDeleted_createdAt" };
 
+        var messageReplyIndexOptions = new CreateIndexOptions
+        {
+            Background = true,
+            Name = "idx_replyToMessageId_conversationId_isDeleted_createdAt"
+        };
+
+        // GOM LẠI TẠO 1 LẦN DUY NHẤT (Không bị trùng lặp biến)
         var messageIndexModel = new CreateIndexModel<Message>(messageIndexKeys, indexMessageOptions);
         var parentMessageIndexModel = new CreateIndexModel<Message>(parentMessageIndexKeys, indexParentMessageOptions);
         var messageTextIndexModel = new CreateIndexModel<Message>(messageTextIndexKeys, messageTextIndexOptions);
