@@ -4,42 +4,47 @@
     build:
       context: .
       dockerfile: src/NexusChat.Api/Dockerfile
+      target: build
       
+    command:
+      dotnet watch run --no-hot-reload
+    
     container_name: backend_nexuschat
+    
+    env_file:
+      - .env
       
     environment:
-        - ConnectionStrings__DefaultConnection=${DEFAULT_CONNECTION}
-        - Jwt__Key=${JWT_KEY}
-        - Jwt__Issuer=${JWT_ISSUER}
-        - Jwt__Audience=${JWT_AUDIENCE}
-        - Cloudinary__CloudName=${CLOUDINARY_CLOUDNAME}
-        - Cloudinary__ApiKey=${CLOUDINARY_APIKEY}
-        - Cloudinary__ApiSecret=${CLOUDINARY_APISECRET}
-        - Chatbot__Ollama__ApiKey=${CHATBOT_OLLAMA_APIKEY}
-        - Chatbot__Ollama__Url=${CHATBOT_OLLAMA_URL}
-        - Chatbot__Ollama__Model=${CHATBOT_OLLAMA_MODEL}
-        - Chatbot__Gemini__ApiKey=${CHATBOT_GEMINI_APIKEY}
-        - Chatbot__Gemini__Model=${CHATBOT_GEMINI_MODEL}
-        - Chatbot__ActiveProvider=${CHATBOT_PROVIDER}
-      
         - ASPNETCORE_ENVIRONMENT=Development
+        - ASPNETCORE_URLS=http://+:8080
     ports:
       - "8080:8080"
     networks:
       - nexus-backend
       - nexus-frontend
+      
+    develop:
+      watch:
+        - action: sync
+          path: ./src
+          target: ./src
         
   cache:
     image: redis:8.6.1-alpine
     container_name: data_cache
-    ports:
-      - "6379:6379"
+    volumes:
+      - redis_data:/data
     networks:
       - nexus-backend
+    command:
+      redis-server --requirepass ${ConnectionStrings__RedisPassword}
     
 networks:
   nexus-backend:
     driver: bridge
   nexus-frontend:
     driver: bridge
+    
+volumes:
+    redis_data:
 
