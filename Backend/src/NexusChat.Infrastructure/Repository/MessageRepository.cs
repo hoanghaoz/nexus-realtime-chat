@@ -151,4 +151,52 @@ public class MessageRepository(
             _ => null
         };
     }
+    
+    /// <summary>
+    ///     Searches messages by keyword using MongoDB Text Index on Content.
+    ///     Filters by conversation ID and excludes deleted or pending messages.
+    /// </summary>
+    public async Task<List<MessageResponseDto>> SearchMessagesByKeywordAsync(
+        string conversationId,
+        string keyword,
+        int skip,
+        int limit,
+        CancellationToken token)
+    {
+        var filter = Builders<Message>.Filter.And(
+            Builders<Message>.Filter.Eq(x => x.ConversationId, conversationId),
+            Builders<Message>.Filter.Eq(x => x.IsDeleted, false),
+            Builders<Message>.Filter.Eq(x => x.IsPending, false),
+            Builders<Message>.Filter.Text(keyword)
+        );
+
+        var messages = await DbSet.Find(filter)
+            .SortByDescending(x => x.CreatedAt)
+            .Skip(skip)
+            .Limit(limit)
+            .ToListAsync(token);
+
+        return messages.Select(x => x.MapMessageDto()).ToList();
+    }
+
+    
+    /// <summary>
+    ///     Retrieves all direct replies of a message in the same conversation.
+    ///     Replies are ordered by creation time ascending.
+    /// </summary>
+    public async Task<List<MessageResponseDto>> GetRepliesByMessageIdAsync(
+        string messageId,
+        string conversationId,
+        CancellationToken token)
+    {
+        var messages = await DbSet.AsQueryable()
+            .Where(x => x.ReplyToMessageId == messageId
+                        && x.ConversationId == conversationId
+                        && !x.IsDeleted
+                        && !x.IsPending)
+            .OrderBy(x => x.CreatedAt)
+            .ToListAsync(token);
+
+        return messages.Select(x => x.MapMessageDto()).ToList();
+    }
 }

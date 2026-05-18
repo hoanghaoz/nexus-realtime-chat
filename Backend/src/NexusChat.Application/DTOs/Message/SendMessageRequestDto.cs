@@ -4,4 +4,6 @@ public sealed record SendMessageRequestDto(
     string ConversationId,
     string? Content,
     List<AttachmentBaseDto>? Attachments,
-    List<string>? MentionedUsersId);
+    List<string>? MentionedUsersId,
+    string? ReplyToMessageId);
+    

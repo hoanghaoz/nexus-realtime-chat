@@ -164,4 +164,64 @@ public class MessageService(
 
         return message.MapMessageDto();
     }
+    
+    
+    /// <summary>
+    ///     Searches messages in a conversation by keyword.
+    ///     Validates conversation membership before querying MongoDB Text Index.
+    /// </summary>
+    public async Task<ErrorOr<List<MessageResponseDto>>> SearchMessagesByKeywordAsync(
+        MessageSearchRequestDto dto,
+        string fromUserId,
+        CancellationToken token)
+    {
+        var isValidUser = await conversationRepository.IsUserInConversationAsync(
+            dto.ConversationId,
+            fromUserId,
+            token);
+
+        if (!isValidUser)
+            return Error.Unauthorized("User.Unauthorized", "You are not a member of this conversation.");
+
+        if (string.IsNullOrWhiteSpace(dto.Keyword))
+            return Error.Validation("Message.KeywordRequired", "Keyword is required.");
+
+        var limit = Math.Clamp(dto.Limit, 1, 50);
+        var skip = Math.Max(dto.Skip, 0);
+
+        return await messageRepository.SearchMessagesByKeywordAsync(
+            dto.ConversationId,
+            dto.Keyword.Trim(),
+            skip,
+            limit,
+            token);
+    }
+
+    public async Task<ErrorOr<MessageThreadResponseDto>> GetMessageThreadAsync(
+        string messageId,
+        string fromUserId,
+        CancellationToken token)
+    {
+        var originalMessage = await messageRepository.GetByIdAsync(messageId, token);
+
+        if (originalMessage is null || originalMessage.IsDeleted || originalMessage.IsPending)
+            return Error.NotFound("Message.NotFound", "The message was not found.");
+
+        var isValidUser = await conversationRepository.IsUserInConversationAsync(
+            originalMessage.ConversationId,
+            fromUserId,
+            token);
+
+        if (!isValidUser)
+            return Error.Unauthorized("User.Unauthorized", "You are not a member of this conversation.");
+
+        var replies = await messageRepository.GetRepliesByMessageIdAsync(
+            originalMessage.Id,
+            originalMessage.ConversationId,
+            token);
+
+        return new MessageThreadResponseDto(
+            originalMessage.MapMessageDto(),
+            replies);
+    }
 }

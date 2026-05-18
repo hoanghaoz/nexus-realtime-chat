@@ -31,4 +31,6 @@ public class Message : Entity<string>
     
     public DateTime? ReplyAt { get; set; }
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+    
+    public string? ReplyToMessageId { get; set; }
 }
