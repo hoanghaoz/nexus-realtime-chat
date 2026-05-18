@@ -1,21 +1,32 @@
 import { useChatStore } from "@/stores/useChatStore";
 import { useAuthStore } from "@/stores/useAuthStore";
 
+// 1. Thêm 2 props cho tính năng tìm kiếm
 interface Props {
   onInfoClick?: () => void;
   infoOpen?: boolean;
+  onSearchClick?: () => void;
+  searchOpen?: boolean;
 }
 
-export default function ChatHeader({ onInfoClick, infoOpen }: Props) {
+export default function ChatHeader({
+  onInfoClick,
+  infoOpen,
+  onSearchClick,
+  searchOpen,
+}: Props) {
   const { conversations, activeConversationId } = useChatStore();
   const { user } = useAuthStore();
 
-  const conversation = conversations.find((c) => c._id === activeConversationId) ?? null;
+  const conversation =
+    conversations.find((c) => c._id === activeConversationId) ?? null;
 
   if (!conversation) {
     return (
       <header className="w-full h-16 border-b sticky top-0 z-40 backdrop-blur-md flex items-center px-6 bg-white/80 dark:bg-slate-900/80 border-slate-200 dark:border-slate-700">
-        <span className="text-slate-400 dark:text-slate-500 text-sm">Chưa chọn hội thoại</span>
+        <span className="text-slate-400 dark:text-slate-500 text-sm">
+          Chưa chọn hội thoại
+        </span>
       </header>
     );
   }
@@ -24,12 +35,12 @@ export default function ChatHeader({ onInfoClick, infoOpen }: Props) {
   const isGroup = conversation.type === "group";
   const otherParticipant = !isGroup
     ? (conversation.participants || []).find(
-        (p) => p._id !== user?._id && !p._id.startsWith("self")
+        (p) => p._id !== user?._id && !p._id.startsWith("self"),
       )
     : null;
 
   const chatName = isGroup
-    ? conversation.group?.name ?? "Nhóm"
+    ? (conversation.group?.name ?? "Nhóm")
     : otherParticipant?.displayName || "Unknown";
 
   const chatAvatar = isGroup ? null : otherParticipant?.avatarUrl;
@@ -63,7 +74,9 @@ export default function ChatHeader({ onInfoClick, infoOpen }: Props) {
             }`}
           >
             {isGroup ? (
-              <span className="material-symbols-outlined text-[18px]">group</span>
+              <span className="material-symbols-outlined text-[18px]">
+                group
+              </span>
             ) : (
               initials
             )}
@@ -82,6 +95,24 @@ export default function ChatHeader({ onInfoClick, infoOpen }: Props) {
 
       {/* Actions */}
       <div className="flex items-center gap-1">
+        {/* 2. Nút Kính lúp (Tìm kiếm) */}
+        <button
+          id="search-panel-btn"
+          className={`p-2 rounded-full transition-colors ${
+            searchOpen
+              ? "bg-blue-100 dark:bg-blue-900/40 text-blue-600 dark:text-blue-400"
+              : "hover:bg-white/60 dark:hover:bg-slate-800 text-slate-500 dark:text-slate-400"
+          }`}
+          title="Tìm kiếm tin nhắn"
+          type="button"
+          onClick={onSearchClick}
+        >
+          <span className="material-symbols-outlined text-[20px]">
+            {searchOpen ? "search_off" : "search"}
+          </span>
+        </button>
+
+        {/* Nút Info */}
         <button
           id="info-panel-btn"
           className={`p-2 rounded-full transition-colors ${

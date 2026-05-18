@@ -52,7 +52,7 @@ function App() {
           {/* Public routes */}
           <Route path="/sign-in" element={<SignIn />} />
           <Route path="/sign-up" element={<SignUp />} />
-
+          <Route path="/" element={<ChatApp />} />
           {/* Protected routes – yêu cầu đăng nhập */}
           <Route element={<ProtectedRoute />}>
             <Route path="/" element={<ChatApp />} />

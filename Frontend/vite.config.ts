@@ -11,4 +11,19 @@ export default defineConfig({
       "@": path.resolve(__dirname, "./src"),
     },
   },
+  server: {
+    proxy: {
+      "/api": {
+        target: "http://localhost:8080", // Trỏ  Backend
+        changeOrigin: true,
+        secure: false,
+      },
+      "/hubs": {
+        target: "http://localhost:8080",
+        changeOrigin: true,
+        secure: false,
+        ws: true, // Cực kỳ quan trọng: Cho phép kết nối WebSocket thời gian thực
+      },
+    },
+  },
 });
