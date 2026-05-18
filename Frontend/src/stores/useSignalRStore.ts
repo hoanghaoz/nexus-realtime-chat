@@ -17,6 +17,7 @@ interface SignalRState {
     conversationId: string;
     content: string;
     mentionedUsersId?: string[];
+    replyToMessageId?: string;
   }) => Promise<void>;
   /** Tham gia SignalR group (conversation room) */
   joinConversation: (conversationId: string) => Promise<void>;

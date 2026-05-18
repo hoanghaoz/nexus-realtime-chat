@@ -24,7 +24,7 @@ public static class MessageMapping
             message.IsDeleted,
             message.IsEdited,
             message.IsPending,
-            message.ParentMessageId,
+            message.ReplyToMessageId,
             message.ReplyAt,
             message.DeletedAt,
             message.EditedAt
