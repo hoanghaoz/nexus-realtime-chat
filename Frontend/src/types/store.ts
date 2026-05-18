@@ -41,6 +41,8 @@ export interface ChatState {
   fetchConversations: () => Promise<void>;
   fetchMessages: (conversationId?: string) => Promise<void>;
   addMessage: (message: Message) => void;
-  updateConversation: (conversation: Partial<Conversation> & { _id: string }) => void;
+  updateConversation: (
+    conversation: Partial<Conversation> & { _id: string },
+  ) => void;
   addConversation: (conversation: Conversation) => void;
 }

@@ -44,6 +44,11 @@ export interface ConversationResponse {
   conversations: Conversation[];
 }
 
+export interface Reaction {
+  type: string;
+  userId: string;
+}
+
 export interface Message {
   _id: string;
   conversationId: string;
@@ -53,4 +58,5 @@ export interface Message {
   updatedAt?: string | null;
   createdAt: string;
   isOwn?: boolean;
+  reactions?: Reaction[];
 }
