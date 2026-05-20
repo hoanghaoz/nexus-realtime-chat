@@ -24,7 +24,7 @@ public static class MessageMapping
             message.IsDeleted,
             message.IsEdited,
             message.IsPending,
-            message.ParentMessageId,
+            message.ReplyToMessageId,
             message.ReplyAt,
             message.DeletedAt,
             message.EditedAt
@@ -41,6 +41,7 @@ public static class MessageMapping
             Content = dto.Content,
             Reactions = [],
             Attachments = dto.Attachments?.Select(MapDtoToAttachment).ToList() ?? [],
+            ReplyToMessageId = dto.ReplyToMessageId,
             CreatedAt = DateTime.UtcNow
         };
     }

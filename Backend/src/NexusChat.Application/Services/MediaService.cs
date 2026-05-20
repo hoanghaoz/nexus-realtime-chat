@@ -69,7 +69,7 @@ public class MediaService (
             ConversationId = conversationId,
             FromUserId = userId,
             Content = null,
-            IsPending = true,
+            IsPending = false, // upload succeeded, mark as completed
             Attachments =
             [
                 new FileAttachment
