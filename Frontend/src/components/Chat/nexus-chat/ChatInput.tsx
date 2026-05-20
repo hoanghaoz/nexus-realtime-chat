@@ -2,6 +2,7 @@ import { useRef, useState, useCallback } from "react";
 import { useChatStore } from "@/stores/useChatStore";
 import { useSignalRStore } from "@/stores/useSignalRStore";
 import EmojiPickerPanel from "@/components/Chat/nexus-chat/EmojiPickerPanel";
+import MenuFileDropdown from "@/components/Chat/nexus-chat/MenuFileDropdown";
 
 export default function ChatInput() {
   const { activeConversationId } = useChatStore();
@@ -14,6 +15,34 @@ export default function ChatInput() {
   const [showEmoji, setShowEmoji] = useState(false);
   const disabled = !activeConversationId;
 
+  // Quản lý trạng thái đóng/ mở Menu
+  const [showAttachMenu, setShowAttachMenu] = useState(false);
+
+  // Định vị vị trí của 2 ô input ẩn
+  const fileInputRef = useRef<HTMLInputElement>(null); // Trỏ vào input chọn File
+  const folderInputRef = useRef<HTMLInputElement>(null); // Trỏ vào input chọn Folder
+
+  // Hàm hứng File/Ảnh/Video
+  const handleFileSelected = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (!files || files.length === 0) return;
+
+    // TODO: Nối API upload file.
+
+    //Reset lại value của input để có thể chọn lại cùng 1 file nếu muốn
+    if (fileInputRef.current) fileInputRef.current.value = "";
+    setShowAttachMenu(false); // Đóng menu sau khi chọn file
+  };
+
+  // Hàm hứng Folder
+  const handleFolderSelected = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const folders = e.target.files;
+    if (!folders || folders.length === 0) return;
+
+    //TODO: Nối API up load folder.
+    if (folderInputRef.current) folderInputRef.current.value = "";
+    setShowAttachMenu(false); // Đóng menu sau khi chọn folder.
+  };
   // Gửi tin nhắn
   const handleSend = useCallback(async () => {
     const content = text.trim();
@@ -71,16 +100,27 @@ export default function ChatInput() {
   return (
     <div className="p-4 pb-6">
       <div className="border rounded-xl flex items-end p-2 gap-2 focus-within:border-blue-500 focus-within:ring-1 focus-within:ring-blue-500/30 transition-all shadow-lg bg-white border-slate-200 dark:bg-slate-900 dark:border-slate-700">
-        <button
-          aria-label="Add attachment"
-          disabled={disabled}
-          className="p-2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-colors flex items-center justify-center shrink-0 disabled:opacity-40"
-          type="button"
-        >
-          <span className="material-symbols-outlined text-[22px]">
-            attach_file
-          </span>
-        </button>
+        <div className="relative flex items-center justify-center shrink-0">
+          <button
+            aria-label="Add attachment"
+            disabled={disabled}
+            onClick={() => setShowAttachMenu((prev) => !prev)} // Bật tắt menu đính kèm
+            className="p-2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-colors flex items-center justify-center shrink-0 disabled:opacity-40"
+            type="button"
+          >
+            <span className="material-symbols-outlined text-[22px]">
+              attach_file
+            </span>
+          </button>
+          {/* Render MenuFileDropdown tại đây */}
+          {showAttachMenu && (
+            <MenuFileDropdown
+              onSelectFile={() => fileInputRef.current?.click()} // Mở input chọn File
+              onSelectFolder={() => folderInputRef.current?.click()} // Mở input chọn Thư mục
+              onClose={() => setShowAttachMenu(false)} // Đóng menu
+            />
+          )}
+        </div>
 
         <textarea
           ref={textareaRef}
@@ -102,7 +142,6 @@ export default function ChatInput() {
             aria-label="Insert emoji"
             disabled={disabled}
             onClick={() => setShowEmoji((prev) => !prev)} // Thêm sự kiện onClick này
-            // Giữ nguyên toàn bộ class cũ của đại ca...
             className="p-2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-colors flex items-center justify-center disabled:opacity-40"
             type="button"
           >
@@ -137,6 +176,24 @@ export default function ChatInput() {
           )}
         </button>
       </div>
+      {/* Input tàng hình cho chọn File (chỉ nhận file) */}
+      <input
+        type="file"
+        multiple
+        ref={fileInputRef}
+        onChange={handleFileSelected}
+        className="hidden"
+      />
+      {/* Input tàng hình cho chọn Folder (webkitdirectory là thuộc tính chỉ hỗ
+      trợ trên Chrome để chọn thư mục) */}
+      <input
+        type="file"
+        multiple
+        ref={folderInputRef}
+        onChange={handleFolderSelected}
+        className="hidden"
+        {...({ webkitdirectory: "", directory: "" } as any)}
+      />
     </div>
   );
 }
