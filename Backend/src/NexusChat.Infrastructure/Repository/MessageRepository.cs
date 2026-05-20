@@ -39,44 +39,7 @@ public class MessageRepository(
         var messages = await query.OrderByDescending(x => x.CreatedAt).ThenByDescending(x => x.Id).Take(20)
             .ToListAsync(token);
 
-        var response = messages.Select(m => new MessageResponseDto
-        (
-            m.Id,
-            m.FromUserId,
-            m.Content,
-            m.ConversationId,
-            m.CreatedAt,
-            m.Attachments.Select(ob => ob switch
-            {
-                FileAttachment file => (AttachmentBaseDto)new FileAttachmentDto(
-                    file.FileUrl ?? string.Empty,
-                    file.FileName ?? string.Empty,
-                    file.FileSize,
-                    file.FileType,
-                    file.CreatedAt
-                ),
-                LinkPreviewAttachment link => new LinkPreviewDto(
-                    link.PreviewLinkUrl ?? string.Empty,
-                    link.Title ?? string.Empty,
-                    link.Description ?? string.Empty,
-                    link.ImageUrl ?? string.Empty,
-                    link.CreatedAt
-                ),
-                _ => throw new InvalidOperationException($"Unknown attachment type: {ob.GetType().Name}")
-            }).ToList(),
-            m.Reactions.Select(re => new ReactionDto(
-                    re.FromUserId,
-                    re.Emoji))
-                .ToList(),
-            m.MentionedUsersId,
-            m.IsDeleted,
-            m.IsEdited,
-            m.IsPending,
-            m.ParentMessageId,
-            m.ReplyAt,
-            m.DeletedAt,
-            m.EditedAt
-        )).ToList();
+        var response = messages.Select(m => m.MapMessageDto()).ToList();
         return response;
     }
 
