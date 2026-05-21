@@ -2,6 +2,7 @@ import { create } from "zustand";
 import { HubConnection, HubConnectionState } from "@microsoft/signalr";
 import { createChatConnection } from "@/services/signalr";
 import { useChatStore } from "./useChatStore";
+import { useAuthStore } from "./useAuthStore";
 import type { Message, Conversation } from "@/types/chat";
 
 interface SignalRState {
@@ -25,6 +26,8 @@ interface SignalRState {
   leaveConversation: (conversationId: string) => Promise<void>;
   /** Gửi typing indicator */
   sendTypingIndicator: (conversationId: string, isTyping: boolean) => Promise<void>;
+  /** Xác nhận pending message sau khi upload file (hybrid flow) */
+  completePendingMessage: (messageId: string) => Promise<void>;
 }
 
 /**
@@ -127,6 +130,8 @@ export const useSignalRStore = create<SignalRState>((set, get) => ({
         };
 
         useChatStore.getState().addConversation(conversation);
+        // Re-fetch conversations để lấy danh sách thành viên đầy đủ từ server
+        useChatStore.getState().fetchConversations().catch(console.error);
         // Tự động join SignalR group để nhận tin nhắn
         if (connection.state === HubConnectionState.Connected) {
           connection.invoke("JoinGroup", conversation._id).catch(console.error);
@@ -147,18 +152,33 @@ export const useSignalRStore = create<SignalRState>((set, get) => ({
         console.error("[SignalR] Server error:", error);
       });
 
-      /** Cập nhật/xóa message (TODO: xử lý ở future sprint) */
+      /** Cập nhật nội dung message khi được chỉnh sửa */
       connection.on(
         "MessageUpdateNotify",
         (conversationId: string, messageId: string, newContent: string) => {
-          console.log("[SignalR] MessageUpdateNotify:", { conversationId, messageId, newContent });
+          useChatStore.getState().updateMessageContent(conversationId, messageId, newContent);
         }
       );
 
+      /** Xóa message khỏi store khi bị xóa */
       connection.on(
         "MessageDeleteNotify",
         (conversationId: string, messageId: string) => {
-          console.log("[SignalR] MessageDeleteNotify:", { conversationId, messageId });
+          useChatStore.getState().removeMessage(conversationId, messageId);
+        }
+      );
+
+      /** Cập nhật reaction realtime */
+      connection.on(
+        "MessageReactNotify",
+        (conversationId: string, messageId: string, emoji: string, fromUserId: string) => {
+          // BỎ QUA nếu là chính mình react – useChatHub đã optimistic update rồi
+          // Nếu không bỏ qua sẽ double-toggle (on → off)
+          const currentUserId = useAuthStore?.getState?.()?.user?._id;
+          if (currentUserId && fromUserId === currentUserId) return;
+
+          console.log("[SignalR] MessageReactNotify (other user):", { conversationId, messageId, emoji, fromUserId });
+          useChatStore.getState().updateMessageReactions(messageId, emoji, fromUserId);
         }
       );
 
@@ -212,5 +232,14 @@ export const useSignalRStore = create<SignalRState>((set, get) => ({
     const { chatConnection } = get();
     if (!chatConnection || chatConnection.state !== HubConnectionState.Connected) return;
     await chatConnection.invoke("SendTypingIndicator", conversationId, isTyping);
+  },
+
+  completePendingMessage: async (messageId) => {
+    const { chatConnection } = get();
+    if (!chatConnection || chatConnection.state !== HubConnectionState.Connected) {
+      console.warn("[SignalR] Not connected, cannot complete pending message");
+      return;
+    }
+    await chatConnection.invoke("CompletePendingMessage", messageId);
   },
 }));

@@ -9,17 +9,11 @@ import {
 } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 
-import { z } from "zod";
-import { useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
+import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useAuthStore } from "@/stores/useAuthStore";
 
-// Định nghĩa schema cho form đăng nhập (sử dụng username)
-const signInSchema = z.object({
-  username: z.string().min(1, "Username không được để trống"),
-  password: z.string().min(8, "Mật khẩu phải có ít nhất 8 kí tự."),
-});
+type SignInErrors = Partial<Record<"username" | "password", string>>;
 
 export function SignInForm({
   className,
@@ -27,25 +21,32 @@ export function SignInForm({
 }: React.ComponentProps<"div">) {
   const { signIn } = useAuthStore();
   const navigate = useNavigate();
+  const [errors, setErrors] = useState<SignInErrors>({});
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const {
-    register,
-    handleSubmit,
-    formState: { errors, isSubmitting },
-  } = useForm<z.infer<typeof signInSchema>>({
-    resolver: zodResolver(signInSchema),
-    defaultValues: {
-      username: "",
-      password: "",
-    },
-  });
+  const onSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    const formData = new FormData(event.currentTarget);
+    const username = String(formData.get("username") ?? "").trim();
+    const password = String(formData.get("password") ?? "");
+    const nextErrors: SignInErrors = {};
 
-  const onSubmit = async (values: z.infer<typeof signInSchema>) => {
+    if (!username) nextErrors.username = "Username không được để trống";
+    if (password.length < 8) {
+      nextErrors.password = "Mật khẩu phải có ít nhất 8 kí tự.";
+    }
+
+    setErrors(nextErrors);
+    if (Object.keys(nextErrors).length > 0) return;
+
     try {
-      await signIn(values.username, values.password);
+      setIsSubmitting(true);
+      await signIn(username, password);
       navigate("/"); // điều hướng sau khi đăng nhập thành công
     } catch {
       // Lỗi đã được xử lý bởi toast bên trong useAuthStore
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -56,14 +57,14 @@ export function SignInForm({
           <CardTitle className="text-xl">Đăng nhập vào Nexus</CardTitle>
         </CardHeader>
         <CardContent>
-          <form onSubmit={handleSubmit(onSubmit)}>
+          <form onSubmit={onSubmit}>
             <FieldGroup className="gap-6">
               <Field>
                 <FieldLabel htmlFor="username">Username</FieldLabel>
-                <Input id="username" type="text" {...register("username")} />
+                <Input id="username" name="username" type="text" autoComplete="username" />
                 {errors.username && (
                   <p className="text-sm font-medium text-destructive">
-                    {errors.username.message}
+                    {errors.username}
                   </p>
                 )}
               </Field>
@@ -71,12 +72,13 @@ export function SignInForm({
                 <FieldLabel htmlFor="password">Mật khẩu</FieldLabel>
                 <Input
                   id="password"
+                  name="password"
                   type="password"
-                  {...register("password")}
+                  autoComplete="current-password"
                 />
                 {errors.password && (
                   <p className="text-sm font-medium text-destructive">
-                    {errors.password.message}
+                    {errors.password}
                   </p>
                 )}
               </Field>
