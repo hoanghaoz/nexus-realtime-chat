@@ -111,9 +111,7 @@ public class ConversationService(
             DisplayName: displayName,
             DisplayAvatar: displayAvatar,
             LastMessage: lastMessage,
-            IsOnline: conversation.RoomType == RoomType.Direct 
-                ? participants.Any(p => p.UserId != currentUserId && p.IsOnline)
-                : participants.Any(p => p.UserId != currentUserId && p.IsOnline),
+            IsOnline: participants.Any(p => p.UserId != currentUserId && p.IsOnline),
             Participants: participants
         );
     }
