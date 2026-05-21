@@ -23,7 +23,7 @@ type EditForm = z.infer<typeof editSchema>;
 
 interface Props { open: boolean; onClose: () => void; }
 
-export default function EditProfileDialog({ open, onClose }: Props) {
+export default function EditProfileDialog({ open, onClose }: Readonly<Props>) {
   const { user, setUser } = useAuthStore();
   const { updateProfile, loading } = useUserStore();
 
@@ -62,7 +62,9 @@ export default function EditProfileDialog({ open, onClose }: Props) {
     }
     setAvatarFile(file);
     const reader = new FileReader();
-    reader.onload = () => setAvatarPreview(reader.result as string);
+    reader.onload = () => {
+      if (typeof reader.result === "string") setAvatarPreview(reader.result);
+    };
     reader.readAsDataURL(file);
   };
 
@@ -71,7 +73,7 @@ export default function EditProfileDialog({ open, onClose }: Props) {
     // để gán vào UserUpdateDto.avatarUrl
     return new Promise((resolve) => {
       const reader = new FileReader();
-      reader.onload = () => resolve(reader.result as string);
+      reader.onload = () => resolve(typeof reader.result === "string" ? reader.result : null);
       reader.onerror = () => resolve(null);
       reader.readAsDataURL(file);
     });
@@ -122,7 +124,12 @@ export default function EditProfileDialog({ open, onClose }: Props) {
 
         {/* Avatar với nút chỉnh sửa */}
         <div className="flex justify-center mt-1">
-          <div className="relative group cursor-pointer" onClick={() => avatarInputRef.current?.click()}>
+          <button
+            aria-label="Chọn ảnh đại diện"
+            className="relative group"
+            onClick={() => avatarInputRef.current?.click()}
+            type="button"
+          >
             {currentAvatar ? (
               <img
                 src={currentAvatar}
@@ -153,7 +160,7 @@ export default function EditProfileDialog({ open, onClose }: Props) {
                 <span className="material-symbols-outlined text-white text-[12px]">check</span>
               </div>
             )}
-          </div>
+          </button>
         </div>
 
         <p className="text-center text-[11px] text-slate-400 -mt-1">

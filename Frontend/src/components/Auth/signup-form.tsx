@@ -17,6 +17,11 @@ type SignUpErrors = Partial<
   Record<"username" | "password" | "confirmPassword", string>
 >;
 
+function getFormString(formData: FormData, key: string) {
+  const value = formData.get(key);
+  return typeof value === "string" ? value : "";
+}
+
 export function SignupForm({
   className,
   ...props
@@ -29,9 +34,9 @@ export function SignupForm({
   const onSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     const formData = new FormData(event.currentTarget);
-    const username = String(formData.get("username") ?? "").trim();
-    const password = String(formData.get("password") ?? "");
-    const confirmPassword = String(formData.get("confirmPassword") ?? "");
+    const username = getFormString(formData, "username").trim();
+    const password = getFormString(formData, "password");
+    const confirmPassword = getFormString(formData, "confirmPassword");
     const nextErrors: SignUpErrors = {};
 
     if (username.length < 4) {

@@ -15,6 +15,11 @@ import { useAuthStore } from "@/stores/useAuthStore";
 
 type SignInErrors = Partial<Record<"username" | "password", string>>;
 
+function getFormString(formData: FormData, key: string) {
+  const value = formData.get(key);
+  return typeof value === "string" ? value : "";
+}
+
 export function SignInForm({
   className,
   ...props
@@ -27,8 +32,8 @@ export function SignInForm({
   const onSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     const formData = new FormData(event.currentTarget);
-    const username = String(formData.get("username") ?? "").trim();
-    const password = String(formData.get("password") ?? "");
+    const username = getFormString(formData, "username").trim();
+    const password = getFormString(formData, "password");
     const nextErrors: SignInErrors = {};
 
     if (!username) nextErrors.username = "Username không được để trống";

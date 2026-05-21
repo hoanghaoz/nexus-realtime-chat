@@ -7,6 +7,14 @@ import api from "@/services/api";
 import type { Message, MessageThread } from "@/types/chat";
 import { toast } from "sonner";
 
+function getNextTypingUsers(prev: string[], userId: string, isTyping: boolean) {
+  if (!isTyping) {
+    return prev.filter((id) => id !== userId);
+  }
+
+  return prev.includes(userId) ? prev : [...prev, userId];
+}
+
 /**
  * useChatHub – Custom Hook tập trung quản lý toàn bộ SignalR lifecycle và
  * tích hợp API liên quan đến chat.
@@ -63,9 +71,7 @@ export function useChatHub() {
 
     const userTypingHandler = (userId: string, _convoId: string, isTyping: boolean) => {
       if (userId === user?._id) return; // Bỏ qua typing của chính mình
-      setTypingUsers((prev) =>
-        isTyping ? [...new Set([...prev, userId])] : prev.filter((id) => id !== userId)
-      );
+      setTypingUsers((prev) => getNextTypingUsers(prev, userId, isTyping));
     };
 
     chatConnection.on("UserTypingNotify", userTypingHandler);

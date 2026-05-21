@@ -1,5 +1,6 @@
 // Frontend/src/components/Chat/nexus-chat/ChatInput.tsx
 import { useRef, useState, useCallback } from "react";
+import type { Dispatch, SetStateAction } from "react";
 import { useChatStore } from "@/stores/useChatStore";
 import { useSignalRStore } from "@/stores/useSignalRStore";
 import { useChatHub } from "@/hooks/useChatHub";
@@ -19,6 +20,32 @@ interface UploadItem {
   fileName: string;
   progress: number; // 0-100
   status: "uploading" | "done" | "error";
+}
+
+type UploadQueueSetter = Dispatch<SetStateAction<UploadItem[]>>;
+
+function updateUploadItem(
+  setUploadQueue: UploadQueueSetter,
+  uploadId: string,
+  updates: Partial<Pick<UploadItem, "progress" | "status">>
+) {
+  setUploadQueue((prev) => prev.map((u) => (u.id === uploadId ? { ...u, ...updates } : u)));
+}
+
+function removeUploadItem(setUploadQueue: UploadQueueSetter, uploadId: string) {
+  setUploadQueue((prev) => prev.filter((u) => u.id !== uploadId));
+}
+
+function getUploadStatusClass(status: UploadItem["status"]) {
+  if (status === "error") return "text-red-400";
+  if (status === "done") return "text-green-400";
+  return "text-blue-400 animate-spin";
+}
+
+function getUploadStatusIcon(status: UploadItem["status"]) {
+  if (status === "error") return "error";
+  if (status === "done") return "check_circle";
+  return "progress_activity";
 }
 
 export default function ChatInput() {
@@ -109,9 +136,7 @@ export default function ChatInput() {
             headers: { "Content-Type": "multipart/form-data" },
             onUploadProgress: (event) => {
               const pct = event.total ? Math.round((event.loaded * 100) / event.total) : 0;
-              setUploadQueue((prev) =>
-                prev.map((u) => (u.id === uploadId ? { ...u, progress: pct } : u))
-              );
+              updateUploadItem(setUploadQueue, uploadId, { progress: pct });
             },
           }
         );
@@ -133,27 +158,19 @@ export default function ChatInput() {
         // Xác nhận với backend để broadcast cho group
         await completePendingMessage(messageId);
 
-        setUploadQueue((prev) =>
-          prev.map((u) => (u.id === uploadId ? { ...u, progress: 100, status: "done" } : u))
-        );
+        updateUploadItem(setUploadQueue, uploadId, { progress: 100, status: "done" });
 
         // Dọn sạch sau 2s
-        setTimeout(() => {
-          setUploadQueue((prev) => prev.filter((u) => u.id !== uploadId));
-        }, 2000);
+        setTimeout(() => removeUploadItem(setUploadQueue, uploadId), 2000);
       } catch (err: any) {
         console.error("[ChatInput] uploadFile error:", err);
-        setUploadQueue((prev) =>
-          prev.map((u) => (u.id === uploadId ? { ...u, status: "error" } : u))
-        );
+        updateUploadItem(setUploadQueue, uploadId, { status: "error" });
         const msg =
           err?.response?.status === 400
             ? `File "${file.name}" không được hỗ trợ hoặc quá lớn.`
             : `Upload "${file.name}" thất bại. Vui lòng thử lại!`;
         toast.error(msg);
-        setTimeout(() => {
-          setUploadQueue((prev) => prev.filter((u) => u.id !== uploadId));
-        }, 3000);
+        setTimeout(() => removeUploadItem(setUploadQueue, uploadId), 3000);
       }
     },
     [activeConversationId, completePendingMessage, user?._id]
@@ -176,14 +193,8 @@ export default function ChatInput() {
         <div className="mb-2 flex flex-col gap-1.5">
           {uploadQueue.map((item) => (
             <div key={item.id} className="flex items-center gap-2 bg-slate-100 dark:bg-slate-800 rounded-xl px-3 py-2">
-              <span className={`material-symbols-outlined text-[16px] shrink-0 ${
-                item.status === "error"
-                  ? "text-red-400"
-                  : item.status === "done"
-                  ? "text-green-400"
-                  : "text-blue-400 animate-spin"
-              }`}>
-                {item.status === "error" ? "error" : item.status === "done" ? "check_circle" : "progress_activity"}
+              <span className={`material-symbols-outlined text-[16px] shrink-0 ${getUploadStatusClass(item.status)}`}>
+                {getUploadStatusIcon(item.status)}
               </span>
               <div className="flex-1 min-w-0">
                 <p className="text-[11px] font-medium text-slate-700 dark:text-slate-300 truncate">{item.fileName}</p>
@@ -349,7 +360,12 @@ export default function ChatInput() {
 
       {/* Click outside để đóng attach menu */}
       {showAttachMenu && (
-        <div className="fixed inset-0 z-40" onClick={() => setShowAttachMenu(false)} />
+        <button
+          aria-label="Đóng menu đính kèm"
+          className="fixed inset-0 z-40 cursor-default"
+          onClick={() => setShowAttachMenu(false)}
+          type="button"
+        />
       )}
     </div>
   );

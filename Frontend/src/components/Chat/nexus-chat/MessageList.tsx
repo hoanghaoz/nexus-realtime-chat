@@ -17,6 +17,20 @@ interface Props {
   onOpenThread?: (messageId: string) => void;
 }
 
+type MessageWithSenderName = {
+  senderName?: string;
+};
+
+type ConversationWithDisplayFallbacks = Conversation & {
+  receiver?: {
+    name?: string;
+    avatarUrl?: string | null;
+  };
+  group?: Conversation["group"] & {
+    avatarUrl?: string | null;
+  };
+};
+
 /** Hiện timestamp phân cách nếu 2 tin nhắn liên tiếp cách nhau > 5 phút */
 const TIMESTAMP_GAP_MS = 5 * 60 * 1000;
 
@@ -29,7 +43,7 @@ export default function MessageList({
   onRecall,
   onCopy,
   onOpenThread,
-}: Props) {
+}: Readonly<Props>) {
   const { messages, fetchMessages, messageLoading } = useChatStore();
   const { user } = useAuthStore();
   const { friends } = useFriendStore();
@@ -148,7 +162,9 @@ export default function MessageList({
         // Tên người gửi: chỉ hiện trong group chat
         const isGroup = conversation.type === "group";
         
-        let finalSenderName = sender?.name || (msg as any).senderName;
+        const messageWithSender = msg as MessageWithSenderName;
+        const conversationWithFallbacks = conversation as ConversationWithDisplayFallbacks;
+        let finalSenderName = sender?.name || messageWithSender.senderName;
         let finalSenderAvatar = sender?.avatar;
         
         const isOwnMessage = msg.senderId === user?._id;
@@ -163,8 +179,8 @@ export default function MessageList({
         }
 
         if (!isGroup && !isOwnMessage) {
-          finalSenderName = finalSenderName || (conversation as any).receiver?.name || (conversation as any).group?.name;
-          finalSenderAvatar = finalSenderAvatar || (conversation as any).receiver?.avatarUrl || (conversation as any).group?.avatarUrl;
+          finalSenderName = finalSenderName || conversationWithFallbacks.receiver?.name || conversation.group?.name;
+          finalSenderAvatar = finalSenderAvatar || conversationWithFallbacks.receiver?.avatarUrl || conversationWithFallbacks.group?.avatarUrl;
         }
 
         return (
@@ -175,7 +191,7 @@ export default function MessageList({
             senderAvatar={finalSenderAvatar}
             showAvatar={isFirstInCluster}
             showTimestamp={showTimestamp}
-            isNew={isNew && !!next === false}
+            isNew={isNew && !next}
             isGroup={isGroup}
             conversationId={convoId}
             onReact={onReact}

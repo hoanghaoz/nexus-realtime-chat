@@ -41,7 +41,7 @@ function getInitials(name: string) {
     .toUpperCase();
 }
 
-export default function ThreadDrawer({ open, onClose, threadData, threadLoading }: Props) {
+export default function ThreadDrawer({ open, onClose, threadData, threadLoading }: Readonly<Props>) {
   const { user } = useAuthStore();
   const { sendMessage } = useSignalRStore();
   const { activeConversationId, conversations } = useChatStore();
@@ -99,8 +99,8 @@ export default function ThreadDrawer({ open, onClose, threadData, threadLoading 
         {/* ── Header ── */}
         <SheetHeader className="px-5 pt-5 pb-3 border-b border-slate-100 dark:border-slate-800 shrink-0">
           <SheetTitle className="flex items-center gap-2 text-base font-bold text-slate-800 dark:text-slate-100">
-            <span className="material-symbols-outlined text-[20px] text-purple-500">forum</span>
-            Thread
+            <span className="material-symbols-outlined text-[20px] text-purple-500" aria-hidden="true">forum</span>
+            <span>Thread</span>
           </SheetTitle>
         </SheetHeader>
 
@@ -195,19 +195,27 @@ export default function ThreadDrawer({ open, onClose, threadData, threadLoading 
               {threadData.replies.map((reply) => {
                 const sender = participantMap.get(reply.senderId);
                 const isOwn = reply.senderId === user?._id;
+                let avatar = (
+                  <div className="w-8 h-8 rounded-full bg-gradient-to-br from-purple-500 to-pink-400 flex items-center justify-center text-white font-bold text-xs shrink-0 mt-0.5">
+                    {getInitials(sender?.name ?? "?")}
+                  </div>
+                );
+
+                if (isOwn) {
+                  avatar = (
+                    <div className="w-8 h-8 rounded-full bg-gradient-to-br from-blue-600 to-cyan-500 flex items-center justify-center text-white font-bold text-xs shrink-0 mt-0.5">
+                      {getInitials(user?.displayName ?? "Bạn")}
+                    </div>
+                  );
+                } else if (sender?.avatar) {
+                  avatar = (
+                    <img src={sender.avatar} alt={sender.name} className="w-8 h-8 rounded-full object-cover shrink-0 mt-0.5" />
+                  );
+                }
+
                 return (
                   <div key={reply._id} className="flex items-start gap-2.5">
-                    {isOwn ? (
-                      <div className="w-8 h-8 rounded-full bg-gradient-to-br from-blue-600 to-cyan-500 flex items-center justify-center text-white font-bold text-xs shrink-0 mt-0.5">
-                        {getInitials(user?.displayName ?? "Bạn")}
-                      </div>
-                    ) : sender?.avatar ? (
-                      <img src={sender.avatar} alt={sender.name} className="w-8 h-8 rounded-full object-cover shrink-0 mt-0.5" />
-                    ) : (
-                      <div className="w-8 h-8 rounded-full bg-gradient-to-br from-purple-500 to-pink-400 flex items-center justify-center text-white font-bold text-xs shrink-0 mt-0.5">
-                        {getInitials(sender?.name ?? "?")}
-                      </div>
-                    )}
+                    {avatar}
                     <div className="flex-1 min-w-0">
                       <div className="flex items-baseline gap-2">
                         <span className="text-sm font-semibold text-slate-800 dark:text-slate-100">

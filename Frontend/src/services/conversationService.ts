@@ -18,12 +18,60 @@ export interface SendMessageDto {
   mentionedUsersId?: string[];
 }
 
+type AttachmentLike = {
+  url?: string;
+  fileUrl?: string;
+};
+
 function readString(source: Record<string, unknown>, ...keys: string[]) {
   for (const key of keys) {
     const value = source[key];
     if (typeof value === "string") return value;
   }
   return "";
+}
+
+function getParticipantDisplayName(
+  participant: unknown,
+  id: string,
+  currentUserId: string,
+  friend?: FriendResponseDto
+) {
+  if (typeof participant === "string") {
+    return friend?.displayName || (id === currentUserId ? "Bạn" : id);
+  }
+
+  return (
+    readString(
+      participant as Record<string, unknown>,
+      "displayName",
+      "userName",
+      "username",
+      "name",
+      "fullName",
+      "DisplayName",
+      "UserName"
+    ) ||
+    friend?.displayName ||
+    (id === currentUserId ? "Bạn" : id)
+  );
+}
+
+function getParticipantAvatarUrl(participant: unknown, friend?: FriendResponseDto) {
+  if (typeof participant === "string") {
+    return friend?.avatarUrl ?? null;
+  }
+
+  return (
+    readString(participant as Record<string, unknown>, "avatarUrl", "avatar", "displayAvatar", "AvatarUrl") ||
+    friend?.avatarUrl ||
+    null
+  );
+}
+
+function getAttachmentImageUrl(firstAttachment: AttachmentLike | undefined, isImageAttachment: boolean) {
+  if (!firstAttachment || !isImageAttachment) return null;
+  return firstAttachment.url || firstAttachment.fileUrl;
 }
 
 function unwrapPayload(data: unknown): unknown {
@@ -99,27 +147,8 @@ function normalizeParticipants(item: any, currentUserId: string): Conversation["
       if (!id) return result;
 
       const friend = friendsById.get(id);
-      const isCurrentUser = id === currentUserId;
-      const displayName =
-        typeof participant === "string"
-          ? friend?.displayName || (isCurrentUser ? "Bạn" : id)
-          : readString(
-              participant,
-              "displayName",
-              "userName",
-              "username",
-              "name",
-              "fullName",
-              "DisplayName",
-              "UserName"
-            ) || friend?.displayName || (isCurrentUser ? "Bạn" : id);
-
-      const avatarUrl =
-        typeof participant === "string"
-          ? friend?.avatarUrl ?? null
-          : readString(participant, "avatarUrl", "avatar", "displayAvatar", "AvatarUrl") ||
-            friend?.avatarUrl ||
-            null;
+      const displayName = getParticipantDisplayName(participant, id, currentUserId, friend);
+      const avatarUrl = getParticipantAvatarUrl(participant, friend);
 
       result.push({
         _id: id,
@@ -387,11 +416,7 @@ export const conversationService = {
         content: item.isDeleted ? null : (item.content ?? null),
         isDeleted: item.isDeleted ?? false,
         deletedText: item.isDeleted ? "Tin nhắn đã bị xóa" : undefined,
-        imgUrl: firstAttachment
-          ? isImageAttachment
-            ? (firstAttachment.url || firstAttachment.fileUrl)
-            : null
-          : null,
+        imgUrl: getAttachmentImageUrl(firstAttachment, isImageAttachment),
         // Lưu thêm thông tin file không phải ảnh
         ...(firstAttachment && !isImageAttachment ? {
           fileAttachment: {
