@@ -39,44 +39,7 @@ public class MessageRepository(
         var messages = await query.OrderByDescending(x => x.CreatedAt).ThenByDescending(x => x.Id).Take(20)
             .ToListAsync(token);
 
-        var response = messages.Select(m => new MessageResponseDto
-        (
-            m.Id,
-            m.FromUserId,
-            m.Content,
-            m.ConversationId,
-            m.CreatedAt,
-            m.Attachments.Select(ob => ob switch
-            {
-                FileAttachment file => (AttachmentBaseDto)new FileAttachmentDto(
-                    file.FileUrl ?? string.Empty,
-                    file.FileName ?? string.Empty,
-                    file.FileSize,
-                    file.FileType,
-                    file.CreatedAt
-                ),
-                LinkPreviewAttachment link => new LinkPreviewDto(
-                    link.PreviewLinkUrl ?? string.Empty,
-                    link.Title ?? string.Empty,
-                    link.Description ?? string.Empty,
-                    link.ImageUrl ?? string.Empty,
-                    link.CreatedAt
-                ),
-                _ => throw new InvalidOperationException($"Unknown attachment type: {ob.GetType().Name}")
-            }).ToList(),
-            m.Reactions.Select(re => new ReactionDto(
-                    re.FromUserId,
-                    re.Emoji))
-                .ToList(),
-            m.MentionedUsersId,
-            m.IsDeleted,
-            m.IsEdited,
-            m.IsPending,
-            m.ParentMessageId,
-            m.ReplyAt,
-            m.DeletedAt,
-            m.EditedAt
-        )).ToList();
+        var response = messages.Select(m => m.MapMessageDto()).ToList();
         return response;
     }
 
@@ -150,5 +113,53 @@ public class MessageRepository(
             "document" or "file" => FileType.Document,
             _ => null
         };
+    }
+    
+    /// <summary>
+    ///     Searches messages by keyword using MongoDB Text Index on Content.
+    ///     Filters by conversation ID and excludes deleted or pending messages.
+    /// </summary>
+    public async Task<List<MessageResponseDto>> SearchMessagesByKeywordAsync(
+        string conversationId,
+        string keyword,
+        int skip,
+        int limit,
+        CancellationToken token)
+    {
+        var filter = Builders<Message>.Filter.And(
+            Builders<Message>.Filter.Eq(x => x.ConversationId, conversationId),
+            Builders<Message>.Filter.Eq(x => x.IsDeleted, false),
+            Builders<Message>.Filter.Eq(x => x.IsPending, false),
+            Builders<Message>.Filter.Text(keyword)
+        );
+
+        var messages = await DbSet.Find(filter)
+            .SortByDescending(x => x.CreatedAt)
+            .Skip(skip)
+            .Limit(limit)
+            .ToListAsync(token);
+
+        return messages.Select(x => x.MapMessageDto()).ToList();
+    }
+
+    
+    /// <summary>
+    ///     Retrieves all direct replies of a message in the same conversation.
+    ///     Replies are ordered by creation time ascending.
+    /// </summary>
+    public async Task<List<MessageResponseDto>> GetRepliesByMessageIdAsync(
+        string messageId,
+        string conversationId,
+        CancellationToken token)
+    {
+        var messages = await DbSet.AsQueryable()
+            .Where(x => x.ReplyToMessageId == messageId
+                        && x.ConversationId == conversationId
+                        && !x.IsDeleted
+                        && !x.IsPending)
+            .OrderBy(x => x.CreatedAt)
+            .ToListAsync(token);
+
+        return messages.Select(x => x.MapMessageDto()).ToList();
     }
 }

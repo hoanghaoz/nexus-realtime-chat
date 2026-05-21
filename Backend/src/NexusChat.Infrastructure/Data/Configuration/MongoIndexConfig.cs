@@ -26,6 +26,7 @@ public static class MongoIndexConfig
         
         // Schema Message index
         var message = database.GetCollection<Message>("Message");
+        
         var messageIndexKeys = Builders<Message>.IndexKeys
             .Ascending(ms => ms.ConversationId)
             .Ascending(ms => ms.IsDeleted)
@@ -34,23 +35,31 @@ public static class MongoIndexConfig
         var parentMessageIndexKeys = Builders<Message>.IndexKeys
             .Ascending(ms => ms.ParentMessageId)
             .Descending(ms => ms.CreatedAt);
+            
+        var messageTextIndexKeys = Builders<Message>.IndexKeys.Text(ms => ms.Content);
         
-        var indexMessageOptions = new CreateIndexOptions 
-        { 
-            Background = true, 
-            Name = "idx_conversationId_CreatedAt_IsDeleted"
-        };
-        
-        var indexParentMessageOptions = new CreateIndexOptions 
-        { 
-            Background = true, 
-            Name = "idx_parentMessageId_CreatedAt"
-        };
+        var messageReplyIndexKeys = Builders<Message>.IndexKeys
+            .Ascending(ms => ms.ReplyToMessageId)
+            .Ascending(ms => ms.ConversationId)
+            .Ascending(ms => ms.IsDeleted)
+            .Ascending(ms => ms.CreatedAt);
+
+        var indexMessageOptions = new CreateIndexOptions { Background = true, Name = "idx_conversationId_CreatedAt_IsDeleted" };
+        var indexParentMessageOptions = new CreateIndexOptions { Background = true, Name = "idx_parentMessageId_CreatedAt" };
+        var messageTextIndexOptions = new CreateIndexOptions { Background = true, Name = "idx_message_content_text" };
+        var messageReplyIndexOptions = new CreateIndexOptions { Background = true, Name = "idx_replyToMessageId_conversationId_isDeleted_createdAt" };
 
         var messageIndexModel = new CreateIndexModel<Message>(messageIndexKeys, indexMessageOptions);
         var parentMessageIndexModel = new CreateIndexModel<Message>(parentMessageIndexKeys, indexParentMessageOptions);
-        await message.Indexes.CreateManyAsync([messageIndexModel,parentMessageIndexModel]);
-        
+        var messageTextIndexModel = new CreateIndexModel<Message>(messageTextIndexKeys, messageTextIndexOptions);
+        var messageReplyIndexModel = new CreateIndexModel<Message>(messageReplyIndexKeys, messageReplyIndexOptions);
+
+        await message.Indexes.CreateManyAsync([
+            messageIndexModel, 
+            parentMessageIndexModel,
+            messageTextIndexModel,
+            messageReplyIndexModel
+        ]);
         // User index
         var user = database.GetCollection<User>("User");
         var userIndexKeys = Builders<User>.IndexKeys

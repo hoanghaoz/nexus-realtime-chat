@@ -21,7 +21,7 @@ import { useAuthStore } from "@/stores/useAuthStore";
 const signUpSchema = z
   .object({
     username: z.string().min(4, "Username phải có ít nhất 4 kí tự."),
-    password: z.string().min(8, "Mật khẩu phải có ít nhất 8 kí tự."),
+    password: z.string().min(6, "Mật khẩu phải có ít nhất 6 kí tự."),
     confirmPassword: z.string(),
   })
   .refine((data) => data.password === data.confirmPassword, {
@@ -113,7 +113,7 @@ export function SignupForm({
                   </Field>
                 </div>
                 <FieldDescription>
-                  Mật khẩu phải có ít nhất 8 ký tự.
+                  Mật khẩu phải có ít nhất 6 ký tự.
                 </FieldDescription>
               </Field>
               <Field>
