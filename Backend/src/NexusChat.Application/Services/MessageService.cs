@@ -65,14 +65,34 @@ public class MessageService(
         var updatedMessage = await messageRepository.GetByIdAsync(messageId, token);
         if (updatedMessage == null) return Error.NotFound("Message.NotFound", "The message was not found.");
         var existingReaction = updatedMessage.Reactions.FirstOrDefault(r => r.FromUserId == fromUserId);
+        
         if (existingReaction != null)
-            updatedMessage.Reactions.Remove(existingReaction);
+        {
+            if (existingReaction.Emoji == dto.Emoji)
+            {
+                // Toggle off
+                updatedMessage.Reactions.Remove(existingReaction);
+            }
+            else
+            {
+                // Replace with new emoji
+                updatedMessage.Reactions.Remove(existingReaction);
+                updatedMessage.Reactions.Add(new Reaction
+                {
+                    FromUserId = fromUserId,
+                    Emoji = dto.Emoji
+                });
+            }
+        }
         else
+        {
             updatedMessage.Reactions.Add(new Reaction
             {
                 FromUserId = fromUserId,
                 Emoji = dto.Emoji
             });
+        }
+            
         await messageRepository.UpdateAsync(updatedMessage, token);
         await notify.NotifyMessageReactedAsync(updatedMessage.ConversationId, updatedMessage.Id, dto.Emoji, fromUserId,
             updatedMessage.FromUserId, token);

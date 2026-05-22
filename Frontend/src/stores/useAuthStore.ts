@@ -78,6 +78,7 @@ export const useAuthStore = create<AuthState>()(
         set({ accessToken: null, user: null, loading: false });
         try {
           localStorage.removeItem("accessToken");
+          localStorage.removeItem("group-participants-cache");
         } catch {
           // ignore storage errors
         }
@@ -110,12 +111,34 @@ export const useAuthStore = create<AuthState>()(
           get().clearState();
           set({ loading: true });
           const { accessToken } = await authService.signIn(username, password);
+          if (!accessToken) {
+            throw new Error("No access token returned from login API");
+          }
           get().setAccessToken(accessToken);
-          // Backend hiện tại không trả về username trong JWT token,
-          // vì vậy ta sẽ cập nhật thủ công username và displayName vào state từ form.
-          set((state) => ({
-            user: state.user ? { ...state.user, username, displayName: username } : null,
-          }));
+          // Lấy profile thật từ server để có avatarUrl thay vì chỉ set username thủ công
+          const userId = get().user?._id;
+          if (userId) {
+            try {
+              const { userService } = await import("@/services/userService");
+              const profile = await userService.getProfile(userId);
+              set((state) => ({
+                user: state.user
+                  ? {
+                      ...state.user,
+                      username: profile.username,
+                      displayName: profile.displayName || profile.username,
+                      avatarUrl: profile.avatarUrl || undefined,
+                    }
+                  : null,
+              }));
+            } catch (err) {
+              console.warn("Could not fetch profile after login", err);
+              // Fallback
+              set((state) => ({
+                user: state.user ? { ...state.user, username, displayName: username } : null,
+              }));
+            }
+          }
           toast.success("Chào mừng bạn quay lại Nexus 🚀");
         } catch (error: any) {
           console.error("signIn error:", error);
@@ -131,6 +154,28 @@ export const useAuthStore = create<AuthState>()(
         }
       },
 
+      /** Lấy profile mới nhất (khi F5 hoặc sau khi update) */
+      fetchProfile: async () => {
+        const userId = get().user?._id;
+        if (!userId) return;
+        try {
+          const { userService } = await import("@/services/userService");
+          const profile = await userService.getProfile(userId);
+          set((state) => ({
+            user: state.user
+              ? {
+                  ...state.user,
+                  username: profile.username,
+                  displayName: profile.displayName || profile.username,
+                  avatarUrl: profile.avatarUrl || undefined,
+                }
+              : null,
+          }));
+        } catch (error) {
+          console.error("fetchProfile error:", error);
+        }
+      },
+
       /** Đăng xuất */
       signOut: () => {
         get().clearState();
@@ -139,8 +184,11 @@ export const useAuthStore = create<AuthState>()(
     }),
     {
       name: "auth-storage",
-      // Persist cả accessToken lẫn user để refresh trang vẫn có thông tin
-      partialize: (state) => ({ accessToken: state.accessToken, user: state.user }),
+      // KHÔNG lưu avatarUrl vào localStorage vì dung lượng base64 lớn gây lỗi QuotaExceededError
+      partialize: (state) => ({ 
+        accessToken: state.accessToken, 
+        user: state.user ? { ...state.user, avatarUrl: undefined } : null 
+      }),
     }
   )
 );

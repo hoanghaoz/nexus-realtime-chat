@@ -1,20 +1,52 @@
+// Frontend/src/components/Chat/nexus-chat/MessageList.tsx
 import { useEffect, useRef, useCallback } from "react";
 import MessageBubble from "./MessageBubble";
 import { useChatStore } from "@/stores/useChatStore";
 import { useAuthStore } from "@/stores/useAuthStore";
+import { useFriendStore } from "@/stores/useFriendStore";
 import type { Conversation } from "@/types/chat";
 
 interface Props {
   conversation: Conversation | null;
   typingUsers?: string[]; // userIds đang gõ
+  botTyping?: boolean;
+  onReact?: (messageId: string, type: string) => void;
+  onDelete?: (messageId: string, conversationId: string) => void;
+  onRecall?: (messageId: string) => void;
+  onCopy?: (content: string) => void;
+  onOpenThread?: (messageId: string) => void;
 }
+
+type MessageWithSenderName = {
+  senderName?: string;
+};
+
+type ConversationWithDisplayFallbacks = Conversation & {
+  receiver?: {
+    name?: string;
+    avatarUrl?: string | null;
+  };
+  group?: Conversation["group"] & {
+    avatarUrl?: string | null;
+  };
+};
 
 /** Hiện timestamp phân cách nếu 2 tin nhắn liên tiếp cách nhau > 5 phút */
 const TIMESTAMP_GAP_MS = 5 * 60 * 1000;
 
-export default function MessageList({ conversation, typingUsers = [] }: Props) {
+export default function MessageList({
+  conversation,
+  typingUsers = [],
+  botTyping = false,
+  onReact,
+  onDelete,
+  onRecall,
+  onCopy,
+  onOpenThread,
+}: Readonly<Props>) {
   const { messages, fetchMessages, messageLoading } = useChatStore();
   const { user } = useAuthStore();
+  const { friends } = useFriendStore();
   const bottomRef = useRef<HTMLDivElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const prevLengthRef = useRef(0);
@@ -118,7 +150,7 @@ export default function MessageList({ conversation, typingUsers = [] }: Props) {
           !prev ||
           new Date(msg.createdAt).getTime() - new Date(prev.createdAt).getTime() > TIMESTAMP_GAP_MS;
 
-        // Có hiện avatar không? = Tin đầu tiên của cụm (khác người gửi với prev, hoặc có timestamp break)
+        // Có hiện avatar không? = Tin đầu tiên của cụm
         const isFirstInCluster =
           showTimestamp ||
           !prev ||
@@ -129,22 +161,49 @@ export default function MessageList({ conversation, typingUsers = [] }: Props) {
 
         // Tên người gửi: chỉ hiện trong group chat
         const isGroup = conversation.type === "group";
-        const senderName = isGroup ? (sender?.name || (msg as any).senderName) : undefined;
+        
+        const messageWithSender = msg as MessageWithSenderName;
+        const conversationWithFallbacks = conversation as ConversationWithDisplayFallbacks;
+        let finalSenderName = sender?.name || messageWithSender.senderName;
+        let finalSenderAvatar = sender?.avatar;
+        
+        const isOwnMessage = msg.senderId === user?._id;
+        
+        // Universal fallback for missing participant avatars
+        if (!finalSenderAvatar && !isOwnMessage) {
+          const friendMatch = friends.find(f => f.id === msg.senderId);
+          if (friendMatch) {
+            finalSenderAvatar = friendMatch.avatarUrl;
+            finalSenderName = finalSenderName || friendMatch.displayName || friendMatch.username;
+          }
+        }
+
+        if (!isGroup && !isOwnMessage) {
+          finalSenderName = finalSenderName || conversationWithFallbacks.receiver?.name || conversation.group?.name;
+          finalSenderAvatar = finalSenderAvatar || conversationWithFallbacks.receiver?.avatarUrl || conversationWithFallbacks.group?.avatarUrl;
+        }
 
         return (
           <MessageBubble
             key={msg._id || index}
             message={msg}
-            senderName={senderName}
-            senderAvatar={sender?.avatar}
+            senderName={finalSenderName} // Pass finalSenderName so initials can be generated correctly even if not displayed
+            senderAvatar={finalSenderAvatar}
             showAvatar={isFirstInCluster}
             showTimestamp={showTimestamp}
-            isNew={isNew && !!next === false} // chỉ animate tin nhắn cuối khi chưa có tin mới hơn
+            isNew={isNew && !next}
+            isGroup={isGroup}
+            conversationId={convoId}
+            onReact={onReact}
+            onDelete={onDelete}
+            onRecall={onRecall}
+            onCopy={onCopy}
+            onOpenThread={onOpenThread}
           />
         );
       })}
 
-      {/* Typing indicator */}
+      {/* Typing indicator – người dùng */}
       {typingUsers.length > 0 && (
         <div className="flex items-end gap-2.5 self-start message-bounce">
           <div className="w-8 h-8 rounded-full bg-gradient-to-br from-slate-400 to-slate-300 flex items-center justify-center text-white text-xs shrink-0">
@@ -154,6 +213,20 @@ export default function MessageList({ conversation, typingUsers = [] }: Props) {
             <div className="w-1.5 h-1.5 rounded-full bg-slate-400 animate-bounce" style={{ animationDelay: "0ms" }} />
             <div className="w-1.5 h-1.5 rounded-full bg-slate-400 animate-bounce" style={{ animationDelay: "150ms" }} />
             <div className="w-1.5 h-1.5 rounded-full bg-slate-400 animate-bounce" style={{ animationDelay: "300ms" }} />
+          </div>
+        </div>
+      )}
+
+      {/* Bot typing indicator */}
+      {botTyping && (
+        <div className="flex items-end gap-2.5 self-start message-bounce">
+          <div className="w-8 h-8 rounded-full bg-gradient-to-br from-violet-500 to-purple-400 flex items-center justify-center text-white text-xs shrink-0">
+            <span className="material-symbols-outlined text-[14px]">smart_toy</span>
+          </div>
+          <div className="bg-slate-100 dark:bg-slate-800 border border-violet-200 dark:border-violet-800 px-4 py-3 rounded-2xl rounded-bl-sm shadow-sm flex items-center gap-1.5">
+            <div className="w-1.5 h-1.5 rounded-full bg-violet-400 animate-bounce" style={{ animationDelay: "0ms" }} />
+            <div className="w-1.5 h-1.5 rounded-full bg-violet-400 animate-bounce" style={{ animationDelay: "150ms" }} />
+            <div className="w-1.5 h-1.5 rounded-full bg-violet-400 animate-bounce" style={{ animationDelay: "300ms" }} />
           </div>
         </div>
       )}

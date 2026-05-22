@@ -30,6 +30,7 @@ export interface LastMessage {
 export interface Conversation {
   _id: string;
   type: "direct" | "group";
+  directUserId?: string;
   group: Group;
   participants: Participant[];
   lastMessageAt: string;
@@ -45,6 +46,7 @@ export interface ConversationResponse {
 }
 
 export interface Reaction {
+  /** type/emoji string: "like" | "heart" | "haha" | "sad" | "wow" | "angry" */
   type: string;
   userId: string;
 }
@@ -58,5 +60,25 @@ export interface Message {
   updatedAt?: string | null;
   createdAt: string;
   isOwn?: boolean;
+  /** Soft-delete flag: message bị xóa hoặc thu hồi */
+  isDeleted?: boolean;
+  /** Nội dung tombstone: "Tin nhắn đã bị xóa" | "Tin nhắn đã bị thu hồi" */
+  deletedText?: string;
   reactions?: Reaction[];
+  /** ID của message gốc mà message này đang reply */
+  replyToMessageId?: string | null;
+  /** Số lượng reply trong thread của message này */
+  threadReplyCount?: number;
+  /** File đính kèm không phải ảnh (PDF, DOC, ZIP...) */
+  fileAttachment?: {
+    url: string;
+    name: string;
+    size: number;
+    type: string;
+  };
+}
+
+export interface MessageThread {
+  originalMessage: Message;
+  replies: Message[];
 }
