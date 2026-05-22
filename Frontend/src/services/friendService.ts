@@ -1,5 +1,4 @@
 import api from "./api";
-import type { FriendRequest } from "@/types/user";
 
 export interface FriendResponseDto {
   id: string;

@@ -123,5 +123,32 @@ public class ConversationController(
 
         return response;
     }
+
+    /// <summary>
+    ///     Retrieves the details of a specific conversation including participants.
+    /// </summary>
+    /// <param name="conversationId">The ID of the conversation.</param>
+    /// <param name="token">Cancellation token for the request.</param>
+    /// <returns>An action result containing the conversation detail.</returns>
+    [HttpGet("{conversationId}")]
+    public async Task<IActionResult> GetConversationDetail(string conversationId, CancellationToken token)
+    {
+        var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        if (string.IsNullOrEmpty(userId))
+            return Unauthorized(new { message = "Invalid token or user not logged in." });
+
+        var result = await conversationService.GetConversationDetailAsync(conversationId, userId, token);
+
+        var response = result.Match<IActionResult>(
+            detail => Ok(new { data = detail, message = "Conversation detail retrieved successfully." }),
+            errors => errors[0].Code switch
+            {
+                "Conversation.NotFound" => NotFound(new { message = "Conversation not found.", description = errors[0].Description }),
+                "Conversation.Unauthorized" => StatusCode(StatusCodes.Status403Forbidden, new { message = "User is not a participant.", description = errors[0].Description }),
+                _ => StatusCode(StatusCodes.Status500InternalServerError, new { message = "An error occurred.", description = errors[0].Description })
+            });
+
+        return response;
+    }
 }
 

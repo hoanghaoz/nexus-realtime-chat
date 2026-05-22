@@ -64,16 +64,25 @@ export const useUserStore = create<UserStoreState>((set) => ({
       set({ loading: true });
       await userService.updateProfile(dto);
 
-      // Cập nhật lại user trong authStore nếu có displayName thay đổi
+      // Cập nhật lại user trong authStore nếu có thay đổi
       const { user, setUser } = useAuthStore.getState();
-      if (user && dto.displayName) {
-        setUser({ ...user, displayName: dto.displayName });
+      if (user) {
+        setUser({
+          ...user,
+          ...(dto.displayName ? { displayName: dto.displayName } : {}),
+          ...(dto.avatarUrl ? { avatarUrl: dto.avatarUrl } : {}),
+        });
       }
 
       toast.success("Cập nhật thông tin thành công!");
-    } catch (error) {
+    } catch (error: any) {
       console.error("Lỗi khi updateProfile:", error);
-      toast.error("Cập nhật thông tin thất bại. Vui lòng thử lại!");
+      const detail = error?.response?.data?.detail;
+      if (detail) {
+        toast.error(detail);
+      } else {
+        toast.error("Cập nhật thông tin thất bại. Vui lòng thử lại!");
+      }
     } finally {
       set({ loading: false });
     }
