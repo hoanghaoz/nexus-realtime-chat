@@ -3,17 +3,20 @@ import { useSignalRStore } from "@/stores/useSignalRStore";
 import { useChatStore } from "@/stores/useChatStore";
 import { useState } from "react";
 import EditProfileDialog from "./EditProfileDialog";
+import { useNavigate } from "react-router-dom";
 
 export default function UserProfile() {
   const { user, signOut } = useAuthStore();
   const { disconnectChat } = useSignalRStore();
   const { reset } = useChatStore();
   const [showEdit, setShowEdit] = useState(false);
+  const navigate = useNavigate();
 
   const handleSignOut = () => {
     disconnectChat();
     reset();
     signOut();
+    navigate("/sign-in", { replace: true });
   };
 
   const initials = (user?.displayName || user?.username || "?")

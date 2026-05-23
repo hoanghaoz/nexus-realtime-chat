@@ -15,7 +15,7 @@
     "@emoji-mart/data": "^1.2.1",
     "@emoji-mart/react": "^1.1.1",
     "@fontsource-variable/geist": "^5.2.9",
-    "@hookform/resolvers": "^5.2.2",
+    "@hookform/resolvers": "^5.4.0",
     "@microsoft/signalr": "^10.0.0",
     "@tailwindcss/vite": "^4.3.0",
     "@vercel/analytics": "^2.0.1",

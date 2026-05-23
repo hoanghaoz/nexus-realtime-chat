@@ -1,4 +1,4 @@
-import { BrowserRouter, Route, Routes } from "react-router-dom";
+import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
 import SignIn from "./pages/SignIn";
 import SignUp from "./pages/SignUp";
 import { Toaster } from "sonner";
@@ -25,6 +25,8 @@ function App() {
   // Tuân thủ pattern của Moji App.tsx (connectSocket / disconnectSocket)
   useEffect(() => {
     if (accessToken) {
+      useAuthStore.getState().fetchProfile().catch(console.error);
+      
       connectChat().then(() => {
         // Fetch conversations sau khi kết nối thành công
         fetchConversations().then(() => {
@@ -52,11 +54,11 @@ function App() {
           {/* Public routes */}
           <Route path="/sign-in" element={<SignIn />} />
           <Route path="/sign-up" element={<SignUp />} />
-          <Route path="/" element={<ChatApp />} />
           {/* Protected routes – yêu cầu đăng nhập */}
           <Route element={<ProtectedRoute />}>
             <Route path="/" element={<ChatApp />} />
           </Route>
+          <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </BrowserRouter>
     </TooltipProvider>

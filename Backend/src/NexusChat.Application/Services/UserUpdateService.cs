@@ -27,7 +27,7 @@ public class UserUpdateService(IUserRepository userRepository) : IUserUpdateServ
             {
                 var daysRemaining = Math.Ceiling(14 - daysElapsed);
                 return Error.Validation("User.UpdateCooldown",
-                    $"You can only update your profile every 14 days. Please try again after {daysRemaining} day(s)");
+                $"You can only update your profile every 14 days. Please try again after {daysRemaining} day(s)");
             }
         }
         user.Avatar = dto.Avatar;

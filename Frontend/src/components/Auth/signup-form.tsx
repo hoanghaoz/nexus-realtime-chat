@@ -9,25 +9,18 @@ import {
 } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 
-import { z } from "zod";
-import { useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
+import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useAuthStore } from "@/stores/useAuthStore";
 
-// Định nghĩa schema cho form đăng ký
-// Lưu ý: Backend Nexus chỉ nhận { username, password }
-// các field còn lại (name, email) chỉ dùng trên UI để cải thiện UX
-const signUpSchema = z
-  .object({
-    username: z.string().min(4, "Username phải có ít nhất 4 kí tự."),
-    password: z.string().min(6, "Mật khẩu phải có ít nhất 6 kí tự."),
-    confirmPassword: z.string(),
-  })
-  .refine((data) => data.password === data.confirmPassword, {
-    message: "Mật khẩu không khớp",
-    path: ["confirmPassword"],
-  });
+type SignUpErrors = Partial<
+  Record<"username" | "password" | "confirmPassword", string>
+>;
+
+function getFormString(formData: FormData, key: string) {
+  const value = formData.get(key);
+  return typeof value === "string" ? value : "";
+}
 
 export function SignupForm({
   className,
@@ -35,26 +28,38 @@ export function SignupForm({
 }: React.ComponentProps<"div">) {
   const { signUp } = useAuthStore();
   const navigate = useNavigate();
+  const [errors, setErrors] = useState<SignUpErrors>({});
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const {
-    register,
-    handleSubmit,
-    formState: { errors, isSubmitting },
-  } = useForm<z.infer<typeof signUpSchema>>({
-    resolver: zodResolver(signUpSchema),
-    defaultValues: {
-      username: "",
-      password: "",
-      confirmPassword: "",
-    },
-  });
+  const onSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    const formData = new FormData(event.currentTarget);
+    const username = getFormString(formData, "username").trim();
+    const password = getFormString(formData, "password");
+    const confirmPassword = getFormString(formData, "confirmPassword");
+    const nextErrors: SignUpErrors = {};
 
-  const onSubmit = async (values: z.infer<typeof signUpSchema>) => {
+    if (username.length < 4) {
+      nextErrors.username = "Username phải có ít nhất 4 kí tự.";
+    }
+    if (password.length < 6) {
+      nextErrors.password = "Mật khẩu phải có ít nhất 6 kí tự.";
+    }
+    if (password !== confirmPassword) {
+      nextErrors.confirmPassword = "Mật khẩu không khớp";
+    }
+
+    setErrors(nextErrors);
+    if (Object.keys(nextErrors).length > 0) return;
+
     try {
-      await signUp(values.username, values.password);
+      setIsSubmitting(true);
+      await signUp(username, password);
       navigate("/sign-in"); // đăng ký xong → chuyển tới trang đăng nhập
     } catch {
       // Lỗi đã được xử lý bởi toast bên trong useAuthStore
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -65,19 +70,20 @@ export function SignupForm({
           <CardTitle className="text-xl">Đăng ký tài khoản</CardTitle>
         </CardHeader>
         <CardContent>
-          <form onSubmit={handleSubmit(onSubmit)}>
+          <form onSubmit={onSubmit}>
             <FieldGroup>
               <Field>
                 <FieldLabel htmlFor="username">Username</FieldLabel>
                 <Input
                   id="username"
+                  name="username"
                   type="text"
                   placeholder="nguyenvana"
-                  {...register("username")}
+                  autoComplete="username"
                 />
                 {errors.username && (
                   <p className="text-sm font-medium text-destructive">
-                    {errors.username.message}
+                    {errors.username}
                   </p>
                 )}
               </Field>
@@ -87,12 +93,13 @@ export function SignupForm({
                     <FieldLabel htmlFor="password">Mật khẩu</FieldLabel>
                     <Input
                       id="password"
+                      name="password"
                       type="password"
-                      {...register("password")}
+                      autoComplete="new-password"
                     />
                     {errors.password && (
                       <p className="text-sm font-medium text-destructive">
-                        {errors.password.message}
+                        {errors.password}
                       </p>
                     )}
                   </Field>
@@ -102,12 +109,13 @@ export function SignupForm({
                     </FieldLabel>
                     <Input
                       id="confirm-password"
+                      name="confirmPassword"
                       type="password"
-                      {...register("confirmPassword")}
+                      autoComplete="new-password"
                     />
                     {errors.confirmPassword && (
                       <p className="text-sm font-medium text-destructive">
-                        {errors.confirmPassword.message}
+                        {errors.confirmPassword}
                       </p>
                     )}
                   </Field>

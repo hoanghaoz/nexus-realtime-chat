@@ -13,6 +13,7 @@ import { useGroupStore } from "@/stores/useGroupStore";
 import { useFriendStore } from "@/stores/useFriendStore";
 import type { UserSearchResponse } from "@/services/userService";
 import { useChatStore } from "@/stores/useChatStore";
+import { cacheConversationParticipants } from "@/services/conversationService";
 
 interface Props {
   open: boolean;
@@ -91,17 +92,19 @@ export default function GroupInfoPanel({ open, onClose, conversation }: Props) {
   const handleAddMembers = async () => {
     if (!selectedToAdd.length) return;
     await addMembers(conversation._id, { participantIds: selectedToAdd.map((u) => u.id) });
+    const nextParticipants = [
+      ...conversation.participants,
+      ...selectedToAdd.map((u) => ({
+        _id: u.id,
+        displayName: u.displayName || u.username,
+        avatarUrl: u.avatarUrl ?? null,
+        joinedAt: new Date().toISOString(),
+      })),
+    ];
+    cacheConversationParticipants(conversation._id, nextParticipants);
     updateConversation({
       _id: conversation._id,
-      participants: [
-        ...conversation.participants,
-        ...selectedToAdd.map((u) => ({
-          _id: u.id,
-          displayName: u.displayName || u.username,
-          avatarUrl: u.avatarUrl ?? null,
-          joinedAt: new Date().toISOString(),
-        })),
-      ],
+      participants: nextParticipants,
     });
     setSelectedToAdd([]);
     setShowAddMember(false);
@@ -120,7 +123,13 @@ export default function GroupInfoPanel({ open, onClose, conversation }: Props) {
   const handleRemoveMember = async () => {
     if (!memberToRemove) return;
     const removed = await removeMember(conversation._id, memberToRemove._id);
-    if (removed) setMemberToRemove(null);
+    if (removed) {
+      const nextParticipants = conversation.participants.filter(
+        (p) => p._id !== memberToRemove._id
+      );
+      cacheConversationParticipants(conversation._id, nextParticipants);
+      setMemberToRemove(null);
+    }
   };
 
   // ────── Avatar helpers ──────

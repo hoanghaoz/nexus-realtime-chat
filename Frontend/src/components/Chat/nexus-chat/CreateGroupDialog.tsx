@@ -15,6 +15,7 @@ import { useFriendStore } from "@/stores/useFriendStore";
 import { useAuthStore } from "@/stores/useAuthStore";
 import { useChatStore } from "@/stores/useChatStore";
 import type { Conversation } from "@/types/chat";
+import { cacheConversationParticipants } from "@/services/conversationService";
 
 /**
  * CreateGroupDialog – Tạo nhóm mới.
@@ -95,6 +96,7 @@ export default function CreateGroupDialog() {
         updatedAt: createdAt,
       };
 
+      cacheConversationParticipants(conversation._id, conversation.participants);
       addConversation(conversation);
       setOpen(false);
       setName("");

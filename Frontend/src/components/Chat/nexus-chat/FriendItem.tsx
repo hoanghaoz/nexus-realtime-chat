@@ -1,21 +1,23 @@
 import type { FriendResponseDto } from "@/services/friendService";
 import { useChatStore } from "@/stores/useChatStore";
+import { useState } from "react";
 
 interface Props {
   friend: FriendResponseDto;
 }
 
 export default function FriendItem({ friend }: Readonly<Props>) {
-  const { setActiveConversation, conversations } = useChatStore();
+  const { startDirectChat } = useChatStore();
+  const [opening, setOpening] = useState(false);
 
-  const handleOpenChat = () => {
-    // Tìm conversation direct với người này nếu đã có
-    const existingConvo = conversations.find(
-      (c) =>
-        c.type === "direct" &&
-        c.participants.some((p) => p._id === friend.id)
-    );
-    if (existingConvo) setActiveConversation(existingConvo._id);
+  const handleOpenChat = async () => {
+    if (opening) return;
+    try {
+      setOpening(true);
+      await startDirectChat(friend);
+    } finally {
+      setOpening(false);
+    }
   };
 
   const initials = (friend.displayName || friend.username || "?")
@@ -28,10 +30,12 @@ export default function FriendItem({ friend }: Readonly<Props>) {
   return (
     <div
       className="bg-white dark:bg-slate-800/80 rounded-[20px] p-3.5 flex items-center justify-between shadow-[0_2px_10px_rgba(0,0,0,0.03)] border border-slate-100/60 dark:border-slate-700 cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-700/80 transition-colors group"
-      onClick={handleOpenChat}
+      onClick={() => void handleOpenChat()}
       role="button"
       tabIndex={0}
-      onKeyDown={(e) => e.key === "Enter" && handleOpenChat()}
+      onKeyDown={(e) => {
+        if (e.key === "Enter") void handleOpenChat();
+      }}
     >
       <div className="flex items-center gap-3">
         <div className="relative">
@@ -63,12 +67,13 @@ export default function FriendItem({ friend }: Readonly<Props>) {
       </div>
       <button
         className="p-1.5 rounded-full opacity-0 group-hover:opacity-100 transition-opacity hover:bg-slate-100 dark:hover:bg-slate-700"
-        onClick={(e) => { e.stopPropagation(); handleOpenChat(); }}
+        disabled={opening}
+        onClick={(e) => { e.stopPropagation(); void handleOpenChat(); }}
         title="Nhắn tin"
         type="button"
       >
         <span className="material-symbols-outlined text-slate-500 dark:text-slate-400 text-[20px]">
-          chat_bubble
+          {opening ? "progress_activity" : "chat_bubble"}
         </span>
       </button>
     </div>

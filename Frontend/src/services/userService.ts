@@ -1,5 +1,4 @@
 import api from "./api";
-import type { User } from "@/types/user";
 
 export interface UserProfileResponse {
   id: string;
@@ -37,10 +36,20 @@ export interface UserUpdateDto {
  *   PUT  /api/users/update        → { message: string }
  */
 export const userService = {
-  /** Lấy profile của user theo ID */
   getProfile: async (userId: string): Promise<UserProfileResponse> => {
     const res = await api.get(`/users/${userId}/profile`);
-    return res.data;
+    const data = res.data;
+    // Map backend DTO sang frontend DTO
+    return {
+      id: data.id || userId,
+      username: data.username,
+      displayName: data.username, // Backend UserName is used as display name
+      avatarUrl: data.avatar || data.avatarUrl || null,
+      bio: data.bio,
+      email: data.email,
+      phone: data.phone,
+      createdAt: data.createdAt
+    };
   },
 
   /** Tìm kiếm user theo tên/username */
@@ -51,7 +60,12 @@ export const userService = {
 
   /** Cập nhật thông tin cá nhân của user đang đăng nhập */
   updateProfile: async (dto: UserUpdateDto): Promise<{ message: string }> => {
-    const res = await api.put(`/users/update`, dto);
+    const payload = {
+      username: dto.displayName,
+      avatar: dto.avatarUrl,
+      status: 0 // Default
+    };
+    const res = await api.put(`/users/update`, payload);
     return res.data;
   },
 };

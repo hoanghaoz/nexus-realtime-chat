@@ -48,6 +48,11 @@ export const useFriendStore = create<FriendStoreState>((set, get) => ({
       set({ loading: true });
       const friends = await friendService.getFriendList();
       set({ friends });
+      try {
+        localStorage.setItem("friend-cache", JSON.stringify(friends));
+      } catch {
+        // ignore storage errors
+      }
     } catch (error) {
       console.error("Lỗi khi getFriends:", error);
       set({ friends: [] });
