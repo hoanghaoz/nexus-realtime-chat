@@ -16,3 +16,8 @@ public sealed record MessageResponseDto(
     DateTime? ReplyAt,
     DateTime? DeletedAt,
     DateTime? EditedAt);
+
+
+public sealed record MessageResultDto(
+    List<MessageResponseDto> Messages,
+    string? NextCursor);
