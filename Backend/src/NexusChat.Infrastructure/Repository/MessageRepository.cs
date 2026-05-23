@@ -17,32 +17,6 @@ public class MessageRepository(
     IMongoUnitOfWork mongoUnitOfWork)
     : GenericRepository<Message, string>(mongoDatabase, mongoUnitOfWork), IMessageRepository
 {
-    /// <summary>
-    ///     Apply Cursor Pagination to get message from conversation,
-    ///     if the cursor is null, it means that we are getting the latest messages,
-    ///     so we will order by createdAt descending and take 20 messages.
-    ///     Otherwise, we will get the messages that are created before the cursor and order by createdAt descending and take
-    ///     20 messages.
-    /// </summary>
-    /// <param name="conversationId"></param>
-    /// <param name="cursor"></param>
-    /// <param name="token"></param>
-    /// <returns></returns>
-    public async Task<List<MessageResponseDto>> GetMessageInConversationAsync(string conversationId,
-        DateTime? cursor, CancellationToken token)
-    {
-        var query = DbSet.AsQueryable();
-        query = cursor == null
-            ? query.Where(x => x.ConversationId.Equals(conversationId))
-            : query.Where(x => x.ConversationId.Equals(conversationId) && x.CreatedAt < cursor);
-
-        var messages = await query.OrderByDescending(x => x.CreatedAt).ThenByDescending(x => x.Id).Take(20)
-            .ToListAsync(token);
-
-        var response = messages.Select(m => m.MapMessageDto()).ToList();
-        return response;
-    }
-
     public async Task<MessageResponseDto> UpdateAttachmentAsync(string messageId,
         LinkPreviewAttachment linkPreviewAttachment, CancellationToken token)
     {
@@ -103,18 +77,6 @@ public class MessageRepository(
             .ToList();
     }
 
-    private static FileType? ResolveMediaType(string? type)
-    {
-        return type?.Trim().ToLowerInvariant() switch
-        {
-            "image" => FileType.Image,
-            "video" => FileType.Video,
-            "audio" => FileType.Audio,
-            "document" or "file" => FileType.Document,
-            _ => null
-        };
-    }
-    
     /// <summary>
     ///     Searches messages by keyword using MongoDB Text Index on Content.
     ///     Filters by conversation ID and excludes deleted or pending messages.
@@ -142,7 +104,7 @@ public class MessageRepository(
         return messages.Select(x => x.MapMessageDto()).ToList();
     }
 
-    
+
     /// <summary>
     ///     Retrieves all direct replies of a message in the same conversation.
     ///     Replies are ordered by creation time ascending.
@@ -161,5 +123,50 @@ public class MessageRepository(
             .ToListAsync(token);
 
         return messages.Select(x => x.MapMessageDto()).ToList();
+    }
+
+    /// <summary>
+    ///     Apply Cursor Pagination to get message from conversation,
+    ///     if the cursor is null, it means that we are getting the latest messages,
+    ///     so we will order by createdAt descending and take 20 messages.
+    ///     Otherwise, we will get the messages that are created before the cursor and order by createdAt descending and take
+    ///     20 messages.
+    /// </summary>
+    /// <param name="conversationId"></param>
+    /// <param name="cursor"></param>
+    /// <param name="messageId"></param>
+    /// <param name="fromUserId"></param>
+    /// <param name="token"></param>
+    /// <returns></returns>
+    public async Task<List<MessageResponseDto>> GetMessageInConversationAsync(string conversationId,
+        DateTime? cursor, string? messageId,string fromUserId ,CancellationToken token)
+    {
+        var query = DbSet.AsQueryable();
+        query = cursor == null
+            ? query.Where(x =>
+                x.ConversationId.Equals(conversationId) &&
+                (x.IsPending == false || (x.IsPending && x.FromUserId == fromUserId)))
+            : query.Where(x =>
+                x.ConversationId.Equals(conversationId) &&
+                 (x.IsPending == false || x.IsPending && x.FromUserId == fromUserId) &&
+                (x.CreatedAt < cursor || (x.CreatedAt == cursor && x.Id.CompareTo(messageId) < 0)));
+
+        var messages = await query.OrderByDescending(x => x.CreatedAt).ThenByDescending(x => x.Id).Take(20)
+            .ToListAsync(token);
+
+        var response = messages.Select(m => m.MapMessageDto()).ToList();
+        return response;
+    }
+
+    private static FileType? ResolveMediaType(string? type)
+    {
+        return type?.Trim().ToLowerInvariant() switch
+        {
+            "image" => FileType.Image,
+            "video" => FileType.Video,
+            "audio" => FileType.Audio,
+            "document" or "file" => FileType.Document,
+            _ => null
+        };
     }
 }

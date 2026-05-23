@@ -32,19 +32,20 @@ public class MessageController(
     ///     User must be a member of the conversation to retrieve its messages.
     /// </remarks>
     /// <param name="messageRequestDto">Request containing conversation ID and optional cursor for pagination.</param>
+    /// <param name="nextCursor"></param>
     /// <param name="token">Cancellation token for the request.</param>
     /// <response code="200">Success; returns list of messages from the conversation.</response>
     /// <response code="404">Not found; conversation does not exist or user is not a member.</response>
     /// <response code="500">Internal server error; failed to retrieve messages.</response>
     /// <returns>An action result containing the list of messages on success, or an error message on failure.</returns>
     [HttpGet("conversation-messages")]
-    public async Task<IActionResult> GetMessagesFromConversation([FromQuery] MessageRequestDto messageRequestDto,
-        CancellationToken token)
+    public async Task<IActionResult> GetMessagesFromConversation([FromQuery] GetMessageRequestDto messageRequestDto,
+        [FromQuery] string? nextCursor,CancellationToken token)
     {
         var fromUserId = User.FindFirstValue(ClaimTypes.NameIdentifier);
         if (fromUserId == null)
             return Unauthorized("You are not authorized to access this resource. Please log in and try again.");
-        var result = await messageService.GetMessageInConversationAsync(messageRequestDto, fromUserId, token);
+        var result = await messageService.GetMessageInConversationAsync(messageRequestDto, fromUserId,nextCursor ,token);
 
         var response = result.Match<IActionResult>(
             messages => Ok(messages),
@@ -230,8 +231,8 @@ public class MessageController(
             });
         return response;
     }
-    
-    
+
+
     /// <summary>
     ///     Searches messages in a conversation by keyword.
     /// </summary>
@@ -248,39 +249,39 @@ public class MessageController(
     /// <response code="500">Internal server error; failed to search messages.</response>
     /// <returns>An action result containing matched messages on success, or an error message on failure.</returns>
     [HttpGet("search")]
-public async Task<IActionResult> SearchMessages(
-    [FromQuery] MessageSearchRequestDto request,
-    CancellationToken token)
-{
-    var fromUserId = User.FindFirstValue(ClaimTypes.NameIdentifier);
-    if (string.IsNullOrEmpty(fromUserId))
-        return Unauthorized(new { message = "Invalid token or user not logged in." });
+    public async Task<IActionResult> SearchMessages(
+        [FromQuery] MessageSearchRequestDto request,
+        CancellationToken token)
+    {
+        var fromUserId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        if (string.IsNullOrEmpty(fromUserId))
+            return Unauthorized(new { message = "Invalid token or user not logged in." });
 
-    var result = await messageService.SearchMessagesByKeywordAsync(request, fromUserId, token);
+        var result = await messageService.SearchMessagesByKeywordAsync(request, fromUserId, token);
 
-    return result.Match<IActionResult>(
-        messages => Ok(messages),
-        errors => errors[0].Code switch
-        {
-            "User.Unauthorized" => Unauthorized(new
+        return result.Match<IActionResult>(
+            messages => Ok(messages),
+            errors => errors[0].Code switch
             {
-                message = "Bạn không thuộc nhóm này",
-                description = errors[0].Description
-            }),
-            "Message.KeywordRequired" => BadRequest(new
-            {
-                message = "Hãy nhập từ khóa",
-                description = errors[0].Description
-            }),
-            _ => StatusCode(StatusCodes.Status500InternalServerError, new
-            {
-                message = "Đã xảy ra lỗi trong quá trình tìm kiếm tin nhắn",
-                description = errors[0].Description
-            })
-        });
-}
+                "User.Unauthorized" => Unauthorized(new
+                {
+                    message = "Bạn không thuộc nhóm này",
+                    description = errors[0].Description
+                }),
+                "Message.KeywordRequired" => BadRequest(new
+                {
+                    message = "Hãy nhập từ khóa",
+                    description = errors[0].Description
+                }),
+                _ => StatusCode(StatusCodes.Status500InternalServerError, new
+                {
+                    message = "Đã xảy ra lỗi trong quá trình tìm kiếm tin nhắn",
+                    description = errors[0].Description
+                })
+            });
+    }
 
-    
+
     /// <summary>
     ///     Retrieves original message and all direct replies of that message.
     /// </summary>
@@ -295,36 +296,36 @@ public async Task<IActionResult> SearchMessages(
     /// <response code="404">Not found; original message does not exist.</response>
     /// <response code="500">Internal server error; failed to retrieve message thread.</response>
     /// <returns>An action result containing the message thread on success, or an error message on failure.</returns>
-[HttpGet("{messageId}/thread")]
-public async Task<IActionResult> GetMessageThread(
-    string messageId,
-    CancellationToken token)
-{
-    var fromUserId = User.FindFirstValue(ClaimTypes.NameIdentifier);
-    if (string.IsNullOrEmpty(fromUserId))
-        return Unauthorized(new { message = "Invalid token or user not logged in." });
+    [HttpGet("{messageId}/thread")]
+    public async Task<IActionResult> GetMessageThread(
+        string messageId,
+        CancellationToken token)
+    {
+        var fromUserId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        if (string.IsNullOrEmpty(fromUserId))
+            return Unauthorized(new { message = "Invalid token or user not logged in." });
 
-    var result = await messageService.GetMessageThreadAsync(messageId, fromUserId, token);
+        var result = await messageService.GetMessageThreadAsync(messageId, fromUserId, token);
 
-    return result.Match<IActionResult>(
-        thread => Ok(thread),
-        errors => errors[0].Code switch
-        {
-            "Message.NotFound" => NotFound(new
+        return result.Match<IActionResult>(
+            thread => Ok(thread),
+            errors => errors[0].Code switch
             {
-                message = "Không tìm thấy tin nhắn",
-                description = errors[0].Description
-            }),
-            "User.Unauthorized" => Unauthorized(new
-            {
-                message = "Bạn không thuộc nhóm này",
-                description = errors[0].Description
-            }),
-            _ => StatusCode(StatusCodes.Status500InternalServerError, new
-            {
-                message = "Đã xảy ra lỗi trong quá trình tìm kiếm tin nhắn",
-                description = errors[0].Description
-            })
-        });
-}
+                "Message.NotFound" => NotFound(new
+                {
+                    message = "Không tìm thấy tin nhắn",
+                    description = errors[0].Description
+                }),
+                "User.Unauthorized" => Unauthorized(new
+                {
+                    message = "Bạn không thuộc nhóm này",
+                    description = errors[0].Description
+                }),
+                _ => StatusCode(StatusCodes.Status500InternalServerError, new
+                {
+                    message = "Đã xảy ra lỗi trong quá trình tìm kiếm tin nhắn",
+                    description = errors[0].Description
+                })
+            });
+    }
 }
