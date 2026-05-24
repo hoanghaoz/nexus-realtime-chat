@@ -9,7 +9,7 @@ namespace NexusChat.Application.Interfaces.MessageInterface;
 public interface IMessageRepository : IGenericRepository<Message, string>
 {
     Task<List<MessageResponseDto>> GetMessageInConversationAsync(string conversationId, DateTime? cursor,
-        CancellationToken token);
+        string? publicMessageId,string fromUserId ,CancellationToken token);
 
     Task<MessageResponseDto> UpdateAttachmentAsync(string messageId, LinkPreviewAttachment linkPreviewAttachment,
         CancellationToken token);
@@ -21,6 +21,7 @@ public interface IMessageRepository : IGenericRepository<Message, string>
     // Media
     Task<List<GetMediaResponseDto>> GetMediaByConversationIdAsync(
         string conversationId, string? type, int skip, int limit, CancellationToken token);
+
     Task<List<MessageResponseDto>> SearchMessagesByKeywordAsync(
         string conversationId,
         string keyword,

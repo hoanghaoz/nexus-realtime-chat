@@ -5,8 +5,8 @@ namespace NexusChat.Application.Interfaces.MessageInterface;
 
 public interface IMessageService
 {
-    Task<ErrorOr<List<MessageResponseDto>>> GetMessageInConversationAsync(MessageRequestDto dto, string fromUserId,
-        CancellationToken token);
+    Task<ErrorOr<MessageResultDto>> GetMessageInConversationAsync(GetMessageRequestDto dto, string fromUserId,
+        string? cursor, CancellationToken token);
 
     Task<ErrorOr<MessageResponseDto>> EditMessageContentAsync(EditMessageRequestDto dto, string fromUserId,
         string messageId
@@ -22,7 +22,7 @@ public interface IMessageService
 
     Task<ErrorOr<MessageResponseDto>> CompletePendingMessageAsync(string messageId, string fromUserId,
         CancellationToken token);
-    
+
     Task<ErrorOr<List<MessageResponseDto>>> SearchMessagesByKeywordAsync(
         MessageSearchRequestDto dto,
         string fromUserId,

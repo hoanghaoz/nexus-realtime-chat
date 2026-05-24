@@ -28,11 +28,21 @@ public class ConversationService(
         if (conversations.Count == 0) return new List<ConversationResponse>();
 
         var onlineUserIds = await presenceTracker.GetOnlineUsers();
+        
+        var directChatUserIds = conversations
+            .Where(c => c.RoomType == RoomType.Direct)
+            .SelectMany(c => c.Participants)
+            .Where(p => p.UserId != userId)
+            .Select(p => p.UserId)
+            .Distinct()
+            .ToList();
+        
+        var userDictionary = await userRepository.GetListUserAsync(directChatUserIds, token);
 
         var response = new List<ConversationResponse>(conversations.Count);
         foreach (var conversation in conversations)
         {
-            response.Add(await MapConversationResponseAsync(conversation, userId, onlineUserIds, token));
+            response.Add(MapConversationResponseAsync(conversation, userId, onlineUserIds, userDictionary));
         }
 
         return response;
@@ -73,35 +83,23 @@ public class ConversationService(
         }
 
         var onlineUserIds = await presenceTracker.GetOnlineUsers();
-        var participants = new List<ParticipantResponse>();
-        
-        foreach (var p in conversation.Participants)
-        {
-            var user = await userRepository.GetByIdAsync(p.UserId, token);
-            participants.Add(new ParticipantResponse(
-                UserId: p.UserId,
-                DisplayName: user?.UserName ?? p.UserId,
-                DisplayAvatar: user?.Avatar ?? "",
-                IsOnline: onlineUserIds.Contains(p.UserId),
-                Role: p.Role.ToString()
-            ));
-        }
+        var participantUserIds = conversation.Participants.Select(p => p.UserId).ToList();
+        var participants = await MapParticipantResponses(participantUserIds, conversation,onlineUserIds,token);
 
         var lastMessage = conversation.LastMessage is null
             ? null
             : new LastMessagePreviewResponse(conversation.LastMessage.Content, conversation.LastMessage.CreatedAt);
 
-        string displayName = conversation.Name;
-        string? displayAvatar = null;
+        var displayName = conversation.Name; 
+        var displayAvatar = conversation.Avatar;
 
         if (conversation.RoomType == RoomType.Direct)
         {
-            var otherParticipant = conversation.Participants.FirstOrDefault(p => p.UserId != currentUserId);
+            var otherParticipant = participants.FirstOrDefault(p => p.UserId != currentUserId);
             if (otherParticipant != null)
             {
-                var otherUser = await userRepository.GetByIdAsync(otherParticipant.UserId, token);
-                displayName = otherUser?.UserName ?? conversation.Name;
-                displayAvatar = otherUser?.Avatar;
+                displayName = otherParticipant?.DisplayName ?? conversation.Name;
+                displayAvatar = otherParticipant?.DisplayAvatar;
             }
         }
 
@@ -117,11 +115,11 @@ public class ConversationService(
     }
 
 
-    private async Task<ConversationResponse> MapConversationResponseAsync(
+    private static ConversationResponse MapConversationResponseAsync(
         Conversation conversation,
         string currentUserId,
         IReadOnlyCollection<string> onlineUserIds,
-        CancellationToken token)
+        Dictionary<string,User> userDictionary)
     {
         var lastMessage = conversation.LastMessage is null
             ? null
@@ -143,7 +141,7 @@ public class ConversationService(
                     Role: GetCurrentUserRole(conversation, currentUserId));
             }
             // Get Information of the other participant to display in the conversation list (e.g., their name and avatar)
-            var otherUser = await userRepository.GetByIdAsync(otherParticipant.UserId, token);
+            var otherUser = userDictionary.GetValueOrDefault(otherParticipant.UserId);
             return new ConversationResponse(
                 ConversationId: conversation.Id,
                 TypeRoom: conversation.RoomType,
@@ -178,5 +176,21 @@ public class ConversationService(
         return string.Equals(conversation.CreatedBy, currentUserId, StringComparison.Ordinal)
             ? "admin"
             : "member";
+    }
+    
+    private async Task<List<ParticipantResponse>> MapParticipantResponses(List<string> userIds,Conversation conversation,string[] onlineUserIds,CancellationToken token)
+    {
+        var userDictionary = await userRepository.GetListUserAsync(userIds, token);
+        var response = userIds.Select(u =>
+        {
+            var user = userDictionary.GetValueOrDefault(u);
+            return new ParticipantResponse(
+                UserId: u,
+                DisplayName: user?.UserName ?? "Unknown",
+                DisplayAvatar: user?.Avatar ?? "",
+                IsOnline: onlineUserIds.Contains(u),
+                Role: GetCurrentUserRole(conversation, u));
+        }).ToList();
+        return response;
     }
 }
