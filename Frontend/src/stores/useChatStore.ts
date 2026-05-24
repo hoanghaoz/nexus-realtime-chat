@@ -41,11 +41,29 @@ export const useChatStore = create<ChatState>()(
           loading: false,
         }),
 
-      /** Lấy chi tiết conversation để load danh sách member (đặc biệt cho nhóm) */
-      fetchConversationDetail: async (conversationId: string) => {
+      /** Lấy chi tiết conversation để load danh sách member và lastMessage */
+      fetchConversationDetail: async (conversationId: string): Promise<void> => {
         try {
-          const conversation = await conversationService.fetchConversationDetail(conversationId);
-          get().updateConversation(conversation);
+          const res = await conversationService.fetchConversationDetail(conversationId);
+          // Merge vào store: giữ nguyên type từ list (không bị ghi đè)
+          // chỉ cập nhật participants, lastMessage, group name
+          set((state) => ({
+            conversations: state.conversations.map((c) => {
+              if (c._id !== conversationId) return c;
+              return {
+                ...c,
+                type: res.type, // Update type in case it's a fallback direct chat
+                directUserId: res.directUserId || c.directUserId,
+                participants: res.participants.length > 0 ? res.participants : c.participants,
+                lastMessage: res.lastMessage ?? c.lastMessage,
+                lastMessageAt: res.lastMessageAt || c.lastMessageAt,
+                group: {
+                  ...c.group,
+                  name: res.group?.name || c.group?.name || "",
+                },
+              };
+            }),
+          }));
         } catch (error) {
           console.error("Lỗi khi fetchConversationDetail:", error);
         }
@@ -55,8 +73,37 @@ export const useChatStore = create<ChatState>()(
       fetchConversations: async () => {
         try {
           set({ convoLoading: true });
-          const conversations = await conversationService.fetchConversations();
-          set({ conversations }); // Overwrite with fresh data from API
+          const newConversations = await conversationService.fetchConversations();
+          
+          set((state) => {
+            const oldMap = new Map(state.conversations.map(c => [c._id, c]));
+            const merged = newConversations.map(c => {
+               const old = oldMap.get(c._id);
+               // Preserve "direct" type, directUserId, and participants from previous fetchConversationDetail
+               if (old && old.type === "direct") {
+                 return { 
+                   ...c, 
+                   type: "direct" as "direct", 
+                   directUserId: old.directUserId, 
+                   participants: old.participants.length > 0 ? old.participants : c.participants
+                 };
+               }
+               // Keep old participants if the new one doesn't have them
+               if (old && c.participants.length === 0 && old.participants.length > 0) {
+                 return { ...c, participants: old.participants };
+               }
+               return c;
+            });
+            return { conversations: merged };
+          });
+
+          // Fetch detail cho những conversation chưa có thông tin participants (mới e.g. từ SignalR)
+          const { conversations, fetchConversationDetail } = get();
+          for (const conv of conversations) {
+            if (conv.type === "group" && (!conv.participants || conv.participants.length === 0)) {
+              fetchConversationDetail(conv._id).catch(console.error);
+            }
+          }
         } catch (error) {
           console.error("Lỗi khi fetchConversations:", error);
         } finally {
@@ -64,20 +111,16 @@ export const useChatStore = create<ChatState>()(
         }
       },
 
-      /** Mở hoặc tạo hội thoại riêng với bạn bè */
+      /** Mở hoặc tạo hội thoại riêng với bạn bè (không tạo trùng) */
       startDirectChat: async (friend: FriendResponseDto) => {
+        // Kiểm tra bằng directUserId (chính xác nhất)
         const existingConvo = get().conversations.find(
           (c) =>
-            c.type === "direct" &&
-            (c.directUserId === friend.id ||
-              c.participants.some((p) => p._id === friend.id) ||
-              c.participants.some(
-                (p) =>
-                  p.displayName === friend.displayName ||
-                  p.displayName === friend.username
-              ) ||
-              c.group?.name === friend.displayName ||
-              c.group?.name === friend.username)
+            (c.type === "direct" || (c.type === "group" && c.participants.length === 2)) &&
+            (
+              c.directUserId === friend.id ||
+              c.participants.some((p) => p._id === friend.id)
+            )
         );
 
         if (existingConvo) {
@@ -87,9 +130,16 @@ export const useChatStore = create<ChatState>()(
 
         try {
           set({ convoLoading: true });
-          const conversation =
-            await conversationService.createDirectConversation(friend);
-          get().addConversation(conversation);
+          const conversation = await conversationService.createDirectConversation(friend);
+
+          // Backend có thể trả về conversation đã tồn tại (idempotent)
+          // Nếu đã có trong store rồi thì chỉ cần active lên, không thêm mới
+          const alreadyInStore = get().conversations.find((c) => c._id === conversation._id);
+          if (alreadyInStore) {
+            set({ activeConversationId: conversation._id });
+          } else {
+            get().addConversation(conversation);
+          }
         } catch (error) {
           console.error("Lỗi khi startDirectChat:", error);
           toast.error("Không thể mở hội thoại riêng. Vui lòng thử lại!");
@@ -131,6 +181,53 @@ export const useChatStore = create<ChatState>()(
               },
             };
           });
+
+          // Backend hardcode Take(20) nên lần đầu mở conversation ta tự load thêm 2 trang nữa
+          // để có ít nhất ~60 tin nhắn, đảm bảo trải nghiệm không bị cụt
+          const isFirstLoad = !current; // current === undefined nghĩa là chưa load lần nào
+          if (isFirstLoad && cursor) {
+            // Load trang 2
+            const page2 = await conversationService.fetchMessages(convoId, cursor);
+            set((state) => {
+              const existing = state.messages[convoId]?.items ?? [];
+              const combined = [...page2.messages, ...existing];
+              const merged = combined
+                .filter((m, idx, arr) => arr.findIndex((x) => x._id === m._id) === idx)
+                .sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime());
+              return {
+                messages: {
+                  ...state.messages,
+                  [convoId]: {
+                    items: merged,
+                    hasMore: !!page2.nextCursor,
+                    nextCursor: page2.nextCursor ?? null,
+                  },
+                },
+              };
+            });
+
+            // Load trang 3 nếu vẫn còn
+            if (page2.nextCursor) {
+              const page3 = await conversationService.fetchMessages(convoId, page2.nextCursor);
+              set((state) => {
+                const existing = state.messages[convoId]?.items ?? [];
+                const combined = [...page3.messages, ...existing];
+                const merged = combined
+                  .filter((m, idx, arr) => arr.findIndex((x) => x._id === m._id) === idx)
+                  .sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime());
+                return {
+                  messages: {
+                    ...state.messages,
+                    [convoId]: {
+                      items: merged,
+                      hasMore: !!page3.nextCursor,
+                      nextCursor: page3.nextCursor ?? null,
+                    },
+                  },
+                };
+              });
+            }
+          }
         } catch (error) {
           console.error("Lỗi khi fetchMessages:", error);
         } finally {
@@ -200,6 +297,8 @@ export const useChatStore = create<ChatState>()(
                   ? {
                       ...c,
                       ...conversation,
+                      // Bảo vệ type: "direct" nếu nó đã là direct chat, tránh bị fallback đè lên
+                      type: existing.type === "direct" ? "direct" : conversation.type,
                       participants: shouldKeepExistingParticipants
                         ? existing.participants
                         : conversation.participants,

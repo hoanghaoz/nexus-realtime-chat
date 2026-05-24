@@ -25,4 +25,16 @@ public class ConversationRepository(
                 cancellationToken: token)
             .Result.AnyAsync(token);
     }
+
+    public async Task<Conversation?> FindDirectConversationAsync(string userId1, string userId2, CancellationToken token)
+    {
+        // Find a conversation that is RoomType.Direct and contains BOTH users
+        var filter = Builders<Conversation>.Filter.And(
+            Builders<Conversation>.Filter.Eq(c => c.RoomType, NexusChat.Domain.Enum.RoomType.Direct),
+            Builders<Conversation>.Filter.ElemMatch(c => c.Participants, p => p.UserId == userId1),
+            Builders<Conversation>.Filter.ElemMatch(c => c.Participants, p => p.UserId == userId2)
+        );
+        var cursor = await DbSet.FindAsync(filter, cancellationToken: token);
+        return await cursor.FirstOrDefaultAsync(token);
+    }
 }

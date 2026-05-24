@@ -9,6 +9,7 @@ export interface AuthState {
 
   setAccessToken: (accessToken: string) => void;
   setUser: (user: User | null) => void;
+  updateProfile: (data: any) => Promise<void>;
   fetchProfile: () => Promise<void>;
   /** Đăng ký – Nexus chỉ cần username + password */
   signUp: (username: string, password: string) => Promise<void>;

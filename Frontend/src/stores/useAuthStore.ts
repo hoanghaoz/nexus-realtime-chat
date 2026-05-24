@@ -74,6 +74,22 @@ export const useAuthStore = create<AuthState>()(
 
       setUser: (user) => set({ user }),
 
+      /** Cập nhật profile (avatar, displayName) qua API */
+      updateProfile: async (data) => {
+        try {
+          set({ loading: true });
+          const { userService } = await import("@/services/userService");
+          await userService.updateProfile(data);
+          // Fetch lại profile để đồng bộ state với DB
+          await get().fetchProfile();
+        } catch (error) {
+          console.error("updateProfile error:", error);
+          throw error;
+        } finally {
+          set({ loading: false });
+        }
+      },
+
       clearState: () => {
         set({ accessToken: null, user: null, loading: false });
         try {

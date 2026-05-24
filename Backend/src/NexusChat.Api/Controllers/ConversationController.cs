@@ -150,5 +150,37 @@ public class ConversationController(
 
         return response;
     }
+
+    /// <summary>
+    ///     Creates a new direct conversation or returns an existing one.
+    /// </summary>
+    /// <param name="dto">The target user ID.</param>
+    /// <param name="token">Cancellation token for the request.</param>
+    /// <returns>An action result containing the conversation detail.</returns>
+    [HttpPost("direct")]
+    public async Task<IActionResult> CreateDirectConversation([FromBody] CreateDirectConversationRequestDto dto, CancellationToken token)
+    {
+        var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        if (string.IsNullOrEmpty(userId))
+            return Unauthorized(new { message = "Invalid token or user not logged in." });
+
+        if (string.IsNullOrEmpty(dto.TargetUserId))
+            return BadRequest(new { message = "TargetUserId is required." });
+
+        if (userId == dto.TargetUserId)
+            return BadRequest(new { message = "Cannot create direct conversation with yourself." });
+
+        var result = await conversationService.CreateDirectConversationAsync(userId, dto.TargetUserId, token);
+
+        var response = result.Match<IActionResult>(
+            groupResp => Ok(groupResp),
+            errors => errors[0].Code switch
+            {
+                "Conversation.UserNotFound" => NotFound(new { message = "User not found.", description = errors[0].Description }),
+                _ => StatusCode(StatusCodes.Status500InternalServerError, new { message = "An error occurred.", description = errors[0].Description })
+            });
+
+        return response;
+    }
 }
 
