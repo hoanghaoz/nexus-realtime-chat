@@ -144,6 +144,53 @@ public class ChatBotService(
         }
     }
 
+    public async Task<ErrorOr<ChatMessageContent>> AnswerMessageInConversationAsync(string conversationId, string userId, CancellationToken token)
+    {
+        var conversationDetail = await conversationService.GetConversationDetailAsync(conversationId, userId, token);
+        if (conversationDetail.IsError)
+            return conversationDetail.Errors;
+
+        var messages = await messageRepository.GetMessagesForBotDataAsync(conversationId, 25, token);
+
+        var executionSettings = BuildSetting();
+
+        var systemPrompt = SystemPrompt.GeneralAssistantPrompt();
+        var chat = new ChatHistory(systemPrompt);
+
+        var content = new StringBuilder();
+        foreach (var message in messages)
+        {
+            var senderName = conversationDetail.Value.Participants.FirstOrDefault(p => p.UserId == message.FromUserId)
+                ?.DisplayName ?? "Unknown";
+            var attachments = message.Attachments.Select(ob => ob switch
+            {
+                FileAttachment file => $"[File Attachment] Name: {file.FileName}, Type: {file.FileType}",
+                LinkPreviewAttachment link => $"[Link Preview] Title: {link.Title}",
+                _ => "[Unknown Attachment]"
+            }).ToList();
+
+            if (attachments.Count == 0)
+            {
+                content.Append($"[{message.CreatedAt:HH:mm}]: {senderName}: {message.Content} \n");
+            }
+            else
+            {
+                var attachmentsString = string.Join(", ", attachments);
+                content.Append(
+                    $"[{message.CreatedAt:HH:mm}]: {senderName}: {message.Content},{attachmentsString} \n");
+            }
+        }
+
+        chat.AddUserMessage(content.ToString());
+
+        var response = await chatCompletionService.GetChatMessageContentAsync(
+            chat,
+            executionSettings,
+            cancellationToken: token);
+
+        return response;
+    }
+
     private static OpenAIPromptExecutionSettings BuildSetting()
     {
         return new OpenAIPromptExecutionSettings

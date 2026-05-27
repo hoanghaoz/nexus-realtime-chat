@@ -11,4 +11,7 @@ public interface IChatBotService
 
     Task<ErrorOr<RemindDataDto>> RemindInConversationAsync(string conversationId, string parentMessageId,
         CancellationToken token);
+
+    Task<ErrorOr<ChatMessageContent>> AnswerMessageInConversationAsync(string conversationId, string userId,
+        CancellationToken token);
 }
