@@ -57,6 +57,11 @@ public class ChatBotAssistantWorker(
                         await SendBotRemind(response, messageRepository, reminderRepository, requestBot, botId,
                             messageError, stoppingToken);
                         break;
+                    
+                    default:
+                        var answer = await chatBotService.AnswerMessageInConversationAsync(requestBot.ConversationId, requestBot.UserId, stoppingToken);
+                        await SendBotReply(answer, messageError, requestBot, messageRepository, botId, stoppingToken);
+                        break;
                 }
 
                 parentMessage.ReplyCount += 1;

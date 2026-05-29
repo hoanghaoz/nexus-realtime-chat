@@ -1,4 +1,3 @@
-using System.Diagnostics.CodeAnalysis;
 using ErrorOr;
 using NexusChat.Application.DTOs.ChatBot;
 using NexusChat.Application.DTOs.Media;
@@ -32,7 +31,7 @@ public class MessageService(
         if (!isValidUser) return Error.Unauthorized("User.Unauthorized", "You are not a member of this conversation.");
         var nextCursor = cursor.ConvertToCursor();
         var response = await messageRepository.GetMessageInConversationAsync(dto.ConversationId,
-            nextCursor?.CreatedAt, nextCursor?.MessageId,fromUserId ,token);
+            nextCursor?.CreatedAt, nextCursor?.MessageId, fromUserId, token);
         var result = new MessageResultDto(response, response.Count != 0
             ? $"{response.LastOrDefault()?.CreatedAt:o}_{response.LastOrDefault()?.MessageId}".ConvertToBase64()
             : null);
@@ -160,13 +159,22 @@ public class MessageService(
                     ChatBotRegex.MissionSummarize
                 ), token);
                 break;
+            case ChatBotRegex.MissionRemind:
+                await chatBotQueue.EnqueueAsync(new ChatBotRequestDto(
+                    message.ConversationId,
+                    fromUserId,
+                    message.Id,
+                    dto.Content,
+                    ChatBotRegex.MissionRemind
+                ), token);
+                break;
             default:
                 await chatBotQueue.EnqueueAsync(new ChatBotRequestDto(
                     message.ConversationId,
                     fromUserId,
                     message.Id,
                     dto.Content,
-                    string.Empty
+                    ChatBotRegex.MissionNone
                 ), token);
                 break;
         }
