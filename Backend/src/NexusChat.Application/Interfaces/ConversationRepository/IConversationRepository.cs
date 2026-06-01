@@ -8,4 +8,6 @@ public interface IConversationRepository : IGenericRepository<Conversation, stri
     Task<List<Conversation>> GetUserConversationsAsync(string userId, CancellationToken token);
 
     Task<bool> IsUserInConversationAsync(string conversationId, string userId, CancellationToken token);
+
+    Task<Conversation?> FindDirectConversationAsync(string userId1, string userId2, CancellationToken token);
 }

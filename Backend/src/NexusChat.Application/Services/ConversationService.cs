@@ -12,7 +12,8 @@ namespace NexusChat.Application.Services;
 public class ConversationService(
     IUserRepository userRepository,
     IConversationRepository conversationRepository,
-    IPresenceTracker presenceTracker)
+    IPresenceTracker presenceTracker,
+    IRealtimeNotification realtimeNotification)
     : IConversationService
 {
     public async Task<ErrorOr<List<ConversationResponse>>> GetConversationListAsync(string userId,
@@ -191,6 +192,65 @@ public class ConversationService(
                 IsOnline: onlineUserIds.Contains(u),
                 Role: GetCurrentUserRole(conversation, u));
         }).ToList();
+        return response;
+    }
+
+    public async Task<ErrorOr<NexusChat.Application.DTOs.Rooms.GroupResponseDto>> CreateDirectConversationAsync(string creatorId, string targetUserId, CancellationToken token)
+    {
+        var user = await userRepository.GetByIdAsync(creatorId, token);
+        var targetUser = await userRepository.GetByIdAsync(targetUserId, token);
+
+        if (user is null || targetUser is null)
+        {
+            return Error.NotFound("Conversation.UserNotFound", "User was not found.");
+        }
+
+        // Check if direct conversation already exists
+        var existingConversation = await conversationRepository.FindDirectConversationAsync(creatorId, targetUserId, token);
+        if (existingConversation != null)
+        {
+            return new NexusChat.Application.DTOs.Rooms.GroupResponseDto
+            {
+                Id = existingConversation.Id,
+                Name = existingConversation.Name,
+                RoomType = existingConversation.RoomType,
+                CreatedBy = existingConversation.CreatedBy,
+                CreatedAt = existingConversation.CreatedAt
+            };
+        }
+
+        // Create new direct conversation
+        var participants = new List<NexusChat.Domain.Entity.EmbeddedObject.Participant>
+        {
+            new() { UserId = creatorId, Role = NexusChat.Domain.Enum.ParticipantRole.Member, JoinedAt = DateTime.UtcNow },
+            new() { UserId = targetUserId, Role = NexusChat.Domain.Enum.ParticipantRole.Member, JoinedAt = DateTime.UtcNow }
+        };
+
+        var newConversation = new Conversation
+        {
+            Id = Guid.NewGuid().ToString(),
+            Name = "", // Direct chats don't need a name
+            RoomType = RoomType.Direct,
+            CreatedBy = creatorId,
+            Participants = participants,
+            CreatedAt = DateTime.UtcNow,
+            UpdatedAt = DateTime.UtcNow
+        };
+
+        await conversationRepository.AddAsync(newConversation, token);
+
+        var response = new NexusChat.Application.DTOs.Rooms.GroupResponseDto
+        {
+            Id = newConversation.Id,
+            Name = newConversation.Name,
+            RoomType = newConversation.RoomType,
+            CreatedBy = newConversation.CreatedBy,
+            CreatedAt = newConversation.CreatedAt
+        };
+
+        var allUserIdsToNotify = new List<string> { creatorId, targetUserId };
+        await realtimeNotification.NotifyAddedToGroupAsync(allUserIdsToNotify, response, token);
+
         return response;
     }
 }

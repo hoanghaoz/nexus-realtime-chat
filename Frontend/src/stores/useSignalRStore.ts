@@ -111,11 +111,14 @@ export const useSignalRStore = create<SignalRState>((set, get) => ({
 
         if (!id) return;
 
+        const roomType = rawPayload.roomType || rawPayload.RoomType;
+        const isDirect = roomType === 1 || roomType === "Direct" || roomType === "direct";
+
         // Backend trả về GroupResponseDto (có id, name, roomType, createdBy)
         // Cần map sang cấu trúc Conversation của Frontend
         const conversation: Conversation = {
           _id: id,
-          type: "group",
+          type: isDirect ? "direct" : "group",
           group: {
             name,
             createdBy,

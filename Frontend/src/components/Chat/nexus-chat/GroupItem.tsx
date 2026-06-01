@@ -22,6 +22,7 @@ export default function GroupItem({ conversation }: Readonly<Props>) {
 
   const isActive = activeConversationId === conversation._id;
   const isGroup = conversation.type === "group";
+
   const groupName = isGroup
     ? conversation.group?.name ?? "Nhóm"
     : (() => {
@@ -39,14 +40,31 @@ export default function GroupItem({ conversation }: Readonly<Props>) {
         ? lastMsg.content.slice(0, 30) + "..."
         : lastMsg.content
       : "📷 Hình ảnh"
-    : "Chưa có tin nhắn";
+    : "";
 
   const displayTime = conversation.lastMessageAt
     ? timeAgo(conversation.lastMessageAt)
     : "";
 
-  // Stacked avatars – lấy tối đa 3 participants đầu
-  const avatarParticipants = (conversation.participants || []).slice(0, 3);
+  // Avatar logic:
+  // - Direct chat: chỉ hiện avatar của người kia (1 avatar)
+  // - Group chat: stack avatar tối đa 3 người (không gồm bản thân)
+  const avatarParticipants = isGroup
+    ? (conversation.participants || []).filter((p) => p._id !== user?._id).slice(0, 3)
+    : (conversation.participants || []).filter(
+        (p) => p._id !== user?._id && !p._id.startsWith("self")
+      ).slice(0, 1);
+
+  // Nếu là direct mà không lọc được người kia, fallback sang tất cả participants
+  const displayAvatars =
+    avatarParticipants.length > 0
+      ? avatarParticipants
+      : (conversation.participants || []).slice(0, isGroup ? 3 : 1);
+
+  const containerWidth =
+    displayAvatars.length === 0
+      ? 36 // fallback avatar width
+      : 36 + (displayAvatars.length - 1) * 22;
 
   return (
     <div
@@ -61,28 +79,54 @@ export default function GroupItem({ conversation }: Readonly<Props>) {
       onKeyDown={(e) => e.key === "Enter" && setActiveConversation(conversation._id)}
     >
       <div className="flex items-center gap-3 min-w-0">
-        {/* Avatar stack */}
-        <div className="flex -space-x-2 shrink-0">
-          {avatarParticipants.map((p, i) => {
-            const nameToUse = p.displayName || (p as any).userName || "?";
-            return p.avatarUrl ? (
-              <img
-                key={p._id}
-                src={p.avatarUrl}
-                alt={nameToUse}
-                className="w-9 h-9 rounded-full object-cover border-2 border-white dark:border-slate-800"
-                style={{ zIndex: avatarParticipants.length - i }}
-              />
-            ) : (
-              <div
-                key={p._id}
-                className="w-9 h-9 rounded-full bg-gradient-to-br from-violet-500 to-purple-400 flex items-center justify-center text-white font-bold text-xs border-2 border-white dark:border-slate-800"
-                style={{ zIndex: avatarParticipants.length - i }}
-              >
-                {nameToUse.charAt(0).toUpperCase()}
-              </div>
-            );
-          })}
+        {/* Avatars */}
+        <div
+          className="relative h-12 shrink-0"
+          style={{ width: `${containerWidth}px` }}
+        >
+          {/* Avatar của conversation/group luôn ở dưới cùng (nếu có và là group) */}
+          {isGroup && conversation.group?.avatarUrl && (
+            <img
+              src={conversation.group.avatarUrl}
+              alt="Group"
+              className="w-12 h-12 rounded-full object-cover border-2 border-white dark:border-slate-800 absolute"
+              style={{ zIndex: 0, left: 0 }}
+            />
+          )}
+
+          {displayAvatars.length > 0 ? (
+            displayAvatars.map((p, i) => {
+              const zIndex = i + 1;
+              const leftOffset = i * 22; // tăng khoảng cách để dễ nhìn hơn
+              const nameToUse = p.displayName || (p as any).userName || "?";
+
+              return p.avatarUrl ? (
+                <img
+                  key={p._id}
+                  src={p.avatarUrl}
+                  alt={nameToUse}
+                  className="w-9 h-9 rounded-full object-cover border-2 border-white dark:border-slate-800 absolute"
+                  style={{ zIndex, left: `${leftOffset}px` }}
+                />
+              ) : (
+                <div
+                  key={p._id}
+                  className="w-9 h-9 rounded-full bg-gradient-to-br from-violet-500 to-purple-400 flex items-center justify-center text-white font-bold text-xs border-2 border-white dark:border-slate-800 absolute"
+                  style={{ zIndex, left: `${leftOffset}px` }}
+                >
+                  {nameToUse.charAt(0).toUpperCase()}
+                </div>
+              );
+            })
+          ) : (
+            /* Fallback khi chưa load được participants */
+            <div
+              className="w-9 h-9 rounded-full bg-gradient-to-br from-slate-400 to-slate-500 flex items-center justify-center text-white font-bold text-xs border-2 border-white dark:border-slate-800 absolute"
+              style={{ zIndex: 1, left: 0 }}
+            >
+              {groupName.charAt(0).toUpperCase()}
+            </div>
+          )}
         </div>
 
         {/* Info */}

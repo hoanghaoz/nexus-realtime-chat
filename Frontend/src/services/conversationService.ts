@@ -2,7 +2,7 @@ import api from "./api";
 import type { Conversation, Message } from "@/types/chat";
 import { useAuthStore } from "@/stores/useAuthStore";
 import type { FriendResponseDto } from "./friendService";
-import { groupService } from "./groupService";
+
 
 const PAGE_LIMIT = 50;
 const GROUP_PARTICIPANTS_CACHE_KEY = "group-participants-cache";
@@ -132,50 +132,71 @@ function normalizeParticipants(item: any, currentUserId: string): Conversation["
   if (!Array.isArray(rawParticipants)) return [];
 
   return rawParticipants.reduce<Conversation["participants"]>((result, participant: any) => {
-      const id =
+    const id =
+      typeof participant === "string"
+        ? participant
+        : readString(
+            participant,
+            "_id",
+            "id",
+            "userId",
+            "memberId",
+            "participantId",
+            "UserId"
+          );
+    if (!id) return result;
+
+    const friend = friendsById.get(id);
+    const displayName = getParticipantDisplayName(participant, id, currentUserId, friend);
+    const avatarUrl = getParticipantAvatarUrl(participant, friend);
+
+    result.push({
+      _id: id,
+      displayName,
+      avatarUrl,
+      joinedAt:
         typeof participant === "string"
-          ? participant
-          : readString(
-              participant,
-              "_id",
-              "id",
-              "userId",
-              "memberId",
-              "participantId",
-              "UserId"
-            );
-      if (!id) return result;
-
-      const friend = friendsById.get(id);
-      const displayName = getParticipantDisplayName(participant, id, currentUserId, friend);
-      const avatarUrl = getParticipantAvatarUrl(participant, friend);
-
-      result.push({
-        _id: id,
-        displayName,
-        avatarUrl,
-        joinedAt:
-          typeof participant === "string"
-            ? ""
-            : readString(participant, "joinedAt", "createdAt", "JoinedAt"),
-      });
-      return result;
-    }, []);
+          ? ""
+          : readString(participant, "joinedAt", "createdAt", "JoinedAt"),
+    });
+    return result;
+  }, []);
 }
 
 function normalizeConversation(item: any, currentUserId: string): Conversation {
-  const isGroup =
+  // Backend dùng JsonStringEnumConverter → typeRoom: "Direct" | "Group"
+  let isGroup =
     item.typeRoom === "Group" ||
     item.typeRoom === "group" ||
     item.typeRoom === "GROUP" ||
+    item.TypeRoom === "Group" ||
     item.roomType === 2 ||
-    item.typeRoom === 2;
+    item.typeRoom === 2 ||
+    item.roomType === "Group" ||
+    item.RoomType === "Group" ||
+    item.RoomType === 2;
   const isAdmin = item.role === "admin";
   const conversationId =
     item.conversationId || item.id || item._id || item.conversationID || "";
+    
+  const displayName = item.displayName || item.name || "Unknown";
+  let displayAvatar = item.displayAvatar || item.avatarUrl || item.avatar || null;
+  const apiParticipants = normalizeParticipants(item, currentUserId);
+  const cachedParticipants = getCachedConversationParticipants(conversationId);
+  const participants =
+    apiParticipants.length > 0 ? apiParticipants : cachedParticipants;
+
+  // HACK: If it's a group but has exactly 2 participants, treat it as a direct chat.
+  // This is because the backend lacks a create direct chat endpoint, so we fallback to creating groups.
+  if (isGroup && participants.length === 2) {
+    isGroup = false;
+  }
+
+  const otherParticipant = participants.find(p => p._id !== currentUserId && p._id !== "self");
+
   const directUserId = isGroup
     ? undefined
-    : readString(
+    : otherParticipant?._id || readString(
         item,
         "userId",
         "friendId",
@@ -184,12 +205,17 @@ function normalizeConversation(item: any, currentUserId: string): Conversation {
         "participantId",
         "receiverId"
       );
-  const displayName = item.displayName || item.name || "Unknown";
-  const displayAvatar = item.displayAvatar || item.avatarUrl || item.avatar || null;
-  const apiParticipants = normalizeParticipants(item, currentUserId);
-  const cachedParticipants = getCachedConversationParticipants(conversationId);
-  const participants =
-    apiParticipants.length > 0 ? apiParticipants : cachedParticipants;
+
+  if (!isGroup && otherParticipant) {
+    // For direct chats, ensure the name and avatar are the other person's
+    if (displayName === "Unknown" || displayName === "Nhóm") {
+       // Only overwrite if it looks like a generic name, or let backend name take precedence?
+       // Actually, fallback groups use the friend's name, so displayName is already correct.
+    }
+    if (!displayAvatar && otherParticipant.avatarUrl) {
+       displayAvatar = otherParticipant.avatarUrl;
+    }
+  }
 
   if (isGroup && apiParticipants.length > 0) {
     cacheConversationParticipants(conversationId, apiParticipants);
@@ -215,7 +241,7 @@ function normalizeConversation(item: any, currentUserId: string): Conversation {
           },
           {
             _id: directUserId || "other-" + conversationId,
-            displayName,
+            displayName: otherParticipant?.displayName || displayName,
             avatarUrl: displayAvatar,
             joinedAt: "",
           },
@@ -225,7 +251,8 @@ function normalizeConversation(item: any, currentUserId: string): Conversation {
       rawLastMsg?.CreatedAt ||
       item.lastMessageAt ||
       item.updatedAt ||
-      new Date().toISOString(),
+      item.createdAt ||
+      "",
     seenBy: [],
     lastMessage: rawLastMsg
       ? {
@@ -264,14 +291,6 @@ function normalizeConversation(item: any, currentUserId: string): Conversation {
 
 /**
  * conversationService – tầng gọi HTTP REST API cho Conversation & Message.
- *
- * Backend ConversationResponse schema:
- *   conversationId, typeRoom (1=Direct, 2=Group), displayName, displayAvatar,
- *   lastMessage { content, createdAt }, isOnline, role ("admin" | "member")
- *
- * Backend MessageResponseDto schema:
- *   messageId, userId, content, conversationId, createdAt, attachments[], reactions[],
- *   mentionUser[], isDeleted, isEdited, isPending, deletedAt, editedAt
  */
 export const conversationService = {
   /** Lấy danh sách cuộc hội thoại của user đang đăng nhập */
@@ -280,24 +299,70 @@ export const conversationService = {
     const payload = unwrapPayload(res.data);
     const rawList: any[] = Array.isArray(payload) ? payload : [];
     const currentUserId = useAuthStore.getState().user?._id || "";
-
     return rawList.map((item: any) => normalizeConversation(item, currentUserId));
   },
 
   /**
-   * Lấy chi tiết conversation theo ID (gọi API mới thêm)
+   * Lấy chi tiết conversation – map đúng ConversationDetailResponse từ backend.
+   * Backend (JsonStringEnumConverter): typeRoom: "Direct"|"Group"
+   * Participants: [{ userId, displayName, displayAvatar, isOnline, role }]
    */
   fetchConversationDetail: async (conversationId: string): Promise<Conversation> => {
     const res = await api.get(`/conversation/${conversationId}`);
     const { user } = useAuthStore.getState();
     const currentUserId = user?._id || "";
-    const conversation = normalizeConversation(res.data?.data || res.data, currentUserId);
-    
-    // Lưu cache participants để group chat không bị mất avatar
-    if (conversation.participants && conversation.participants.length > 0) {
-      cacheConversationParticipants(conversation._id, conversation.participants);
+    const raw = res.data?.data || res.data;
+
+    const isGroup =
+      raw.typeRoom === "Group" || raw.typeRoom === "GROUP" || raw.typeRoom === "group" ||
+      raw.TypeRoom === "Group" ||
+      raw.roomType === 2 || raw.typeRoom === 2;
+
+    // Map participants từ ConversationDetailResponse (camelCase: userId, displayAvatar)
+    const rawParticipants: any[] = Array.isArray(raw.participants) ? raw.participants : [];
+    const participants: Conversation["participants"] = rawParticipants
+      .map((p: any) => ({
+        _id: p.userId || p._id || p.id || "",
+        displayName: p.displayName || p.DisplayName || p.userName || "",
+        avatarUrl: p.displayAvatar || p.avatarUrl || p.avatar || null,
+        joinedAt: p.joinedAt || "",
+      }))
+      .filter((p) => !!p._id);
+
+    // Map lastMessage
+    const rawLast = raw.lastMessage ?? raw.LastMessage ?? null;
+    const lastMessage = rawLast
+      ? {
+          _id: rawLast.messageId || rawLast._id || "preview-" + conversationId,
+          content: rawLast.content ?? rawLast.Content ?? rawLast.text ?? "",
+          createdAt: rawLast.createdAt || rawLast.CreatedAt || "",
+          sender: {
+            _id: rawLast.userId || rawLast.senderId || "",
+            displayName: rawLast.senderName || rawLast.displayName || "",
+          },
+        }
+      : null;
+
+    const displayName = raw.displayName || raw.DisplayName || raw.name || "Unknown";
+
+    const conversation: Conversation = {
+      _id: raw.conversationId || raw.id || conversationId,
+      type: isGroup ? "group" : "direct",
+      directUserId: isGroup ? undefined : rawParticipants.find((p) => p.userId !== currentUserId)?.userId,
+      group: { name: displayName, createdBy: "" },
+      participants,
+      lastMessageAt: rawLast?.createdAt || rawLast?.CreatedAt || raw.updatedAt || "",
+      seenBy: [],
+      lastMessage,
+      unreadCounts: {},
+      createdAt: raw.createdAt || "",
+      updatedAt: raw.updatedAt || "",
+    };
+
+    if (participants.length > 0) {
+      cacheConversationParticipants(conversationId, participants);
     }
-    
+
     return conversation;
   },
 
@@ -306,7 +371,6 @@ export const conversationService = {
     const res = await api.get("/conversation/search", {
       params: { keyword },
     });
-    // Apply same mapping
     const payload = unwrapPayload(res.data);
     if (Array.isArray(payload)) {
       const rawList: any[] = payload;
@@ -319,77 +383,31 @@ export const conversationService = {
   /** Tạo hoặc lấy hội thoại riêng với một user */
   createDirectConversation: async (friend: FriendResponseDto): Promise<Conversation> => {
     const currentUserId = useAuthStore.getState().user?._id || "";
-    const requests = [
-      () => api.post("/conversation/direct", { receiverId: friend.id }),
-      () => api.post("/conversation/direct", { targetUserId: friend.id }),
-      () => api.post("/conversation/create-direct", { receiverId: friend.id }),
-      () => api.post("/conversation/create", { typeRoom: "Direct", participantIds: [friend.id] }),
-      () => api.post("/conversation/create", { roomType: 1, participantIds: [friend.id] }),
-    ];
-
-    for (const request of requests) {
-      try {
-        const res = await request();
-        const payload = unwrapPayload(res.data);
-        const raw = Array.isArray(payload) ? payload[0] : payload;
-        const conversation = normalizeConversation(raw, currentUserId);
-        if (conversation._id) {
-          conversation.directUserId = friend.id;
-          conversation.participants = [
-            {
-              _id: currentUserId || "self",
-              displayName: "Bạn",
-              avatarUrl: null,
-              joinedAt: conversation.createdAt,
-            },
-            {
-              _id: friend.id,
-              displayName: friend.displayName || friend.username,
-              avatarUrl: friend.avatarUrl ?? null,
-              joinedAt: conversation.createdAt,
-            },
-          ];
-          return conversation;
-        }
-      } catch {
-        // Try the next known direct-chat endpoint shape.
-      }
-    }
-
-    const fallbackGroup = await groupService.createGroup({
-      name: friend.displayName || friend.username,
-      participantIds: [friend.id],
-    });
-    const createdAt = fallbackGroup.createdAt || new Date().toISOString();
-    return {
-      _id: fallbackGroup.id,
-      type: "direct",
-      directUserId: friend.id,
-      group: {
-        name: friend.displayName || friend.username,
-        createdBy: fallbackGroup.createdBy || currentUserId,
-      },
-      participants: [
+    const res = await api.post("/conversation/direct", { targetUserId: friend.id });
+    const payload = unwrapPayload(res.data);
+    const raw = Array.isArray(payload) ? payload[0] : payload;
+    const conversation = normalizeConversation(raw, currentUserId);
+    
+    if (conversation._id) {
+      conversation.directUserId = friend.id;
+      conversation.participants = [
         {
           _id: currentUserId || "self",
           displayName: "Bạn",
           avatarUrl: null,
-          joinedAt: createdAt,
+          joinedAt: conversation.createdAt,
         },
         {
           _id: friend.id,
           displayName: friend.displayName || friend.username,
           avatarUrl: friend.avatarUrl ?? null,
-          joinedAt: createdAt,
+          joinedAt: conversation.createdAt,
         },
-      ],
-      lastMessageAt: createdAt,
-      seenBy: [],
-      lastMessage: null,
-      unreadCounts: {},
-      createdAt,
-      updatedAt: createdAt,
-    };
+      ];
+      return conversation;
+    }
+
+    throw new Error("Tạo hội thoại riêng thất bại");
   },
 
   /** Lấy tin nhắn theo conversationId (cursor-based pagination) */
@@ -401,7 +419,7 @@ export const conversationService = {
       conversationId,
       limit: String(PAGE_LIMIT),
     };
-    if (cursor) params.cursor = cursor;
+    if (cursor) params.nextCursor = cursor;
 
     const res = await api.get("/message/conversation-messages", { params });
 
