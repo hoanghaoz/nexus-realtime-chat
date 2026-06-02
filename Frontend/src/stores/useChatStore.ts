@@ -447,6 +447,28 @@ export const useChatStore = create<ChatState>()(
           return { messages: updatedMessages };
         });
       },
+
+      /** Xóa optimistic pending message (prefix 'pending-') khi server echo về */
+      removePendingMessage: (conversationId: string) => {
+        set((state) => {
+          const convoMessages = state.messages[conversationId];
+          if (!convoMessages) return state;
+          // Tìm message pending mới nhất (prefix 'pending-') trong conversation
+          const pendingIdx = convoMessages.items.findLastIndex((m) =>
+            m._id.startsWith("pending-")
+          );
+          if (pendingIdx === -1) return state;
+          return {
+            messages: {
+              ...state.messages,
+              [conversationId]: {
+                ...convoMessages,
+                items: convoMessages.items.filter((_, i) => i !== pendingIdx),
+              },
+            },
+          };
+        });
+      },
   })
 );
 

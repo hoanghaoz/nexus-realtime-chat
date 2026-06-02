@@ -60,5 +60,7 @@ export interface ChatState {
   updateMessageReactions: (messageId: string, emoji: string, fromUserId: string) => void;
   /** Reset unread count khi user mở conversation */
   markConversationRead: (conversationId: string) => void;
+  /** Xóa optimistic pending message (prefix 'pending-') khi server echo về */
+  removePendingMessage: (conversationId: string) => void;
 }
 

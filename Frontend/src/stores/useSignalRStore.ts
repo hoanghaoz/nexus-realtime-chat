@@ -99,13 +99,20 @@ export const useSignalRStore = create<SignalRState>((set, get) => ({
           createdAt: typeof rawMessage.createdAt === "string" ? rawMessage.createdAt : new Date().toISOString(),
         };
 
-        const { activeConversationId, conversations } = useChatStore.getState();
         const currentUserId = useAuthStore?.getState?.()?.user?._id;
         const isFromMe = message.senderId === currentUserId;
+
+        // Nếu là tin của chính mình → xóa optimistic message pending trước khi thêm bản thật
+        if (isFromMe && message.conversationId) {
+          useChatStore.getState().removePendingMessage(message.conversationId);
+        }
+
+        const { activeConversationId, conversations } = useChatStore.getState();
         const isActiveConversation = message.conversationId === activeConversationId;
 
         // Thêm vào store (dedup được xử lý bên trong addMessage)
         useChatStore.getState().addMessage(message);
+
 
         // Nếu message đến ở conversation KHÔNG đang active và KHÔNG phải từ mình
         // → hiển thị toast notification
@@ -372,7 +379,33 @@ export const useSignalRStore = create<SignalRState>((set, get) => ({
       console.warn("[SignalR] Not connected, cannot send message");
       return;
     }
-    await chatConnection.invoke("SendMessage", dto);
+
+    // Optimistic update: hiện tin nhắn ngay cho người gửi trước khi server phản hồi
+    const currentUser = useAuthStore.getState().user;
+    const optimisticId = `pending-${Date.now()}-${Math.random().toString(36).slice(2)}`;
+    if (currentUser?._id && dto.conversationId) {
+      useChatStore.getState().addMessage({
+        _id: optimisticId,
+        conversationId: dto.conversationId,
+        senderId: currentUser._id,
+        content: dto.content ?? null,
+        imgUrl: null,
+        createdAt: new Date().toISOString(),
+        updatedAt: null,
+        reactions: [],
+      });
+    }
+
+    try {
+      await chatConnection.invoke("SendMessage", dto);
+    } catch (err) {
+      console.error("[SignalR] SendMessage failed:", err);
+      // Rollback optimistic message nếu gửi thất bại
+      if (dto.conversationId) {
+        useChatStore.getState().removeMessage(dto.conversationId, optimisticId);
+      }
+      throw err;
+    }
   },
 
   joinConversation: async (conversationId) => {

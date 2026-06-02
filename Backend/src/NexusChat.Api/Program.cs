@@ -50,7 +50,14 @@ builder.Services.AddHybridCache(options =>
         Expiration = TimeSpan.FromMinutes(10)
     };
 });
-builder.Services.AddSignalR(opt => { opt.EnableDetailedErrors = true; });
+builder.Services.AddSignalR(opt => { opt.EnableDetailedErrors = true; })
+    .AddJsonProtocol(options =>
+    {
+        // Serialize SignalR payloads as camelCase to match frontend expectations
+        // e.g. MessageId -> messageId, ConversationId -> conversationId
+        options.PayloadSerializerOptions.PropertyNamingPolicy = System.Text.Json.JsonNamingPolicy.CamelCase;
+        options.PayloadSerializerOptions.Converters.Add(new JsonStringEnumConverter());
+    });
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowAll", policy =>
@@ -88,11 +95,12 @@ builder.Services.AddAuthentication(options =>
         {
             var accessToken = context.Request.Query["access_token"];
             var path = context.HttpContext.Request.Path;
-            if (!string.IsNullOrEmpty(accessToken) 
-                && path.StartsWithSegments("/hubs/chat") || path.StartsWithSegments("/hubs/presence"))
+            // Fix: wrap first condition in parens so && binds correctly before ||
+            if (!string.IsNullOrEmpty(accessToken)
+                && (path.StartsWithSegments("/hubs/chat") || path.StartsWithSegments("/hubs/presence")))
             {
                 context.Token = accessToken;
-            }   
+            }
             return Task.CompletedTask;
         }
     };
