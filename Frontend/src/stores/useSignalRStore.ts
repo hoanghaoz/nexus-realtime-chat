@@ -33,25 +33,198 @@ interface SignalRState {
   completePendingMessage: (messageId: string) => Promise<void>;
 }
 
+// ──────────────────────────────────────────────────────────────────────────────
+// Module-level helper functions – extracted to avoid deep nesting (SonarCloud)
+// ──────────────────────────────────────────────────────────────────────────────
+
+/** Parse tên conversation để hiện trong toast notification */
+function resolveConvoName(
+  convo: Conversation | undefined,
+  currentUserId: string | undefined
+): string {
+  if (!convo) return "Ai đó";
+  if (convo.type === "group") return convo.group?.name ?? "Nhóm";
+  const other = convo.participants?.find((p) => p._id !== currentUserId);
+  return other?.displayName ?? "Ai đó";
+}
+
+/** Tạo preview text cho toast notification (tối đa 40 ký tự) */
+function buildMessagePreview(content: string | null): string {
+  if (!content) return "📷 Đã gửi một hình ảnh";
+  if (content.length > 40) return `${content.slice(0, 40)}...`;
+  return content;
+}
+
+/** Hiện toast khi nhận message từ conversation không active */
+function showMessageToast(
+  message: Message,
+  conversations: Conversation[],
+  currentUserId: string | undefined
+): void {
+  const convo = conversations.find((c) => c._id === message.conversationId);
+  const convoName = resolveConvoName(convo, currentUserId);
+  const preview = buildMessagePreview(message.content);
+
+  toast(`💬 ${convoName}`, {
+    description: preview,
+    duration: 4000,
+    action: {
+      label: "Xem",
+      onClick: () => useChatStore.getState().setActiveConversation(message.conversationId),
+    },
+  });
+}
+
+/** Parse raw SignalR payload thành Message object */
+function parseRawMessage(rawMessage: Record<string, unknown>): Message {
+  const attachments = Array.isArray(rawMessage.attachments) ? rawMessage.attachments : [];
+  const firstAttachment = attachments[0] as { url?: unknown } | undefined;
+  const imgUrl = typeof firstAttachment?.url === "string" ? firstAttachment.url : null;
+  const content = typeof rawMessage.content === "string" ? rawMessage.content : null;
+  const updatedAt = typeof rawMessage.editedAt === "string" ? rawMessage.editedAt : null;
+  const createdAt = typeof rawMessage.createdAt === "string"
+    ? rawMessage.createdAt
+    : new Date().toISOString();
+
+  return {
+    _id: String(rawMessage.messageId || rawMessage._id || ""),
+    conversationId: String(rawMessage.conversationId || ""),
+    senderId: String(rawMessage.userId || rawMessage.senderId || ""),
+    content,
+    imgUrl,
+    updatedAt,
+    createdAt,
+  };
+}
+
+/** Handler: ReceiveMessage – thêm vào store + toast nếu không active */
+function handleReceiveMessage(rawMessage: Record<string, unknown>): void {
+  const message = parseRawMessage(rawMessage);
+  const currentUserId = useAuthStore?.getState?.()?.user?._id;
+  const isFromMe = message.senderId === currentUserId;
+
+  if (isFromMe && message.conversationId) {
+    useChatStore.getState().removePendingMessage(message.conversationId);
+  }
+
+  const { activeConversationId, conversations } = useChatStore.getState();
+  const isActiveConversation = message.conversationId === activeConversationId;
+
+  useChatStore.getState().addMessage(message);
+
+  if (!isActiveConversation && !isFromMe) {
+    showMessageToast(message, conversations, currentUserId);
+  }
+}
+
+/** Handler: ReceiveAddedToGroupNotification – thêm conversation mới vào store */
+function handleAddedToGroup(
+  rawPayload: Record<string, unknown>,
+  connection: HubConnection
+): void {
+  const id =
+    (typeof rawPayload.id === "string" && rawPayload.id) ||
+    (typeof rawPayload._id === "string" && rawPayload._id) ||
+    "";
+  if (!id) return;
+
+  const name = typeof rawPayload.name === "string" ? rawPayload.name : "Nhóm mới";
+  const createdBy = typeof rawPayload.createdBy === "string" ? rawPayload.createdBy : "";
+  const createdAt = typeof rawPayload.createdAt === "string"
+    ? rawPayload.createdAt
+    : new Date().toISOString();
+  const participants = Array.isArray(rawPayload.participants) ? rawPayload.participants : [];
+  const roomType = rawPayload.roomType;
+  const isDirect = roomType === 1 || roomType === "Direct" || roomType === "direct";
+
+  const conversation: Conversation = {
+    _id: id,
+    type: isDirect ? "direct" : "group",
+    group: { name, createdBy },
+    participants: participants as Conversation["participants"],
+    lastMessageAt: createdAt,
+    seenBy: [],
+    lastMessage: null,
+    unreadCounts: {},
+    createdAt,
+    updatedAt: createdAt,
+  };
+
+  useChatStore.getState().addConversation(conversation);
+  useChatStore.getState().fetchConversations().catch(console.error);
+
+  if (connection.state === HubConnectionState.Connected) {
+    connection.invoke("JoinGroup", conversation._id).catch(console.error);
+  }
+
+  toast.success(`Bạn đã được thêm vào nhóm "${name}"`, { duration: 4000 });
+}
+
+/** Handler: ReceiveFriendRequest – toast + auto-refresh pending requests */
+function handleReceiveFriendRequest(request: Record<string, unknown>): void {
+  const fromName = typeof request.fromName === "string" ? request.fromName : "Ai đó";
+
+  const refreshPending = (): void => {
+    import("@/stores/useFriendStore").then(({ useFriendStore }) => {
+      useFriendStore.getState().getPendingRequests();
+    });
+  };
+
+  toast(`👤 ${fromName} đã gửi lời mời kết bạn!`, {
+    duration: 6000,
+    action: { label: "Xem", onClick: refreshPending },
+  });
+  refreshPending();
+}
+
+/** Handler: ReceiveAcceptFriendNotification – toast + refresh friends */
+function handleAcceptFriendNotification(dto: Record<string, unknown>): void {
+  const acceptorName = typeof dto.acceptorName === "string" ? dto.acceptorName : "Ai đó";
+  toast.success(`🎉 ${acceptorName} đã chấp nhận lời mời kết bạn của bạn!`, { duration: 5000 });
+  import("@/stores/useFriendStore").then(({ useFriendStore }) => {
+    useFriendStore.getState().getFriends();
+  });
+}
+
+/** Handler: MessageReactNotify – bỏ qua reaction của chính mình */
+function handleMessageReact(
+  conversationId: string,
+  messageId: string,
+  emoji: string,
+  fromUserId: string
+): void {
+  const currentUserId = useAuthStore?.getState?.()?.user?._id;
+  if (currentUserId && fromUserId === currentUserId) return;
+  console.log("[SignalR] MessageReactNotify (other user):", { conversationId, messageId, emoji, fromUserId });
+  useChatStore.getState().updateMessageReactions(messageId, emoji, fromUserId);
+}
+
+/** Handler: ReceiveToastNotification – react notification */
+function handleToastNotification(fromUserId: string, _messageId: string, emoji: string): void {
+  const currentUserId = useAuthStore?.getState?.()?.user?._id;
+  if (fromUserId === currentUserId) return;
+  toast(`${emoji} Ai đó đã react tin nhắn của bạn`, { duration: 3000 });
+}
+
+/** Rejoin tất cả conversations sau khi reconnect */
+function rejoinAllGroups(connection: HubConnection): void {
+  const conversations = useChatStore.getState().conversations;
+  for (const conv of conversations) {
+    connection.invoke("JoinGroup", conv._id).catch(console.error);
+  }
+  console.log("[SignalR] Rejoined all groups after reconnect");
+}
+
+// ──────────────────────────────────────────────────────────────────────────────
+// Store
+// ──────────────────────────────────────────────────────────────────────────────
+
 /**
  * useSignalRStore – quản lý kết nối SignalR với ChatHub và PresenceHub.
  *
  * Nexus dùng SignalR với 2 hub:
  *   /hubs/chat     → ChatHub (tin nhắn, typing)
  *   /hubs/presence → PresenceHub (online status)
- *
- * Client nhận các sự kiện từ server:
- *   ReceiveMessage(MessageResponseDto)           → thêm message vào store
- *   ReceiveAddedToGroupNotification(GroupDto)    → thêm conversation vào store
- *   NotifyUserJoined(userId, groupName)          → log
- *   NotifyUserLeft(userId, groupName)            → log
- *   UserTypingNotify(userId, conversationId, isTyping) → typing indicator
- *   MessageUpdateNotify(conversationId, messageId, newContent) → edit
- *   MessageDeleteNotify(conversationId, messageId)             → delete
- *   ReceiveErrorMessage(error)                  → log error
- *   ReceiveToastNotification(fromUserId, messageId, emoji) → toast
- *   UserOnline(userId)  → online status
- *   UserOffline(userId) → offline status
  */
 export const useSignalRStore = create<SignalRState>((set, get) => ({
   chatConnection: null,
@@ -64,235 +237,58 @@ export const useSignalRStore = create<SignalRState>((set, get) => ({
   // ──────────────────────────────────────────────────────────────────
   connectChat: async () => {
     const { chatConnection } = get();
-    if (
-      chatConnection &&
-      chatConnection.state !== HubConnectionState.Disconnected
-    ) {
-      return; // Đã kết nối rồi
+    if (chatConnection && chatConnection.state !== HubConnectionState.Disconnected) {
+      return;
     }
 
     try {
       const connection = await createChatConnection();
 
-      // ──── Helper: rejoin tất cả conversations ────
-      const rejoinAllGroups = () => {
-        const conversations = useChatStore.getState().conversations;
-        for (const conv of conversations) {
-          connection.invoke("JoinGroup", conv._id).catch(console.error);
-        }
-        console.log("[SignalR] Rejoined all groups after reconnect");
-      };
-
-      // ──── Lắng nghe sự kiện từ server ────
-
-      /** Nhận tin nhắn mới */
-      connection.on("ReceiveMessage", (rawMessage: Record<string, unknown>) => {
-        const attachments = Array.isArray(rawMessage.attachments) ? rawMessage.attachments : [];
-        const firstAttachment = attachments[0] as { url?: unknown } | undefined;
-        const message: Message = {
-          _id: String(rawMessage.messageId || rawMessage._id || ""),
-          conversationId: String(rawMessage.conversationId || ""),
-          senderId: String(rawMessage.userId || rawMessage.senderId || ""),
-          content: typeof rawMessage.content === "string" ? rawMessage.content : null,
-          imgUrl: typeof firstAttachment?.url === "string" ? firstAttachment.url : null,
-          updatedAt: typeof rawMessage.editedAt === "string" ? rawMessage.editedAt : null,
-          createdAt: typeof rawMessage.createdAt === "string" ? rawMessage.createdAt : new Date().toISOString(),
-        };
-
-        const currentUserId = useAuthStore?.getState?.()?.user?._id;
-        const isFromMe = message.senderId === currentUserId;
-
-        // Nếu là tin của chính mình → xóa optimistic message pending trước khi thêm bản thật
-        if (isFromMe && message.conversationId) {
-          useChatStore.getState().removePendingMessage(message.conversationId);
-        }
-
-        const { activeConversationId, conversations } = useChatStore.getState();
-        const isActiveConversation = message.conversationId === activeConversationId;
-
-        // Thêm vào store + cập nhật lastMessage + tăng unread count trong 1 set()
-        useChatStore.getState().addMessage(message);
-
-        // Nếu message đến ở conversation KHÔNG đang active và KHÔNG phải từ mình
-        // → hiển thị toast notification
-        if (!isActiveConversation && !isFromMe) {
-          const convo = conversations.find((c) => c._id === message.conversationId);
-          const convoName = convo
-            ? convo.type === "group"
-              ? (convo.group?.name ?? "Nhóm")
-              : (convo.participants?.find((p) => p._id !== currentUserId)?.displayName ?? "Ai đó")
-            : "Ai đó";
-
-          const preview = message.content
-            ? message.content.length > 40
-              ? message.content.slice(0, 40) + "..."
-              : message.content
-            : "📷 Đã gửi một hình ảnh";
-
-          toast(`💬 ${convoName}`, {
-            description: preview,
-            duration: 4000,
-            action: {
-              label: "Xem",
-              onClick: () => useChatStore.getState().setActiveConversation(message.conversationId),
-            },
-          });
-        }
-      });
-
-      /** Được thêm vào nhóm mới
-       * Sau khi AddJsonProtocol camelCase: backend gửi id, name, roomType (camelCase)
-       */
-      connection.on("ReceiveAddedToGroupNotification", (rawPayload: Record<string, unknown>) => {
-        // Sau AddJsonProtocol fix: backend serialize camelCase
-        const id =
-          (typeof rawPayload.id === "string" && rawPayload.id) ||
-          (typeof rawPayload._id === "string" && rawPayload._id) ||
-          "";
-        const name =
-          (typeof rawPayload.name === "string" && rawPayload.name) ||
-          "Nhóm mới";
-        const createdBy =
-          (typeof rawPayload.createdBy === "string" && rawPayload.createdBy) ||
-          "";
-        const createdAt =
-          (typeof rawPayload.createdAt === "string" && rawPayload.createdAt) ||
-          new Date().toISOString();
-        const participants = Array.isArray(rawPayload.participants)
-          ? rawPayload.participants
-          : [];
-
-        if (!id) return;
-
-        const roomType = rawPayload.roomType;
-        const isDirect = roomType === 1 || roomType === "Direct" || roomType === "direct";
-
-        const conversation: Conversation = {
-          _id: id,
-          type: isDirect ? "direct" : "group",
-          group: { name, createdBy },
-          participants: participants as Conversation["participants"],
-          lastMessageAt: createdAt,
-          seenBy: [],
-          lastMessage: null,
-          unreadCounts: {},
-          createdAt,
-          updatedAt: createdAt,
-        };
-
-        useChatStore.getState().addConversation(conversation);
-        useChatStore.getState().fetchConversations().catch(console.error);
-        if (connection.state === HubConnectionState.Connected) {
-          connection.invoke("JoinGroup", conversation._id).catch(console.error);
-        }
-        toast.success(`Bạn đã được thêm vào nhóm "${name}"`, { duration: 4000 });
-      });
-
-      /** Nhận lời mời kết bạn mới */
-      connection.on("ReceiveFriendRequest", (request: Record<string, unknown>) => {
-        const fromName = typeof request.fromName === "string" ? request.fromName : "Ai đó";
-        toast(`👤 ${fromName} đã gửi lời mời kết bạn!`, {
-          duration: 6000,
-          action: {
-            label: "Xem",
-            onClick: () => {
-              // Tự động refresh pending requests để badge hiện ngay
-              import("@/stores/useFriendStore").then(({ useFriendStore }) => {
-                useFriendStore.getState().getPendingRequests();
-              });
-            },
-          },
-        });
-        // Auto-refresh pending requests
-        import("@/stores/useFriendStore").then(({ useFriendStore }) => {
-          useFriendStore.getState().getPendingRequests();
-        });
-      });
-
-      /** Thông báo lời mời kết bạn được chấp nhận */
-      connection.on("ReceiveAcceptFriendNotification", (dto: Record<string, unknown>) => {
-        const acceptorName = typeof dto.acceptorName === "string" ? dto.acceptorName : "Ai đó";
-        toast.success(`🎉 ${acceptorName} đã chấp nhận lời mời kết bạn của bạn!`, { duration: 5000 });
-        // Auto-refresh danh sách bạn bè
-        import("@/stores/useFriendStore").then(({ useFriendStore }) => {
-          useFriendStore.getState().getFriends();
-        });
-      });
-
-      /** Thông báo user khác tham gia/rời conversation */
+      // ──── Đăng ký event handlers ────
+      connection.on("ReceiveMessage", handleReceiveMessage);
+      connection.on("ReceiveAddedToGroupNotification", (payload: Record<string, unknown>) =>
+        handleAddedToGroup(payload, connection)
+      );
+      connection.on("ReceiveFriendRequest", handleReceiveFriendRequest);
+      connection.on("ReceiveAcceptFriendNotification", handleAcceptFriendNotification);
       connection.on("NotifyUserJoined", (userId: string, groupName: string) => {
         console.log(`[SignalR] User ${userId} joined group ${groupName}`);
       });
-
       connection.on("NotifyUserLeft", (userId: string, groupName: string) => {
         console.log(`[SignalR] User ${userId} left group ${groupName}`);
       });
-
-      /** Lỗi từ server */
       connection.on("ReceiveErrorMessage", (error: string) => {
         console.error("[SignalR] Server error:", error);
       });
-
-      /** Toast notification (react, tag, v.v.) từ server */
-      connection.on("ReceiveToastNotification", (fromUserId: string, _messageId: string, emoji: string) => {
-        // Không hiện toast nếu là chính mình
-        const currentUserId = useAuthStore?.getState?.()?.user?._id;
-        if (fromUserId === currentUserId) return;
-        toast(`${emoji} Ai đó đã react tin nhắn của bạn`, { duration: 3000 });
+      connection.on("ReceiveToastNotification", handleToastNotification);
+      connection.on("MessageUpdateNotify", (conversationId: string, messageId: string, newContent: string) => {
+        useChatStore.getState().updateMessageContent(conversationId, messageId, newContent);
       });
+      connection.on("MessageDeleteNotify", (conversationId: string, messageId: string) => {
+        useChatStore.getState().removeMessage(conversationId, messageId);
+      });
+      connection.on("MessageReactNotify", handleMessageReact);
 
-      /** Cập nhật nội dung message khi được chỉnh sửa */
-      connection.on(
-        "MessageUpdateNotify",
-        (conversationId: string, messageId: string, newContent: string) => {
-          useChatStore.getState().updateMessageContent(conversationId, messageId, newContent);
-        }
-      );
-
-      /** Xóa message khỏi store khi bị xóa */
-      connection.on(
-        "MessageDeleteNotify",
-        (conversationId: string, messageId: string) => {
-          useChatStore.getState().removeMessage(conversationId, messageId);
-        }
-      );
-
-      /** Cập nhật reaction realtime */
-      connection.on(
-        "MessageReactNotify",
-        (conversationId: string, messageId: string, emoji: string, fromUserId: string) => {
-          // BỎ QUA nếu là chính mình react – useChatHub đã optimistic update rồi
-          const currentUserId = useAuthStore?.getState?.()?.user?._id;
-          if (currentUserId && fromUserId === currentUserId) return;
-
-          console.log("[SignalR] MessageReactNotify (other user):", { conversationId, messageId, emoji, fromUserId });
-          useChatStore.getState().updateMessageReactions(messageId, emoji, fromUserId);
-        }
-      );
-
-      // ──── Reconnect handler: rejoin tất cả groups ────
+      // ──── Reconnect handlers ────
       connection.onreconnected(() => {
         console.log("[SignalR] ChatHub reconnected – rejoining all groups...");
         set({ isConnected: true });
-        rejoinAllGroups();
+        rejoinAllGroups(connection);
       });
-
       connection.onreconnecting(() => {
         console.warn("[SignalR] ChatHub reconnecting...");
         set({ isConnected: false });
       });
-
       connection.onclose(() => {
         console.warn("[SignalR] ChatHub connection closed");
         set({ isConnected: false });
       });
 
-      // Kết nối
       await connection.start();
       set({ chatConnection: connection, isConnected: true });
       console.log("[SignalR] ChatHub connected");
 
-      // Tự động join tất cả conversations hiện có
+      // Join tất cả conversations hiện có
       const conversations = useChatStore.getState().conversations;
       for (const conv of conversations) {
         connection.invoke("JoinGroup", conv._id).catch(console.error);
@@ -317,17 +313,13 @@ export const useSignalRStore = create<SignalRState>((set, get) => ({
   // ──────────────────────────────────────────────────────────────────
   connectPresence: async () => {
     const { presenceConnection } = get();
-    if (
-      presenceConnection &&
-      presenceConnection.state !== HubConnectionState.Disconnected
-    ) {
-      return; // Đã kết nối rồi
+    if (presenceConnection && presenceConnection.state !== HubConnectionState.Disconnected) {
+      return;
     }
 
     try {
       const connection = await createPresenceConnection();
 
-      /** Khi user khác online */
       connection.on("UserOnline", (userId: string) => {
         console.log("[SignalR Presence] UserOnline:", userId);
         set((state) => ({
@@ -337,7 +329,6 @@ export const useSignalRStore = create<SignalRState>((set, get) => ({
         }));
       });
 
-      /** Khi user khác offline */
       connection.on("UserOffline", (userId: string) => {
         console.log("[SignalR Presence] UserOffline:", userId);
         set((state) => ({
@@ -368,7 +359,6 @@ export const useSignalRStore = create<SignalRState>((set, get) => ({
       set({ presenceConnection: connection });
       console.log("[SignalR] PresenceHub connected");
 
-      // Lấy danh sách online users ngay sau khi kết nối
       try {
         const onlineUsers: string[] = await connection.invoke("GetOnlineUsers");
         set({ onlineUsers });
@@ -400,7 +390,7 @@ export const useSignalRStore = create<SignalRState>((set, get) => ({
       return;
     }
 
-    // Optimistic update: hiện tin nhắn ngay cho người gửi trước khi server phản hồi
+    // Optimistic update: hiện tin nhắn ngay cho người gửi
     const currentUser = useAuthStore.getState().user;
     const optimisticId = `pending-${Date.now()}-${Math.random().toString(36).slice(2)}`;
     if (currentUser?._id && dto.conversationId) {
@@ -420,7 +410,6 @@ export const useSignalRStore = create<SignalRState>((set, get) => ({
       await chatConnection.invoke("SendMessage", dto);
     } catch (err) {
       console.error("[SignalR] SendMessage failed:", err);
-      // Rollback optimistic message nếu gửi thất bại
       if (dto.conversationId) {
         useChatStore.getState().removeMessage(dto.conversationId, optimisticId);
       }

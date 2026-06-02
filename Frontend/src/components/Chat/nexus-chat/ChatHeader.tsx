@@ -45,16 +45,22 @@ export default function ChatHeader({
     : otherParticipant?.displayName || "Unknown";
 
   const chatAvatar = isGroup ? null : otherParticipant?.avatarUrl;
-  // Trạng thái online realtime: group hiển số thành viên, direct chat check PresenceHub
+
+  // Trạng thái online realtime: chỉ check với direct chat
   const isDirectOnline =
     !isGroup &&
-    !!otherParticipant &&
+    otherParticipant != null &&
     onlineUsers.includes(otherParticipant._id);
-  const subtitle = isGroup
-    ? `${(conversation.participants || []).length} thành viên`
-    : isDirectOnline
-      ? "Đang hoạt động"
-      : "Offline";
+
+  // Tách nested ternary thành biến rõ ràng (SonarCloud)
+  let subtitle: string;
+  if (isGroup) {
+    subtitle = `${(conversation.participants || []).length} thành viên`;
+  } else if (isDirectOnline) {
+    subtitle = "Đang hoạt động";
+  } else {
+    subtitle = "Offline";
+  }
 
   const initials = chatName
     .split(" ")

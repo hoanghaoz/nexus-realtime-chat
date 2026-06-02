@@ -26,22 +26,19 @@ export default function GroupItem({ conversation }: Readonly<Props>) {
   const isActive = activeConversationId === conversation._id;
   const isGroup = conversation.type === "group";
 
-  const groupName = isGroup
-    ? conversation.group?.name ?? "Nhóm"
-    : (() => {
-        const other = (conversation.participants || []).find(
-          (p) => p._id !== user?._id && !p._id.startsWith("self")
-        );
-        return other?.displayName || "Unknown";
-      })();
-
   // Online status: chỉ check cho direct chat
-  const otherParticipant = !isGroup
-    ? (conversation.participants || []).find(
+  // Dùng isGroup dương thảy trước để tránh negated condition (SonarCloud)
+  const otherParticipant = isGroup
+    ? null
+    : (conversation.participants || []).find(
         (p) => p._id !== user?._id && !p._id.startsWith("self")
-      )
-    : null;
-  const isOtherOnline = !isGroup && !!otherParticipant && onlineUsers.includes(otherParticipant._id);
+      );
+
+  const groupName = isGroup
+    ? (conversation.group?.name ?? "Nhóm")
+    : (otherParticipant?.displayName || "Unknown");
+
+  const isOtherOnline = !isGroup && otherParticipant != null && onlineUsers.includes(otherParticipant._id);
 
   const unread = user?._id ? (conversation.unreadCounts?.[user._id] ?? 0) : 0;
   const lastMsg = conversation.lastMessage;
