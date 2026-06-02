@@ -255,11 +255,41 @@ export const useChatStore = create<ChatState>()(
       /** Thêm message mới vào store (gọi từ SignalR handler) */
       addMessage: (message: Message) => {
         const convoId = message.conversationId;
+        const currentUserId = (useAuthStore as any)?.getState?.()?.user?._id;
+        const isFromMe = message.senderId === currentUserId;
+        // Không cập nhật lastMessage/unread khi là optimistic pending message
+        const isPending = message._id.startsWith("pending-");
+
         set((state) => {
           const convoMessages = state.messages[convoId];
           const currentItems = convoMessages?.items ?? [];
           // Tránh duplicate
           if (currentItems.some((m) => m._id === message._id)) return state;
+
+          const isActive = state.activeConversationId === convoId;
+
+          // Cập nhật conversations (lastMessage + unread) – bỏ qua nếu là optimistic pending
+          const updatedConversations = isPending
+            ? state.conversations
+            : state.conversations.map((c) => {
+                if (c._id !== convoId) return c;
+                const newUnread =
+                  !isActive && !isFromMe && currentUserId
+                    ? { ...c.unreadCounts, [currentUserId]: (c.unreadCounts?.[currentUserId] ?? 0) + 1 }
+                    : c.unreadCounts;
+                return {
+                  ...c,
+                  lastMessageAt: message.createdAt,
+                  lastMessage: {
+                    _id: message._id,
+                    content: message.content ?? "",
+                    createdAt: message.createdAt,
+                    sender: { _id: message.senderId, displayName: "" },
+                  },
+                  unreadCounts: newUnread,
+                };
+              });
+
           return {
             messages: {
               ...state.messages,
@@ -269,36 +299,12 @@ export const useChatStore = create<ChatState>()(
                 nextCursor: convoMessages?.nextCursor ?? null,
               },
             },
-          };
-        });
-        // Cập nhật lastMessage và tăng unread count nếu không phải active conversation
-        set((state) => {
-          const isActive = state.activeConversationId === convoId;
-          const currentUserId = (useAuthStore as any)?.getState?.()?.user?._id;
-          const isFromMe = message.senderId === currentUserId;
-
-          return {
-            conversations: state.conversations.map((c) => {
-              if (c._id !== convoId) return c;
-              const updatedUnread =
-                !isActive && !isFromMe && currentUserId
-                  ? { ...c.unreadCounts, [currentUserId]: (c.unreadCounts?.[currentUserId] ?? 0) + 1 }
-                  : c.unreadCounts;
-              return {
-                ...c,
-                lastMessageAt: message.createdAt,
-                lastMessage: {
-                  _id: message._id,
-                  content: message.content ?? "",
-                  createdAt: message.createdAt,
-                  sender: { _id: message.senderId, displayName: "" },
-                },
-                unreadCounts: updatedUnread,
-              };
-            }),
+            conversations: updatedConversations,
           };
         });
       },
+
+
 
 
       /** Cập nhật conversation (gọi từ SignalR handler) */

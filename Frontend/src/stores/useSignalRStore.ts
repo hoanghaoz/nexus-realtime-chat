@@ -110,9 +110,8 @@ export const useSignalRStore = create<SignalRState>((set, get) => ({
         const { activeConversationId, conversations } = useChatStore.getState();
         const isActiveConversation = message.conversationId === activeConversationId;
 
-        // Thêm vào store (dedup được xử lý bên trong addMessage)
+        // Thêm vào store + cập nhật lastMessage + tăng unread count trong 1 set()
         useChatStore.getState().addMessage(message);
-
 
         // Nếu message đến ở conversation KHÔNG đang active và KHÔNG phải từ mình
         // → hiển thị toast notification
@@ -141,43 +140,37 @@ export const useSignalRStore = create<SignalRState>((set, get) => ({
         }
       });
 
-      /** Được thêm vào nhóm mới */
+      /** Được thêm vào nhóm mới
+       * Sau khi AddJsonProtocol camelCase: backend gửi id, name, roomType (camelCase)
+       */
       connection.on("ReceiveAddedToGroupNotification", (rawPayload: Record<string, unknown>) => {
+        // Sau AddJsonProtocol fix: backend serialize camelCase
         const id =
-          (typeof rawPayload._id === "string" && rawPayload._id) ||
           (typeof rawPayload.id === "string" && rawPayload.id) ||
-          (typeof rawPayload.Id === "string" && rawPayload.Id) ||
+          (typeof rawPayload._id === "string" && rawPayload._id) ||
           "";
         const name =
           (typeof rawPayload.name === "string" && rawPayload.name) ||
-          (typeof rawPayload.Name === "string" && rawPayload.Name) ||
           "Nhóm mới";
         const createdBy =
           (typeof rawPayload.createdBy === "string" && rawPayload.createdBy) ||
-          (typeof rawPayload.CreatedBy === "string" && rawPayload.CreatedBy) ||
           "";
         const createdAt =
           (typeof rawPayload.createdAt === "string" && rawPayload.createdAt) ||
-          (typeof rawPayload.CreatedAt === "string" && rawPayload.CreatedAt) ||
           new Date().toISOString();
         const participants = Array.isArray(rawPayload.participants)
           ? rawPayload.participants
-          : Array.isArray(rawPayload.Participants)
-            ? rawPayload.Participants
-            : [];
+          : [];
 
         if (!id) return;
 
-        const roomType = rawPayload.roomType || rawPayload.RoomType;
+        const roomType = rawPayload.roomType;
         const isDirect = roomType === 1 || roomType === "Direct" || roomType === "direct";
 
         const conversation: Conversation = {
           _id: id,
           type: isDirect ? "direct" : "group",
-          group: {
-            name,
-            createdBy,
-          },
+          group: { name, createdBy },
           participants: participants as Conversation["participants"],
           lastMessageAt: createdAt,
           seenBy: [],
@@ -188,15 +181,42 @@ export const useSignalRStore = create<SignalRState>((set, get) => ({
         };
 
         useChatStore.getState().addConversation(conversation);
-        // Re-fetch conversations để lấy danh sách thành viên đầy đủ từ server
         useChatStore.getState().fetchConversations().catch(console.error);
-        // Tự động join SignalR group để nhận tin nhắn
         if (connection.state === HubConnectionState.Connected) {
           connection.invoke("JoinGroup", conversation._id).catch(console.error);
         }
-
-        // Toast thông báo được thêm vào group
         toast.success(`Bạn đã được thêm vào nhóm "${name}"`, { duration: 4000 });
+      });
+
+      /** Nhận lời mời kết bạn mới */
+      connection.on("ReceiveFriendRequest", (request: Record<string, unknown>) => {
+        const fromName = typeof request.fromName === "string" ? request.fromName : "Ai đó";
+        toast(`👤 ${fromName} đã gửi lời mời kết bạn!`, {
+          duration: 6000,
+          action: {
+            label: "Xem",
+            onClick: () => {
+              // Tự động refresh pending requests để badge hiện ngay
+              import("@/stores/useFriendStore").then(({ useFriendStore }) => {
+                useFriendStore.getState().getPendingRequests();
+              });
+            },
+          },
+        });
+        // Auto-refresh pending requests
+        import("@/stores/useFriendStore").then(({ useFriendStore }) => {
+          useFriendStore.getState().getPendingRequests();
+        });
+      });
+
+      /** Thông báo lời mời kết bạn được chấp nhận */
+      connection.on("ReceiveAcceptFriendNotification", (dto: Record<string, unknown>) => {
+        const acceptorName = typeof dto.acceptorName === "string" ? dto.acceptorName : "Ai đó";
+        toast.success(`🎉 ${acceptorName} đã chấp nhận lời mời kết bạn của bạn!`, { duration: 5000 });
+        // Auto-refresh danh sách bạn bè
+        import("@/stores/useFriendStore").then(({ useFriendStore }) => {
+          useFriendStore.getState().getFriends();
+        });
       });
 
       /** Thông báo user khác tham gia/rời conversation */
