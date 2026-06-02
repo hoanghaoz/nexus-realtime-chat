@@ -1,5 +1,6 @@
 import { useChatStore } from "@/stores/useChatStore";
 import { useAuthStore } from "@/stores/useAuthStore";
+import { useSignalRStore } from "@/stores/useSignalRStore";
 
 interface Props {
   readonly onInfoClick?: () => void;
@@ -16,6 +17,7 @@ export default function ChatHeader({
 }: Props) {
   const { conversations, activeConversationId } = useChatStore();
   const { user } = useAuthStore();
+  const { onlineUsers } = useSignalRStore();
 
   const conversation =
     conversations.find((c) => c._id === activeConversationId) ?? null;
@@ -43,9 +45,16 @@ export default function ChatHeader({
     : otherParticipant?.displayName || "Unknown";
 
   const chatAvatar = isGroup ? null : otherParticipant?.avatarUrl;
+  // Trạng thái online realtime: group hiển số thành viên, direct chat check PresenceHub
+  const isDirectOnline =
+    !isGroup &&
+    !!otherParticipant &&
+    onlineUsers.includes(otherParticipant._id);
   const subtitle = isGroup
     ? `${(conversation.participants || []).length} thành viên`
-    : "Đang hoạt động";
+    : isDirectOnline
+      ? "Đang hoạt động"
+      : "Offline";
 
   const initials = chatName
     .split(" ")
@@ -86,7 +95,14 @@ export default function ChatHeader({
           <h2 className="text-base font-extrabold tracking-tight text-sky-900 dark:text-slate-100">
             {chatName}
           </h2>
-          <span className="text-[12px] text-slate-500 dark:text-slate-400 font-normal">
+          <span className={`flex items-center gap-1 text-[12px] font-normal ${
+            !isGroup && isDirectOnline
+              ? "text-green-500"
+              : "text-slate-500 dark:text-slate-400"
+          }`}>
+            {!isGroup && isDirectOnline && (
+              <span className="inline-block w-2 h-2 rounded-full bg-green-500" />
+            )}
             {subtitle}
           </span>
         </div>

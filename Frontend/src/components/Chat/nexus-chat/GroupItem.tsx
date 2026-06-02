@@ -1,6 +1,8 @@
 import type { Conversation } from "@/types/chat";
 import { useChatStore } from "@/stores/useChatStore";
 import { useAuthStore } from "@/stores/useAuthStore";
+import { useSignalRStore } from "@/stores/useSignalRStore";
+
 
 interface Props {
   conversation: Conversation;
@@ -19,6 +21,7 @@ function timeAgo(iso: string) {
 export default function GroupItem({ conversation }: Readonly<Props>) {
   const { setActiveConversation, activeConversationId } = useChatStore();
   const { user } = useAuthStore();
+  const { onlineUsers } = useSignalRStore();
 
   const isActive = activeConversationId === conversation._id;
   const isGroup = conversation.type === "group";
@@ -31,6 +34,14 @@ export default function GroupItem({ conversation }: Readonly<Props>) {
         );
         return other?.displayName || "Unknown";
       })();
+
+  // Online status: chỉ check cho direct chat
+  const otherParticipant = !isGroup
+    ? (conversation.participants || []).find(
+        (p) => p._id !== user?._id && !p._id.startsWith("self")
+      )
+    : null;
+  const isOtherOnline = !isGroup && !!otherParticipant && onlineUsers.includes(otherParticipant._id);
 
   const unread = user?._id ? (conversation.unreadCounts?.[user._id] ?? 0) : 0;
   const lastMsg = conversation.lastMessage;
@@ -126,6 +137,13 @@ export default function GroupItem({ conversation }: Readonly<Props>) {
             >
               {groupName.charAt(0).toUpperCase()}
             </div>
+          )}
+          {/* Online dot chỉ hiện với direct chat */}
+          {isOtherOnline && (
+            <span
+              className="absolute bottom-0 right-0 w-3 h-3 rounded-full bg-green-500 border-2 border-white dark:border-slate-800 z-10"
+              title="Đang hoạt động"
+            />
           )}
         </div>
 

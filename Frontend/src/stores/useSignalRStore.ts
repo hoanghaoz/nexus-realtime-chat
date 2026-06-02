@@ -1,9 +1,10 @@
 import { create } from "zustand";
 import { HubConnection, HubConnectionState } from "@microsoft/signalr";
-import { createChatConnection } from "@/services/signalr";
+import { createChatConnection, createPresenceConnection } from "@/services/signalr";
 import { useChatStore } from "./useChatStore";
 import { useAuthStore } from "./useAuthStore";
 import type { Message, Conversation } from "@/types/chat";
+import { toast } from "sonner";
 
 interface SignalRState {
   chatConnection: HubConnection | null;
@@ -13,6 +14,8 @@ interface SignalRState {
 
   connectChat: () => Promise<void>;
   disconnectChat: () => Promise<void>;
+  connectPresence: () => Promise<void>;
+  disconnectPresence: () => Promise<void>;
   /** Gửi tin nhắn qua SignalR ChatHub.SendMessage */
   sendMessage: (dto: {
     conversationId: string;
@@ -31,8 +34,7 @@ interface SignalRState {
 }
 
 /**
- * useSignalRStore – quản lý kết nối SignalR với ChatHub.
- * Thay thế useSocketStore của Moji (socket.io → SignalR).
+ * useSignalRStore – quản lý kết nối SignalR với ChatHub và PresenceHub.
  *
  * Nexus dùng SignalR với 2 hub:
  *   /hubs/chat     → ChatHub (tin nhắn, typing)
@@ -43,10 +45,13 @@ interface SignalRState {
  *   ReceiveAddedToGroupNotification(GroupDto)    → thêm conversation vào store
  *   NotifyUserJoined(userId, groupName)          → log
  *   NotifyUserLeft(userId, groupName)            → log
- *   UserTypingNotify(userId, conversationId, isTyping) → (TODO: UI indicator)
- *   MessageUpdateNotify(conversationId, messageId, newContent) → (TODO: edit)
- *   MessageDeleteNotify(conversationId, messageId)             → (TODO: delete)
+ *   UserTypingNotify(userId, conversationId, isTyping) → typing indicator
+ *   MessageUpdateNotify(conversationId, messageId, newContent) → edit
+ *   MessageDeleteNotify(conversationId, messageId)             → delete
  *   ReceiveErrorMessage(error)                  → log error
+ *   ReceiveToastNotification(fromUserId, messageId, emoji) → toast
+ *   UserOnline(userId)  → online status
+ *   UserOffline(userId) → offline status
  */
 export const useSignalRStore = create<SignalRState>((set, get) => ({
   chatConnection: null,
@@ -54,6 +59,9 @@ export const useSignalRStore = create<SignalRState>((set, get) => ({
   onlineUsers: [],
   isConnected: false,
 
+  // ──────────────────────────────────────────────────────────────────
+  // CHAT HUB
+  // ──────────────────────────────────────────────────────────────────
   connectChat: async () => {
     const { chatConnection } = get();
     if (
@@ -65,6 +73,15 @@ export const useSignalRStore = create<SignalRState>((set, get) => ({
 
     try {
       const connection = await createChatConnection();
+
+      // ──── Helper: rejoin tất cả conversations ────
+      const rejoinAllGroups = () => {
+        const conversations = useChatStore.getState().conversations;
+        for (const conv of conversations) {
+          connection.invoke("JoinGroup", conv._id).catch(console.error);
+        }
+        console.log("[SignalR] Rejoined all groups after reconnect");
+      };
 
       // ──── Lắng nghe sự kiện từ server ────
 
@@ -81,7 +98,40 @@ export const useSignalRStore = create<SignalRState>((set, get) => ({
           updatedAt: typeof rawMessage.editedAt === "string" ? rawMessage.editedAt : null,
           createdAt: typeof rawMessage.createdAt === "string" ? rawMessage.createdAt : new Date().toISOString(),
         };
+
+        const { activeConversationId, conversations } = useChatStore.getState();
+        const currentUserId = useAuthStore?.getState?.()?.user?._id;
+        const isFromMe = message.senderId === currentUserId;
+        const isActiveConversation = message.conversationId === activeConversationId;
+
+        // Thêm vào store (dedup được xử lý bên trong addMessage)
         useChatStore.getState().addMessage(message);
+
+        // Nếu message đến ở conversation KHÔNG đang active và KHÔNG phải từ mình
+        // → hiển thị toast notification
+        if (!isActiveConversation && !isFromMe) {
+          const convo = conversations.find((c) => c._id === message.conversationId);
+          const convoName = convo
+            ? convo.type === "group"
+              ? (convo.group?.name ?? "Nhóm")
+              : (convo.participants?.find((p) => p._id !== currentUserId)?.displayName ?? "Ai đó")
+            : "Ai đó";
+
+          const preview = message.content
+            ? message.content.length > 40
+              ? message.content.slice(0, 40) + "..."
+              : message.content
+            : "📷 Đã gửi một hình ảnh";
+
+          toast(`💬 ${convoName}`, {
+            description: preview,
+            duration: 4000,
+            action: {
+              label: "Xem",
+              onClick: () => useChatStore.getState().setActiveConversation(message.conversationId),
+            },
+          });
+        }
       });
 
       /** Được thêm vào nhóm mới */
@@ -114,8 +164,6 @@ export const useSignalRStore = create<SignalRState>((set, get) => ({
         const roomType = rawPayload.roomType || rawPayload.RoomType;
         const isDirect = roomType === 1 || roomType === "Direct" || roomType === "direct";
 
-        // Backend trả về GroupResponseDto (có id, name, roomType, createdBy)
-        // Cần map sang cấu trúc Conversation của Frontend
         const conversation: Conversation = {
           _id: id,
           type: isDirect ? "direct" : "group",
@@ -123,7 +171,7 @@ export const useSignalRStore = create<SignalRState>((set, get) => ({
             name,
             createdBy,
           },
-          participants: participants as Conversation["participants"], // Mặc định rỗng nếu backend ko gửi
+          participants: participants as Conversation["participants"],
           lastMessageAt: createdAt,
           seenBy: [],
           lastMessage: null,
@@ -139,6 +187,9 @@ export const useSignalRStore = create<SignalRState>((set, get) => ({
         if (connection.state === HubConnectionState.Connected) {
           connection.invoke("JoinGroup", conversation._id).catch(console.error);
         }
+
+        // Toast thông báo được thêm vào group
+        toast.success(`Bạn đã được thêm vào nhóm "${name}"`, { duration: 4000 });
       });
 
       /** Thông báo user khác tham gia/rời conversation */
@@ -153,6 +204,14 @@ export const useSignalRStore = create<SignalRState>((set, get) => ({
       /** Lỗi từ server */
       connection.on("ReceiveErrorMessage", (error: string) => {
         console.error("[SignalR] Server error:", error);
+      });
+
+      /** Toast notification (react, tag, v.v.) từ server */
+      connection.on("ReceiveToastNotification", (fromUserId: string, _messageId: string, emoji: string) => {
+        // Không hiện toast nếu là chính mình
+        const currentUserId = useAuthStore?.getState?.()?.user?._id;
+        if (fromUserId === currentUserId) return;
+        toast(`${emoji} Ai đó đã react tin nhắn của bạn`, { duration: 3000 });
       });
 
       /** Cập nhật nội dung message khi được chỉnh sửa */
@@ -176,7 +235,6 @@ export const useSignalRStore = create<SignalRState>((set, get) => ({
         "MessageReactNotify",
         (conversationId: string, messageId: string, emoji: string, fromUserId: string) => {
           // BỎ QUA nếu là chính mình react – useChatHub đã optimistic update rồi
-          // Nếu không bỏ qua sẽ double-toggle (on → off)
           const currentUserId = useAuthStore?.getState?.()?.user?._id;
           if (currentUserId && fromUserId === currentUserId) return;
 
@@ -184,6 +242,23 @@ export const useSignalRStore = create<SignalRState>((set, get) => ({
           useChatStore.getState().updateMessageReactions(messageId, emoji, fromUserId);
         }
       );
+
+      // ──── Reconnect handler: rejoin tất cả groups ────
+      connection.onreconnected(() => {
+        console.log("[SignalR] ChatHub reconnected – rejoining all groups...");
+        set({ isConnected: true });
+        rejoinAllGroups();
+      });
+
+      connection.onreconnecting(() => {
+        console.warn("[SignalR] ChatHub reconnecting...");
+        set({ isConnected: false });
+      });
+
+      connection.onclose(() => {
+        console.warn("[SignalR] ChatHub connection closed");
+        set({ isConnected: false });
+      });
 
       // Kết nối
       await connection.start();
@@ -210,6 +285,87 @@ export const useSignalRStore = create<SignalRState>((set, get) => ({
     }
   },
 
+  // ──────────────────────────────────────────────────────────────────
+  // PRESENCE HUB
+  // ──────────────────────────────────────────────────────────────────
+  connectPresence: async () => {
+    const { presenceConnection } = get();
+    if (
+      presenceConnection &&
+      presenceConnection.state !== HubConnectionState.Disconnected
+    ) {
+      return; // Đã kết nối rồi
+    }
+
+    try {
+      const connection = await createPresenceConnection();
+
+      /** Khi user khác online */
+      connection.on("UserOnline", (userId: string) => {
+        console.log("[SignalR Presence] UserOnline:", userId);
+        set((state) => ({
+          onlineUsers: state.onlineUsers.includes(userId)
+            ? state.onlineUsers
+            : [...state.onlineUsers, userId],
+        }));
+      });
+
+      /** Khi user khác offline */
+      connection.on("UserOffline", (userId: string) => {
+        console.log("[SignalR Presence] UserOffline:", userId);
+        set((state) => ({
+          onlineUsers: state.onlineUsers.filter((id) => id !== userId),
+        }));
+      });
+
+      connection.onreconnected(async () => {
+        console.log("[SignalR Presence] Reconnected – refreshing online users...");
+        try {
+          const onlineUsers: string[] = await connection.invoke("GetOnlineUsers");
+          set({ onlineUsers });
+        } catch (err) {
+          console.warn("[SignalR Presence] GetOnlineUsers after reconnect failed:", err);
+        }
+      });
+
+      connection.onreconnecting(() => {
+        console.warn("[SignalR Presence] Reconnecting...");
+      });
+
+      connection.onclose(() => {
+        console.warn("[SignalR Presence] Connection closed");
+        set({ onlineUsers: [] });
+      });
+
+      await connection.start();
+      set({ presenceConnection: connection });
+      console.log("[SignalR] PresenceHub connected");
+
+      // Lấy danh sách online users ngay sau khi kết nối
+      try {
+        const onlineUsers: string[] = await connection.invoke("GetOnlineUsers");
+        set({ onlineUsers });
+        console.log("[SignalR Presence] Initial online users:", onlineUsers.length);
+      } catch (err) {
+        console.warn("[SignalR Presence] GetOnlineUsers failed:", err);
+      }
+    } catch (error) {
+      console.error("[SignalR Presence] Connection error:", error);
+    }
+  },
+
+  disconnectPresence: async () => {
+    const { presenceConnection } = get();
+    if (presenceConnection) {
+      await presenceConnection.stop();
+      set({ presenceConnection: null, onlineUsers: [] });
+      console.log("[SignalR] PresenceHub disconnected");
+    }
+  },
+
+  // ──────────────────────────────────────────────────────────────────
+  // CHAT ACTIONS
+  // ──────────────────────────────────────────────────────────────────
   sendMessage: async (dto) => {
     const { chatConnection } = get();
     if (!chatConnection || chatConnection.state !== HubConnectionState.Connected) {

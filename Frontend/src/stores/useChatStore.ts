@@ -4,6 +4,8 @@ import type { ChatState } from "@/types/store";
 import type { Conversation, Message } from "@/types/chat";
 import type { FriendResponseDto } from "@/services/friendService";
 import { toast } from "sonner";
+import { useAuthStore } from "./useAuthStore";
+
 
 /**
  * useChatStore – quản lý state conversations và messages.
@@ -28,6 +30,8 @@ export const useChatStore = create<ChatState>()(
         set({ activeConversationId: id });
         if (id) {
           get().fetchConversationDetail(id);
+          // Reset unread count khi user mở conversation
+          get().markConversationRead(id);
         }
       },
 
@@ -40,6 +44,19 @@ export const useChatStore = create<ChatState>()(
           messageLoading: false,
           loading: false,
         }),
+
+      /** Reset unread count khi mở conversation */
+      markConversationRead: (conversationId: string) => {
+        const userId = (useAuthStore as any)?.getState?.()?.user?._id;
+        if (!userId) return;
+        set((state) => ({
+          conversations: state.conversations.map((c) =>
+            c._id === conversationId
+              ? { ...c, unreadCounts: { ...c.unreadCounts, [userId]: 0 } }
+              : c
+          ),
+        }));
+      },
 
       /** Lấy chi tiết conversation để load danh sách member và lastMessage */
       fetchConversationDetail: async (conversationId: string): Promise<void> => {
@@ -254,23 +271,33 @@ export const useChatStore = create<ChatState>()(
             },
           };
         });
-        // Cập nhật lastMessage với nội dung thực (không để null)
-        set((state) => ({
-          conversations: state.conversations.map((c) =>
-            c._id === convoId
-              ? {
-                  ...c,
-                  lastMessageAt: message.createdAt,
-                  lastMessage: {
-                    _id: message._id,
-                    content: message.content ?? "",
-                    createdAt: message.createdAt,
-                    sender: { _id: message.senderId, displayName: "" },
-                  },
-                }
-              : c
-          ),
-        }));
+        // Cập nhật lastMessage và tăng unread count nếu không phải active conversation
+        set((state) => {
+          const isActive = state.activeConversationId === convoId;
+          const currentUserId = (useAuthStore as any)?.getState?.()?.user?._id;
+          const isFromMe = message.senderId === currentUserId;
+
+          return {
+            conversations: state.conversations.map((c) => {
+              if (c._id !== convoId) return c;
+              const updatedUnread =
+                !isActive && !isFromMe && currentUserId
+                  ? { ...c.unreadCounts, [currentUserId]: (c.unreadCounts?.[currentUserId] ?? 0) + 1 }
+                  : c.unreadCounts;
+              return {
+                ...c,
+                lastMessageAt: message.createdAt,
+                lastMessage: {
+                  _id: message._id,
+                  content: message.content ?? "",
+                  createdAt: message.createdAt,
+                  sender: { _id: message.senderId, displayName: "" },
+                },
+                unreadCounts: updatedUnread,
+              };
+            }),
+          };
+        });
       },
 
 
