@@ -78,13 +78,54 @@ function showMessageToast(
 /** Parse raw SignalR payload thành Message object */
 function parseRawMessage(rawMessage: Record<string, unknown>): Message {
   const attachments = Array.isArray(rawMessage.attachments) ? rawMessage.attachments : [];
-  const firstAttachment = attachments[0] as { url?: unknown } | undefined;
-  const imgUrl = typeof firstAttachment?.url === "string" ? firstAttachment.url : null;
+  const firstAttachment = attachments[0] as {
+    url?: unknown;
+    contentType?: unknown;
+    originalName?: unknown;
+    fileSize?: unknown;
+    fileName?: unknown;
+  } | undefined;
+
   const content = typeof rawMessage.content === "string" ? rawMessage.content : null;
   const updatedAt = typeof rawMessage.editedAt === "string" ? rawMessage.editedAt : null;
   const createdAt = typeof rawMessage.createdAt === "string"
     ? rawMessage.createdAt
     : new Date().toISOString();
+
+  // Phân biệt ảnh vs file dựa vào contentType từ backend
+  let imgUrl: string | null = null;
+  let fileAttachment: Message["fileAttachment"] = undefined;
+
+  if (firstAttachment && typeof firstAttachment.url === "string") {
+    const contentType = typeof firstAttachment.contentType === "string" ? firstAttachment.contentType : "";
+    const url = firstAttachment.url;
+
+    if (contentType.startsWith("image/")) {
+      // Backend xác nhận là ảnh
+      imgUrl = url;
+    } else if (contentType !== "" && !contentType.startsWith("image/")) {
+      // Backend xác nhận là file (PDF, ZIP, DOCX…) – không phải ảnh
+      const name = typeof firstAttachment.originalName === "string"
+        ? firstAttachment.originalName
+        : typeof firstAttachment.fileName === "string"
+          ? firstAttachment.fileName
+          : url.split("/").pop()?.split("?")[0] ?? "file";
+      const size = typeof firstAttachment.fileSize === "number" ? firstAttachment.fileSize : 0;
+      fileAttachment = { url, name, size, type: contentType };
+    } else {
+      // contentType rỗng → fallback bằng extension trong URL
+      const looksLikeImage = /\.(jpe?g|png|gif|webp|heic|bmp|svg)(\?.*)?$/i.test(url);
+      const looksLikeFile = /\.(pdf|doc|docx|xls|xlsx|ppt|pptx|zip|rar|7z|tar|gz|mp4|mp3|txt|csv)(\?.*)?$/i.test(url);
+      if (looksLikeImage) {
+        imgUrl = url;
+      } else if (looksLikeFile) {
+        const name = url.split("/").pop()?.split("?")[0] ?? "file";
+        fileAttachment = { url, name, size: 0, type: "" };
+      }
+      // Nếu là URL thuần (web link) → không set imgUrl/fileAttachment
+      // → LinkPreview sẽ handle qua UpdateLinkPreview SignalR
+    }
+  }
 
   return {
     _id: String(rawMessage.messageId || rawMessage._id || ""),
@@ -92,6 +133,7 @@ function parseRawMessage(rawMessage: Record<string, unknown>): Message {
     senderId: String(rawMessage.userId || rawMessage.senderId || ""),
     content,
     imgUrl,
+    fileAttachment,
     updatedAt,
     createdAt,
   };
@@ -268,6 +310,53 @@ export const useSignalRStore = create<SignalRState>((set, get) => ({
         useChatStore.getState().removeMessage(conversationId, messageId);
       });
       connection.on("MessageReactNotify", handleMessageReact);
+      // Feature 2: Link Preview – backend gửi 1 object { MessageId, Attachment: { previewLinkUrl, title, description, imageUrl, siteName } }
+      connection.on(
+        "UpdateLinkPreview",
+        (payload: Record<string, unknown>) => {
+          try {
+            console.log("[SignalR] UpdateLinkPreview payload:", payload);
+            const messageId = String(payload.messageId || payload.MessageId || "");
+            const att = (payload.attachment || payload.Attachment || {}) as Record<string, unknown>;
+            const url = String(att.previewLinkUrl || att.PreviewLinkUrl || att.url || "");
+            if (!messageId || !url) return;
+            useChatStore.getState().updateMessageLinkPreview(messageId, {
+              url,
+              title: typeof att.title === "string" ? att.title : (typeof att.Title === "string" ? att.Title : null),
+              description: typeof att.description === "string" ? att.description : (typeof att.Description === "string" ? att.Description : null),
+              imageUrl: typeof att.imageUrl === "string" ? att.imageUrl : (typeof att.ImageUrl === "string" ? att.ImageUrl : null),
+              siteName: typeof att.siteName === "string" ? att.siteName : (typeof att.SiteName === "string" ? att.SiteName : null),
+            });
+          } catch (err) {
+            console.error("[SignalR] UpdateLinkPreview parse error:", err);
+          }
+        }
+      );
+      // Bot reply – backend push ReceiveBotReply với payload BotResponseDto
+      connection.on("ReceiveBotReply", (rawMessage: Record<string, unknown>) => {
+        try {
+          console.log("[SignalR] ReceiveBotReply payload:", rawMessage);
+          const BOT_ID = "15c5232d-1bd9-4bbd-98e0-1ea7308e80bb";
+          const botMessage: Message = {
+            _id: String(rawMessage.messageId || rawMessage.MessageId || `bot-reply-${Date.now()}`),
+            conversationId: String(rawMessage.conversationId || rawMessage.ConversationId || ""),
+            senderId: BOT_ID,
+            content: typeof rawMessage.content === "string" ? rawMessage.content : (typeof rawMessage.Content === "string" ? rawMessage.Content : ""),
+            createdAt: typeof rawMessage.replyAt === "string" ? rawMessage.replyAt : (typeof rawMessage.ReplyAt === "string" ? rawMessage.ReplyAt : new Date().toISOString()),
+            replyToMessageId: typeof rawMessage.parentMessageId === "string" ? rawMessage.parentMessageId : (typeof rawMessage.ParentMessageId === "string" ? rawMessage.ParentMessageId : null),
+            reactions: []
+          };
+          console.log("[SignalR] Parsed Bot Message:", botMessage);
+          if (botMessage.conversationId && botMessage._id) {
+            useChatStore.getState().addMessage(botMessage);
+          } else {
+            console.warn("[SignalR] Invalid bot message payload (missing id or convoId)");
+          }
+        } catch (err) {
+          console.error("[SignalR] ReceiveBotReply parse error:", err);
+        }
+      });
+
 
       // ──── Reconnect handlers ────
       connection.onreconnected(() => {

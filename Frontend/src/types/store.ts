@@ -62,5 +62,7 @@ export interface ChatState {
   markConversationRead: (conversationId: string) => void;
   /** Xóa optimistic pending message (prefix 'pending-') khi server echo về */
   removePendingMessage: (conversationId: string) => void;
+  /** Cập nhật link preview của một message (từ SignalR UpdateLinkPreview) */
+  updateMessageLinkPreview: (messageId: string, preview: import('./chat').LinkPreview) => void;
 }
 

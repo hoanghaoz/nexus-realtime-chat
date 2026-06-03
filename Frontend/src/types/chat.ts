@@ -52,6 +52,14 @@ export interface Reaction {
   userId: string;
 }
 
+export interface LinkPreview {
+  url: string;
+  title?: string | null;
+  description?: string | null;
+  imageUrl?: string | null;
+  siteName?: string | null;
+}
+
 export interface Message {
   _id: string;
   conversationId: string;
@@ -77,6 +85,10 @@ export interface Message {
     size: number;
     type: string;
   };
+  /** Link preview được crawl bởi backend qua SignalR UpdateLinkPreview */
+  linkPreview?: LinkPreview | null;
+  /** Danh sách userId được mention trong tin nhắn */
+  mentionedUsersId?: string[];
 }
 
 export interface MessageThread {

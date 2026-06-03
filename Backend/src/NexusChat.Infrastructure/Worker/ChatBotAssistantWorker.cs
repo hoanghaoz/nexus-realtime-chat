@@ -25,7 +25,7 @@ public class ChatBotAssistantWorker(
     {
         logger.LogInformation("Chatbot assistant is ready");
         const string messageError = "Please try again later";
-        var botId = configuration["ChatBot:BotId"] ?? throw new InvalidOperationException("Bot id is not configured");
+        var botId = configuration["ChatBot:BotId"] ?? "15c5232d-1bd9-4bbd-98e0-1ea7308e80bb";
         while (!stoppingToken.IsCancellationRequested)
             try
             {
@@ -43,25 +43,33 @@ public class ChatBotAssistantWorker(
                     continue;
                 }
 
-                switch (requestBot.Mission)
+                try
                 {
-                    case ChatBotRegex.MissionSummarize:
-                        var result = await chatBotService.SummarizeMessageInConversationAsync(requestBot.ConversationId,
-                            requestBot.UserId, stoppingToken);
-                        await SendBotReply(result, messageError, requestBot, messageRepository, botId, stoppingToken);
-                        break;
+                    switch (requestBot.Mission)
+                    {
+                        case ChatBotRegex.MissionSummarize:
+                            var result = await chatBotService.SummarizeMessageInConversationAsync(requestBot.ConversationId,
+                                requestBot.UserId, stoppingToken);
+                            await SendBotReply(result, messageError, requestBot, messageRepository, botId, stoppingToken);
+                            break;
 
-                    case ChatBotRegex.MissionRemind:
-                        var response = await chatBotService.RemindInConversationAsync(requestBot.ConversationId,
-                            requestBot.ParentMessageId, stoppingToken);
-                        await SendBotRemind(response, messageRepository, reminderRepository, requestBot, botId,
-                            messageError, stoppingToken);
-                        break;
-                    
-                    default:
-                        var answer = await chatBotService.AnswerMessageInConversationAsync(requestBot.ConversationId, requestBot.UserId, stoppingToken);
-                        await SendBotReply(answer, messageError, requestBot, messageRepository, botId, stoppingToken);
-                        break;
+                        case ChatBotRegex.MissionRemind:
+                            var response = await chatBotService.RemindInConversationAsync(requestBot.ConversationId,
+                                requestBot.ParentMessageId, stoppingToken);
+                            await SendBotRemind(response, messageRepository, reminderRepository, requestBot, botId,
+                                messageError, stoppingToken);
+                            break;
+                        
+                        default:
+                            var answer = await chatBotService.AnswerMessageInConversationAsync(requestBot.ConversationId, requestBot.UserId, stoppingToken);
+                            await SendBotReply(answer, messageError, requestBot, messageRepository, botId, stoppingToken);
+                            break;
+                    }
+                }
+                catch (Exception ex)
+                {
+                    logger.LogError(ex, "LLM or ChatBot service exception for conversation {ConversationId}", requestBot.ConversationId);
+                    await botReplyService.SendBotReplyErrorMessageAsync(messageError, requestBot.ConversationId, stoppingToken);
                 }
 
                 parentMessage.ReplyCount += 1;
