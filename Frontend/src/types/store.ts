@@ -58,4 +58,9 @@ export interface ChatState {
   recallMessageInStore: (messageId: string) => void;
   /** Cập nhật reactions của một message (react realtime) */
   updateMessageReactions: (messageId: string, emoji: string, fromUserId: string) => void;
+  /** Reset unread count khi user mở conversation */
+  markConversationRead: (conversationId: string) => void;
+  /** Xóa optimistic pending message (prefix 'pending-') khi server echo về */
+  removePendingMessage: (conversationId: string) => void;
 }
+

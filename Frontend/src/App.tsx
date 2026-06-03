@@ -14,18 +14,19 @@ import { useChatStore } from "./stores/useChatStore";
 function App() {
   const { isDark, setTheme } = useThemeStore();
   const { accessToken } = useAuthStore();
-  const { connectChat, disconnectChat } = useSignalRStore();
+  const { connectChat, disconnectChat, connectPresence, disconnectPresence } = useSignalRStore();
   const { fetchConversations } = useChatStore();
 
   useEffect(() => {
     setTheme(isDark);
   }, [isDark]);
 
-  // Kết nối SignalR ChatHub khi user đăng nhập, ngắt khi đăng xuất
+  // Kết nối SignalR ChatHub + PresenceHub khi user đăng nhập, ngắt khi đăng xuất
   useEffect(() => {
     if (accessToken) {
       useAuthStore.getState().fetchProfile().catch(console.error);
 
+      // Kết nối ChatHub
       connectChat().then(() => {
         // Fetch conversations sau khi kết nối thành công
         fetchConversations().then(() => {
@@ -38,10 +39,14 @@ function App() {
           }
         });
       });
+
+      // Kết nối PresenceHub (song song)
+      connectPresence().catch(console.error);
     }
 
     return () => {
       disconnectChat();
+      disconnectPresence();
     };
   }, [accessToken]);
 

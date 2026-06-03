@@ -4,6 +4,8 @@ import type { ChatState } from "@/types/store";
 import type { Conversation, Message } from "@/types/chat";
 import type { FriendResponseDto } from "@/services/friendService";
 import { toast } from "sonner";
+import { useAuthStore } from "./useAuthStore";
+
 
 /**
  * useChatStore – quản lý state conversations và messages.
@@ -28,6 +30,8 @@ export const useChatStore = create<ChatState>()(
         set({ activeConversationId: id });
         if (id) {
           get().fetchConversationDetail(id);
+          // Reset unread count khi user mở conversation
+          get().markConversationRead(id);
         }
       },
 
@@ -40,6 +44,19 @@ export const useChatStore = create<ChatState>()(
           messageLoading: false,
           loading: false,
         }),
+
+      /** Reset unread count khi mở conversation */
+      markConversationRead: (conversationId: string) => {
+        const userId = (useAuthStore as any)?.getState?.()?.user?._id;
+        if (!userId) return;
+        set((state) => ({
+          conversations: state.conversations.map((c) =>
+            c._id === conversationId
+              ? { ...c, unreadCounts: { ...c.unreadCounts, [userId]: 0 } }
+              : c
+          ),
+        }));
+      },
 
       /** Lấy chi tiết conversation để load danh sách member và lastMessage */
       fetchConversationDetail: async (conversationId: string): Promise<void> => {
@@ -238,11 +255,41 @@ export const useChatStore = create<ChatState>()(
       /** Thêm message mới vào store (gọi từ SignalR handler) */
       addMessage: (message: Message) => {
         const convoId = message.conversationId;
+        const currentUserId = (useAuthStore as any)?.getState?.()?.user?._id;
+        const isFromMe = message.senderId === currentUserId;
+        // Không cập nhật lastMessage/unread khi là optimistic pending message
+        const isPending = message._id.startsWith("pending-");
+
         set((state) => {
           const convoMessages = state.messages[convoId];
           const currentItems = convoMessages?.items ?? [];
           // Tránh duplicate
           if (currentItems.some((m) => m._id === message._id)) return state;
+
+          const isActive = state.activeConversationId === convoId;
+
+          // Cập nhật conversations (lastMessage + unread) – bỏ qua nếu là optimistic pending
+          const updatedConversations = isPending
+            ? state.conversations
+            : state.conversations.map((c) => {
+                if (c._id !== convoId) return c;
+                const newUnread =
+                  !isActive && !isFromMe && currentUserId
+                    ? { ...c.unreadCounts, [currentUserId]: (c.unreadCounts?.[currentUserId] ?? 0) + 1 }
+                    : c.unreadCounts;
+                return {
+                  ...c,
+                  lastMessageAt: message.createdAt,
+                  lastMessage: {
+                    _id: message._id,
+                    content: message.content ?? "",
+                    createdAt: message.createdAt,
+                    sender: { _id: message.senderId, displayName: "" },
+                  },
+                  unreadCounts: newUnread,
+                };
+              });
+
           return {
             messages: {
               ...state.messages,
@@ -252,26 +299,12 @@ export const useChatStore = create<ChatState>()(
                 nextCursor: convoMessages?.nextCursor ?? null,
               },
             },
+            conversations: updatedConversations,
           };
         });
-        // Cập nhật lastMessage với nội dung thực (không để null)
-        set((state) => ({
-          conversations: state.conversations.map((c) =>
-            c._id === convoId
-              ? {
-                  ...c,
-                  lastMessageAt: message.createdAt,
-                  lastMessage: {
-                    _id: message._id,
-                    content: message.content ?? "",
-                    createdAt: message.createdAt,
-                    sender: { _id: message.senderId, displayName: "" },
-                  },
-                }
-              : c
-          ),
-        }));
       },
+
+
 
 
       /** Cập nhật conversation (gọi từ SignalR handler) */
@@ -418,6 +451,28 @@ export const useChatStore = create<ChatState>()(
             break;
           }
           return { messages: updatedMessages };
+        });
+      },
+
+      /** Xóa optimistic pending message (prefix 'pending-') khi server echo về */
+      removePendingMessage: (conversationId: string) => {
+        set((state) => {
+          const convoMessages = state.messages[conversationId];
+          if (!convoMessages) return state;
+          // Tìm message pending mới nhất (prefix 'pending-') trong conversation
+          const pendingIdx = convoMessages.items.findLastIndex((m) =>
+            m._id.startsWith("pending-")
+          );
+          if (pendingIdx === -1) return state;
+          return {
+            messages: {
+              ...state.messages,
+              [conversationId]: {
+                ...convoMessages,
+                items: convoMessages.items.filter((_, i) => i !== pendingIdx),
+              },
+            },
+          };
         });
       },
   })
