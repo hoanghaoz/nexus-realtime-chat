@@ -1,4 +1,4 @@
-// Frontend/src/hooks/useChatHub.ts
+﻿// Frontend/src/hooks/useChatHub.ts
 import { useState, useEffect, useCallback, useRef } from "react";
 import { useSignalRStore } from "@/stores/useSignalRStore";
 import { useChatStore } from "@/stores/useChatStore";
