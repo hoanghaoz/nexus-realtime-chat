@@ -424,9 +424,20 @@ export const conversationService = {
     const res = await api.get("/message/conversation-messages", { params });
 
     const mapMessage = (item: any): Message => {
-      const firstAttachment = item.attachments?.[0];
-      const isImageAttachment = firstAttachment?.type?.startsWith("image") ||
+      // Tìm file/ảnh thật sự (bỏ qua LinkPreview)
+      const realAttachments = Array.isArray(item.attachments) 
+        ? item.attachments.filter((a: any) => a.attachmentType !== "link_preview" && a.type !== 5 && a.type !== "LinkPreview")
+        : [];
+      
+      const firstAttachment = realAttachments[0];
+      const isImageAttachment = firstAttachment?.type?.toString().startsWith("image") ||
         /\.(jpg|jpeg|png|gif|webp|heic)$/i.test(firstAttachment?.fileName ?? firstAttachment?.name ?? "");
+
+      // Tìm Link Preview attachment
+      const linkPreviewAttr = Array.isArray(item.attachments)
+        ? item.attachments.find((a: any) => a.attachmentType === "link_preview" || a.type === 5 || a.type === "LinkPreview")
+        : null;
+
       return {
         _id: item.messageId || item._id,
         conversationId: item.conversationId,
@@ -435,15 +446,31 @@ export const conversationService = {
         isDeleted: item.isDeleted ?? false,
         deletedText: item.isDeleted ? "Tin nhắn đã bị xóa" : undefined,
         imgUrl: getAttachmentImageUrl(firstAttachment, isImageAttachment),
-        // Lưu thêm thông tin file không phải ảnh
-        ...(firstAttachment && !isImageAttachment ? {
+        // Lưu thêm thông tin file không phải ảnh (bỏ qua web link thuần túy)
+        ...(firstAttachment && !isImageAttachment && (
+          (firstAttachment.type && firstAttachment.type !== "" && !firstAttachment.type.toString().startsWith("text/") && !firstAttachment.type.toString().includes("html")) ||
+          /\.(pdf|doc|docx|xls|xlsx|ppt|pptx|zip|rar|7z|tar|gz|mp4|mp3|txt|csv)(\?.*)?$/i.test(firstAttachment.url || firstAttachment.fileUrl || "")
+        ) ? {
           fileAttachment: {
             url: firstAttachment.url || firstAttachment.fileUrl || "",
-            name: firstAttachment.fileName || firstAttachment.name || "file",
+            name: firstAttachment.fileName || firstAttachment.name || (firstAttachment.url || "").split("/").pop()?.split("?")[0] || "file",
             size: firstAttachment.fileSize || firstAttachment.size || 0,
             type: firstAttachment.type || firstAttachment.mediaType || "file",
           }
         } : {}),
+        linkPreview: linkPreviewAttr ? {
+          url: linkPreviewAttr.previewLinkUrl || linkPreviewAttr.url || "",
+          title: linkPreviewAttr.title || null,
+          description: linkPreviewAttr.description || null,
+          imageUrl: linkPreviewAttr.imageUrl || null,
+          siteName: linkPreviewAttr.siteName || null,
+        } : (item.linkPreview ? {
+          url: item.linkPreview.url || "",
+          title: item.linkPreview.title || null,
+          description: item.linkPreview.description || null,
+          imageUrl: item.linkPreview.imageUrl || null,
+          siteName: item.linkPreview.siteName || null,
+        } : null),
         updatedAt: item.editedAt ?? null,
         createdAt: item.createdAt,
         replyToMessageId: item.replyToMessageId ?? null,

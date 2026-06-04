@@ -475,6 +475,25 @@ export const useChatStore = create<ChatState>()(
           };
         });
       },
+
+      /** Cập nhật link preview từ SignalR UpdateLinkPreview */
+      updateMessageLinkPreview: (messageId, preview) => {
+        set((state) => {
+          const updatedMessages = { ...state.messages };
+          for (const [convoId, convoData] of Object.entries(updatedMessages)) {
+            const idx = convoData.items.findIndex((m) => m._id === messageId);
+            if (idx === -1) continue;
+            updatedMessages[convoId] = {
+              ...convoData,
+              items: convoData.items.map((m, i) =>
+                i === idx ? { ...m, linkPreview: preview } : m
+              ),
+            };
+            break;
+          }
+          return { messages: updatedMessages };
+        });
+      },
   })
 );
 
