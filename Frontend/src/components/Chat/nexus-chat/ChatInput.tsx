@@ -99,13 +99,15 @@ export default function ChatInput() {
     if (textareaRef.current) textareaRef.current.style.height = "auto";
     setMentionedUsersId([]);
     // Neu co mention @Bot: set botTyping = true truoc khi gui
-    const hasBotMention = mentionedUsersId.includes("15c5232d-1bd9-4bbd-98e0-1ea7308e80bb") || /\@bot/i.test(content);
+    const hasBotMention = mentionedUsersId.includes("15c5232d-1bd9-4bbd-98e0-1ea7308e80bb") || /@bot/i.test(content);
     if (hasBotMention) notifyBotMentioned();
     try {
       await sendMessage({
         conversationId: activeConversationId,
         content,
-        mentionedUsersId: mentionedUsersId.length > 0 ? mentionedUsersId : undefined,
+        mentionedUsersId: mentionedUsersId.filter(id => id !== BOT_ID_MENTION).length > 0
+          ? mentionedUsersId.filter(id => id !== BOT_ID_MENTION)
+          : undefined,
       });
     } finally {
       setSending(false);
@@ -139,7 +141,7 @@ export default function ChatInput() {
     }
   };
 
-  const handleEmojiSelect = (emoji: any) => {
+  const handleEmojiSelect = (emoji: { native: string }) => {
     setText((prev) => prev + emoji.native);
     textareaRef.current?.focus();
     setShowEmoji(false);
@@ -207,11 +209,12 @@ export default function ChatInput() {
 
         // Dọn sạch sau 2s
         setTimeout(() => removeUploadItem(setUploadQueue, uploadId), 2000);
-      } catch (err: any) {
+      } catch (err: unknown) {
         console.error("[ChatInput] uploadFile error:", err);
         updateUploadItem(setUploadQueue, uploadId, { status: "error" });
+        const e = err as { response?: { status?: number } };
         const msg =
-          err?.response?.status === 400
+          e?.response?.status === 400
             ? `File "${file.name}" không được hỗ trợ hoặc quá lớn.`
             : `Upload "${file.name}" thất bại. Vui lòng thử lại!`;
         toast.error(msg);
@@ -231,7 +234,7 @@ export default function ChatInput() {
     }
   };
   // Chon mention candidate
-  const handleSelectMention = useCallback((candidate: { id: string; displayName: string }) => {
+  const handleSelectMention = (candidate: { id: string; displayName: string }) => {
     const pos = textareaRef.current?.selectionStart ?? text.length;
     const before = text.slice(0, pos);
     const after = text.slice(pos);
@@ -254,7 +257,7 @@ export default function ChatInput() {
         textareaRef.current.selectionStart = textareaRef.current.selectionEnd = newBefore.length;
       }
     }, 0);
-  }, [text]);
+  };
 
   return (
     <div className="px-4 pb-6 pt-2">
@@ -446,7 +449,7 @@ export default function ChatInput() {
         multiple
         className="hidden"
         onChange={(e) => handleFilesSelected(e.target.files)}
-        {...({ webkitdirectory: "", directory: "" } as any)}
+        {...( { webkitdirectory: "", directory: "" } as React.InputHTMLAttributes<HTMLInputElement> )}
       />
 
       {/* Click outside để đóng attach menu */}

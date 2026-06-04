@@ -1,4 +1,4 @@
-﻿// Frontend/src/hooks/useChatHub.ts
+// Frontend/src/hooks/useChatHub.ts
 import { useState, useEffect, useCallback, useRef } from "react";
 import { useSignalRStore } from "@/stores/useSignalRStore";
 import { useChatStore } from "@/stores/useChatStore";
@@ -78,12 +78,16 @@ export function useChatHub() {
     return () => chatConnection.off("UserTypingNotify", userTypingHandler);
   }, [chatConnection, user?._id]);
 
-  // Lắng nghe ReceiveBotReply – bot đang trả lời
+  // Lắng nghe ReceiveBotReply hoặc ReceiveErrorMessage – bot đã xử lý xong (thành công hay lỗi)
   useEffect(() => {
     if (!chatConnection) return;
-    const botHandler = (_rawMessage: unknown) => setBotTyping(false);
-    chatConnection.on("ReceiveBotReply", botHandler);
-    return () => chatConnection.off("ReceiveBotReply", botHandler);
+    const botDoneHandler = (_rawMessage: unknown) => setBotTyping(false);
+    chatConnection.on("ReceiveBotReply", botDoneHandler);
+    chatConnection.on("ReceiveErrorMessage", botDoneHandler);
+    return () => {
+      chatConnection.off("ReceiveBotReply", botDoneHandler);
+      chatConnection.off("ReceiveErrorMessage", botDoneHandler);
+    };
   }, [chatConnection]);
 
   // Reset typing khi đổi conversation
@@ -254,7 +258,7 @@ export function useChatHub() {
   // Đóng thread khi đổi conversation
   useEffect(() => {
     closeThread();
-  }, [activeConversationId]);
+  }, [activeConversationId, closeThread]);
 
 
   // Callback de ChatInput goi khi phat hien tin nhan mention @Bot

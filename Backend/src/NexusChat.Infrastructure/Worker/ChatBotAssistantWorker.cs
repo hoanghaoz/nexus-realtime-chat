@@ -43,33 +43,80 @@ public class ChatBotAssistantWorker(
                     continue;
                 }
 
-                try
+                // Retry với exponential backoff khi gặp 429 Rate Limit
+                const int maxRetries = 3;
+                var attempt = 0;
+                var success = false;
+                while (attempt <= maxRetries && !success)
                 {
-                    switch (requestBot.Mission)
+                    try
                     {
-                        case ChatBotRegex.MissionSummarize:
-                            var result = await chatBotService.SummarizeMessageInConversationAsync(requestBot.ConversationId,
-                                requestBot.UserId, stoppingToken);
-                            await SendBotReply(result, messageError, requestBot, messageRepository, botId, stoppingToken);
-                            break;
+                        switch (requestBot.Mission)
+                        {
+                            case ChatBotRegex.MissionSummarize:
+                                var result = await chatBotService.SummarizeMessageInConversationAsync(requestBot.ConversationId,
+                                    requestBot.UserId, stoppingToken);
+                                await SendBotReply(result, messageError, requestBot, messageRepository, botId, stoppingToken);
+                                break;
 
-                        case ChatBotRegex.MissionRemind:
-                            var response = await chatBotService.RemindInConversationAsync(requestBot.ConversationId,
-                                requestBot.ParentMessageId, stoppingToken);
-                            await SendBotRemind(response, messageRepository, reminderRepository, requestBot, botId,
-                                messageError, stoppingToken);
-                            break;
-                        
-                        default:
-                            var answer = await chatBotService.AnswerMessageInConversationAsync(requestBot.ConversationId, requestBot.UserId, stoppingToken);
-                            await SendBotReply(answer, messageError, requestBot, messageRepository, botId, stoppingToken);
-                            break;
+                            case ChatBotRegex.MissionRemind:
+                                var response = await chatBotService.RemindInConversationAsync(requestBot.ConversationId,
+                                    requestBot.ParentMessageId, stoppingToken);
+                                await SendBotRemind(response, messageRepository, reminderRepository, requestBot, botId,
+                                    messageError, stoppingToken);
+                                break;
+
+                            default:
+                                var answer = await chatBotService.AnswerMessageInConversationAsync(requestBot.ConversationId, requestBot.UserId, stoppingToken);
+                                await SendBotReply(answer, messageError, requestBot, messageRepository, botId, stoppingToken);
+                                break;
+                        }
+                        success = true;
                     }
-                }
-                catch (Exception ex)
-                {
-                    logger.LogError(ex, "LLM or ChatBot service exception for conversation {ConversationId}", requestBot.ConversationId);
-                    await botReplyService.SendBotReplyErrorMessageAsync(messageError, requestBot.ConversationId, stoppingToken);
+                    catch (HttpRequestException ex) when (ex.StatusCode == System.Net.HttpStatusCode.TooManyRequests ||
+                                                          ex.Message.Contains("429"))
+                    {
+                        attempt++;
+                        if (attempt > maxRetries)
+                        {
+                            logger.LogError(ex, "Rate limit exceeded after {MaxRetries} retries for conversation {ConversationId}", maxRetries, requestBot.ConversationId);
+                            var errMessage = new Message { Id = Guid.NewGuid().ToString(), ConversationId = requestBot.ConversationId, FromUserId = botId, Content = "Hệ thống AI đang quá tải (Rate Limit). Vui lòng thử lại sau ít phút!", ParentMessageId = requestBot.ParentMessageId, ReplyAt = DateTime.UtcNow };
+                            await messageRepository.AddAsync(errMessage, stoppingToken);
+                            var botReply = new BotResponseDto(errMessage.Id, requestBot.ParentMessageId, requestBot.ConversationId, errMessage.Content, errMessage.ReplyAt, errMessage.CreatedAt);
+                            await botReplyService.SendBotReplyAsync(botReply, stoppingToken);
+                            break;
+                        }
+                        var delaySeconds = Math.Pow(2, attempt); // 2s, 4s, 8s
+                        logger.LogWarning("Rate limited (429). Retrying attempt {Attempt}/{MaxRetries} in {Delay}s...", attempt, maxRetries, delaySeconds);
+                        await Task.Delay(TimeSpan.FromSeconds(delaySeconds), stoppingToken);
+                    }
+                    catch (Exception ex) when (ex.InnerException is HttpRequestException innerHttp &&
+                                               (innerHttp.StatusCode == System.Net.HttpStatusCode.TooManyRequests ||
+                                                ex.Message.Contains("429")))
+                    {
+                        attempt++;
+                        if (attempt > maxRetries)
+                        {
+                            logger.LogError(ex, "Rate limit exceeded after {MaxRetries} retries for conversation {ConversationId}", maxRetries, requestBot.ConversationId);
+                            var errMessage = new Message { Id = Guid.NewGuid().ToString(), ConversationId = requestBot.ConversationId, FromUserId = botId, Content = "Hệ thống AI đang quá tải (Rate Limit). Vui lòng thử lại sau ít phút!", ParentMessageId = requestBot.ParentMessageId, ReplyAt = DateTime.UtcNow };
+                            await messageRepository.AddAsync(errMessage, stoppingToken);
+                            var botReply = new BotResponseDto(errMessage.Id, requestBot.ParentMessageId, requestBot.ConversationId, errMessage.Content, errMessage.ReplyAt, errMessage.CreatedAt);
+                            await botReplyService.SendBotReplyAsync(botReply, stoppingToken);
+                            break;
+                        }
+                        var delaySeconds = Math.Pow(2, attempt);
+                        logger.LogWarning("Rate limited (429). Retrying attempt {Attempt}/{MaxRetries} in {Delay}s...", attempt, maxRetries, delaySeconds);
+                        await Task.Delay(TimeSpan.FromSeconds(delaySeconds), stoppingToken);
+                    }
+                    catch (Exception ex)
+                    {
+                        logger.LogError(ex, "LLM or ChatBot service exception for conversation {ConversationId}", requestBot.ConversationId);
+                        var errMessage = new Message { Id = Guid.NewGuid().ToString(), ConversationId = requestBot.ConversationId, FromUserId = botId, Content = "Xin lỗi, đã xảy ra lỗi trong quá trình xử lý. Vui lòng thử lại sau!", ParentMessageId = requestBot.ParentMessageId, ReplyAt = DateTime.UtcNow };
+                        await messageRepository.AddAsync(errMessage, stoppingToken);
+                        var botReply = new BotResponseDto(errMessage.Id, requestBot.ParentMessageId, requestBot.ConversationId, errMessage.Content, errMessage.ReplyAt, errMessage.CreatedAt);
+                        await botReplyService.SendBotReplyAsync(botReply, stoppingToken);
+                        break;
+                    }
                 }
 
                 parentMessage.ReplyCount += 1;
