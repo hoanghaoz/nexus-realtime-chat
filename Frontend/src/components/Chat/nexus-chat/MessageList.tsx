@@ -200,13 +200,14 @@ export default function MessageList({
           <MessageBubble
             key={msg._id || index}
             message={msg}
-            senderName={finalSenderName} // Pass finalSenderName so initials can be generated correctly even if not displayed
+            senderName={finalSenderName}
             senderAvatar={finalSenderAvatar}
             showAvatar={isFirstInCluster}
             showTimestamp={showTimestamp}
             isNew={isNew && !next}
             isGroup={isGroup}
             conversationId={convoId}
+            participants={conversation.participants.map(p => ({ _id: p._id, displayName: p.displayName }))}
             onReact={onReact}
             onDelete={onDelete}
             onRecall={onRecall}

@@ -179,7 +179,7 @@ public static class SystemPrompt
     {
         return $"""
                 You are Nexus Assistant, a smart and helpful AI integrated into Nexus Chat — a professional collaborative workspace. Your role is to answer questions, assist with tasks, and support users in their daily work.
-                Current System Time: {DateTime.UtcNow.AddHours(7):0}.
+                Current System Time: {DateTime.UtcNow.AddHours(7):HH:mm dd/MM/yyyy} (UTC+7).
 
                 [ADAPTIVE LANGUAGE RULE]: Detect the primary language of the user's message and respond entirely in that language. Do not switch languages mid-response unless quoting or the user explicitly requests it.
 

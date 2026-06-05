@@ -1,5 +1,5 @@
 // Frontend/src/components/Chat/nexus-chat/MessageBubble.tsx
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import type { Message } from "@/types/chat";
 import { useAuthStore } from "@/stores/useAuthStore";
 import { MessageActionBar } from "./MessageActionBar";
@@ -25,6 +25,8 @@ interface Props {
   isNew?: boolean;
   isGroup?: boolean;
   conversationId?: string;
+  /** Danh sách participants để resolve tên mention multi-word */
+  participants?: Array<{ _id: string; displayName: string }>;
   onReact?: (messageId: string, type: string) => void;
   onDelete?: (messageId: string, conversationId: string) => void;
   onRecall?: (messageId: string) => void;
@@ -86,7 +88,6 @@ function getTombstoneText(message: Message, isOwn: boolean, senderName?: string)
   if (message.deletedText && message.deletedText !== "Tin nhắn đã bị xóa") {
     return message.deletedText;
   }
-
   return isOwn ? "Bạn đã thu hồi tin nhắn" : `${senderName || "Người dùng"} đã thu hồi tin nhắn`;
 }
 
@@ -94,7 +95,6 @@ function getTombstoneClass(isOwn: boolean) {
   if (isOwn) {
     return "bg-slate-200 dark:bg-slate-700 text-slate-400 dark:text-slate-500 rounded-br-sm";
   }
-
   return "bg-slate-100 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 text-slate-400 dark:text-slate-500 rounded-bl-sm";
 }
 
@@ -103,7 +103,6 @@ function getTextBubbleClass(isOwn: boolean, isBot: boolean) {
   if (isBot) {
     return "border rounded-2xl rounded-bl-sm shadow-sm bg-violet-50 border-violet-200 text-violet-900 dark:bg-violet-950/40 dark:border-violet-800 dark:text-violet-100";
   }
-
   return "border rounded-2xl rounded-bl-sm shadow-sm bg-slate-100 border-slate-200 text-slate-800 dark:bg-slate-800 dark:border-slate-700 dark:text-slate-100";
 }
 
@@ -122,7 +121,6 @@ function SenderLabel({
       </span>
     );
   }
-
   return senderName;
 }
 
@@ -178,7 +176,7 @@ function FileAttachmentCard({
   );
 }
 
-// ─── Link Preview Card (Feature 2) ──────────────────────────────────────────
+// ─── Link Preview Card ────────────────────────────────────────────────────────
 function LinkPreviewCard({
   message,
   isOwn,
@@ -201,32 +199,21 @@ function LinkPreviewCard({
       }`}
     >
       {imageUrl && (
-        <img
-          src={imageUrl}
-          alt={title ?? "preview"}
-          className="w-full h-32 object-cover"
-          loading="lazy"
-        />
+        <img src={imageUrl} alt={title ?? "preview"} className="w-full h-32 object-cover" loading="lazy" />
       )}
       <div className="px-3 py-2.5 flex flex-col gap-0.5">
         {siteName && (
-          <span className={`text-[10px] font-semibold uppercase tracking-wide ${
-            isOwn ? "text-blue-200" : "text-blue-500 dark:text-blue-400"
-          }`}>
+          <span className={`text-[10px] font-semibold uppercase tracking-wide ${isOwn ? "text-blue-200" : "text-blue-500 dark:text-blue-400"}`}>
             {siteName}
           </span>
         )}
         {title && (
-          <p className={`text-[12px] font-bold leading-snug line-clamp-2 ${
-            isOwn ? "text-white" : "text-slate-800 dark:text-slate-100"
-          }`}>
+          <p className={`text-[12px] font-bold leading-snug line-clamp-2 ${isOwn ? "text-white" : "text-slate-800 dark:text-slate-100"}`}>
             {title}
           </p>
         )}
         {description && (
-          <p className={`text-[11px] leading-snug line-clamp-2 ${
-            isOwn ? "text-blue-100" : "text-slate-500 dark:text-slate-400"
-          }`}>
+          <p className={`text-[11px] leading-snug line-clamp-2 ${isOwn ? "text-blue-100" : "text-slate-500 dark:text-slate-400"}`}>
             {description}
           </p>
         )}
@@ -235,6 +222,9 @@ function LinkPreviewCard({
   );
 }
 
+// Escape special regex chars
+const escapeRegex = (s: string) => s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+
 function MentionText({
   content,
   participants,
@@ -242,61 +232,71 @@ function MentionText({
   content: string;
   participants?: Array<{ _id: string; displayName: string }>;
 }>) {
-  // Regex to match URLs or @mentions
-  // URL regex: simple http/https matcher
-  // Mention regex: @ followed by non-whitespace
-  const regex = /(https?:\/\/[^\s]+)|(^|\s)(@\S+)/g;
-  
-  const parts = [];
-  let lastIndex = 0;
-  let match;
+  // Memoize regex để tránh tạo lại mỗi lần render (tránh SonarCloud performance smell)
+  const combined = useMemo(() => {
+    const knownNames = Array.from(new Set([
+      "Bot AI",
+      "mọi người",
+      ...(participants ?? []).map(p => p.displayName).filter(Boolean),
+    ])).sort((a, b) => b.length - a.length);
 
-  while ((match = regex.exec(content)) !== null) {
-    // Add text before the match
+    const knownPattern = knownNames.map(escapeRegex).join("|");
+    return new RegExp(`(https?://[^\\s]+)|@(${knownPattern})|(@\\S+)`, "gi");
+  }, [participants]);
+
+  const parts: React.ReactNode[] = [];
+  let lastIndex = 0;
+  let match: RegExpExecArray | null;
+  let keyIdx = 0;
+
+  while ((match = combined.exec(content)) !== null) {
     if (match.index > lastIndex) {
-      parts.push(<span key={`text-${lastIndex}`}>{content.slice(lastIndex, match.index)}</span>);
+      parts.push(<span key={keyIdx++}>{content.slice(lastIndex, match.index)}</span>);
     }
 
     if (match[1]) {
-      // It's a URL
+      // URL
       parts.push(
-        <a
-          key={`url-${match.index}`}
-          href={match[1]}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="text-blue-500 hover:underline break-all"
-        >
+        <a key={keyIdx++} href={match[1]} target="_blank" rel="noopener noreferrer"
+          className="text-blue-500 hover:underline break-all">
           {match[1]}
         </a>
       );
-    } else if (match[3]) {
-      // It's a mention (match[2] is the whitespace before it)
-      if (match[2]) {
-        parts.push(<span key={`space-${match.index}`}>{match[2]}</span>);
-      }
-      const name = match[3].slice(1); // remove @
-      const isBot = name.toLowerCase() === "bot" || name.toLowerCase() === "bot ai";
+    } else if (match[2]) {
+      // @{KnownName} – multi-word mention
+      const name = match[2];
+      const isBot = name.toLowerCase() === "bot ai";
       parts.push(
-        <span
-          key={`mention-${match.index}`}
+        <span key={keyIdx++}
           className={`font-semibold rounded px-0.5 ${
             isBot
               ? "text-violet-600 dark:text-violet-300 bg-violet-100 dark:bg-violet-900/40"
               : "text-blue-600 dark:text-blue-300 bg-blue-50 dark:bg-blue-900/30"
-          }`}
-        >
+          }`}>
           @{name}
         </span>
       );
+    } else if (match[3]) {
+      // @fallback (single-word, unknown)
+      const raw = match[3]; // includes @
+      const isBot = raw.toLowerCase() === "@bot";
+      parts.push(
+        <span key={keyIdx++}
+          className={`font-semibold rounded px-0.5 ${
+            isBot
+              ? "text-violet-600 dark:text-violet-300 bg-violet-100 dark:bg-violet-900/40"
+              : "text-blue-600 dark:text-blue-300 bg-blue-50 dark:bg-blue-900/30"
+          }`}>
+          {raw}
+        </span>
+      );
     }
-    
-    lastIndex = regex.lastIndex;
+
+    lastIndex = combined.lastIndex;
   }
 
-  // Add remaining text
   if (lastIndex < content.length) {
-    parts.push(<span key={`text-${lastIndex}`}>{content.slice(lastIndex)}</span>);
+    parts.push(<span key={keyIdx}>{content.slice(lastIndex)}</span>);
   }
 
   return <>{parts}</>;
@@ -326,11 +326,7 @@ function MessageContent({
               isOwn ? "rounded-br-sm" : "rounded-bl-sm"
             }`}
           >
-            <img
-              src={message.imgUrl}
-              alt="attachment"
-              className="w-full object-cover"
-            />
+            <img src={message.imgUrl} alt="attachment" className="w-full object-cover" />
           </button>
           {lightboxOpen && (
             <Dialog open onOpenChange={(v) => !v && setLightboxOpen(false)}>
@@ -435,7 +431,6 @@ function AvatarSlot({
   if (!showAvatar) {
     return <div className="w-8 h-8" />;
   }
-
   return (
     <SenderAvatar
       senderId={message.senderId}
@@ -456,7 +451,6 @@ function ThreadReplyButton({
   onOpenThread?: (messageId: string) => void;
 }>) {
   if ((message.threadReplyCount ?? 0) === 0) return null;
-
   return (
     <button
       type="button"
@@ -493,6 +487,7 @@ export default function MessageBubble({
   isNew = false,
   isGroup = false,
   conversationId,
+  participants = [],
   onReact,
   onDelete,
   onRecall,
@@ -564,16 +559,16 @@ export default function MessageBubble({
             </span>
           )}
 
-          {/* ── Tombstone (message đã bị xóa/thu hồi) ── */}
+          {/* Tombstone (message đã bị xóa/thu hồi) */}
           {isDeleted ? (
             <DeletedMessage message={message} isOwn={isOwn} senderName={senderName} />
           ) : (
             <>
-              <MessageContent message={message} isOwn={isOwn} isBot={isBot} participants={[]} />
+              <MessageContent message={message} isOwn={isOwn} isBot={isBot} participants={participants} />
 
               <ThreadReplyButton message={message} isOwn={isOwn} onOpenThread={onOpenThread} />
 
-              {/* ── Reaction badge – fixed dưới bubble, KHÔNG đè lên tên người sau ── */}
+              {/* Reaction badge */}
               {hasReactions && (
                 <ReactionBadge topReactionTypes={topReactionTypes} totalReactionCount={totalReactionCount} />
               )}
