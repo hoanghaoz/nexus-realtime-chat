@@ -32,22 +32,9 @@ Open your terminal and navigate to the `Backend` folder. Run the below command:
 Navigate to `http://localhost:<port>/scalar/v1` to see the **API Docs (Scalar)**.
 
 ### 2. ⚛️ Deploy Frontend (ReactJS Web App)
-**Requirement:** Install [Node.js](https://nodejs.org/) (v18 or newer recommended).
+The nexus team deploy the website on [vercel](https://vercel.com)
 
-#### Step 1: Install Dependencies
-Open your terminal and navigate to the `Frontend` folder:
-```bash
-  cd Frontend
-  npm install
-```
-
-#### Step 2: Configure & Run
-- If you have an environment variables file, ensure the backend API URL is configured correctly (e.g., in `.env` or `vite.config.js`).
-- Start the development server:
-```bash
-  npm run dev
-```
-The app will normally run at `http://localhost:5173`.
+You can visit via this link: [Nexus Chat](https://nexus-realtime-chat-yayj-14xmmod7b-quangha-s-projects.vercel.app/sign-in)
 
 
 ## 📚 Documentation

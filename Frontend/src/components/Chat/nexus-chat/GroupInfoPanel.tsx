@@ -14,6 +14,8 @@ import { useFriendStore } from "@/stores/useFriendStore";
 import type { UserSearchResponse } from "@/services/userService";
 import { useChatStore } from "@/stores/useChatStore";
 import { cacheConversationParticipants } from "@/services/conversationService";
+import MediaGallery from "./MediaGallery";
+
 
 interface Props {
   open: boolean;
@@ -38,12 +40,17 @@ export default function GroupInfoPanel({ open, onClose, conversation }: Props) {
   const { user } = useAuthStore();
   const { updateGroup, deleteGroup, addMembers, removeMember, loading } = useGroupStore();
   const { friends } = useFriendStore();
-  const { updateConversation } = useChatStore();
+  const { updateConversation, messages } = useChatStore();
+
+  // Messages trong conversation hiện tại (để Media Gallery)
+  const convoMessages = messages[conversation._id]?.items ?? [];
 
   const isGroup = conversation.type === "group";
   // Admin check (dùng cho đổi tên nhóm và xóa thành viên)
   const isCreator = isGroup && conversation.group?.createdBy === user?._id;
   // Nút xóa nhóm hiện cho tất cả thành viên
+
+  const [showGallery, setShowGallery] = useState(false);
 
   // ────── State: Rename group ──────
   const [editingName, setEditingName] = useState(false);
@@ -413,6 +420,27 @@ export default function GroupInfoPanel({ open, onClose, conversation }: Props) {
               );
             })}
           </div>
+        </div>
+
+        {/* ── Media & File Gallery ── */}
+        <div className="px-4 py-3 border-t border-slate-100 dark:border-slate-800">
+          <button
+            type="button"
+            onClick={() => setShowGallery((v) => !v)}
+            className="w-full flex items-center justify-between text-left"
+          >
+            <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wide">
+              File phương tiện và file
+            </span>
+            <span className={`material-symbols-outlined text-[18px] text-slate-400 transition-transform duration-200 ${showGallery ? "rotate-180" : ""}`}>
+              expand_more
+            </span>
+          </button>
+          {showGallery && (
+            <div className="mt-3">
+              <MediaGallery messages={convoMessages} />
+            </div>
+          )}
         </div>
 
         {/* ── Danger zone ── */}

@@ -4,12 +4,24 @@ import AddFriendDialog from "./AddFriendDialog";
 import PendingRequestsDialog from "./PendingRequestsDialog";
 import { useFriendStore } from "@/stores/useFriendStore";
 
+const PENDING_POLL_INTERVAL_MS = 30_000;
+
 export default function FriendList() {
-  const { friends, getFriends, loading } = useFriendStore();
+  const { friends, getFriends, loading, getPendingRequests } = useFriendStore();
 
   useEffect(() => {
     getFriends();
+    // Lấy pending requests ngay khi mount để badge hiện ngay
+    getPendingRequests();
+
+    // Polling 30s để cập nhật friend request mới nhất
+    const timer = setInterval(() => {
+      getPendingRequests();
+    }, PENDING_POLL_INTERVAL_MS);
+
+    return () => clearInterval(timer);
   }, []);
+
 
   return (
     <div className="mt-4 flex flex-col pb-6">

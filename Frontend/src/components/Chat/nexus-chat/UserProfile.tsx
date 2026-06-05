@@ -28,7 +28,7 @@ export default function UserProfile() {
 
   return (
     <>
-      <div className="mt-auto border-t border-slate-200 dark:border-slate-700 bg-white/80 dark:bg-slate-900/85 backdrop-blur-sm p-4 sticky bottom-0">
+      <div className="mt-auto border-t border-slate-200 dark:border-slate-700 bg-white/80 dark:bg-slate-900/85 backdrop-blur-sm p-4 sticky bottom-0 z-50">
         <div className="flex items-center justify-between group">
           {/* Avatar + info */}
           <button

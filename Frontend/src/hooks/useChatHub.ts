@@ -1,4 +1,4 @@
-// Frontend/src/hooks/useChatHub.ts
+﻿// Frontend/src/hooks/useChatHub.ts
 import { useState, useEffect, useCallback, useRef } from "react";
 import { useSignalRStore } from "@/stores/useSignalRStore";
 import { useChatStore } from "@/stores/useChatStore";
@@ -81,7 +81,7 @@ export function useChatHub() {
   // Lắng nghe ReceiveBotReply – bot đang trả lời
   useEffect(() => {
     if (!chatConnection) return;
-    const botHandler = () => setBotTyping(false);
+    const botHandler = (_rawMessage: unknown) => setBotTyping(false);
     chatConnection.on("ReceiveBotReply", botHandler);
     return () => chatConnection.off("ReceiveBotReply", botHandler);
   }, [chatConnection]);
@@ -256,12 +256,22 @@ export function useChatHub() {
     closeThread();
   }, [activeConversationId]);
 
+
+  // Callback de ChatInput goi khi phat hien tin nhan mention @Bot
+  const notifyBotMentioned = useCallback(() => {
+    setBotTyping(true);
+    // Safety timeout: tu tat sau 30s neu bot khong tra loi
+    const t = setTimeout(() => setBotTyping(false), 30_000);
+    return () => clearTimeout(t);
+  }, []);
+
   return {
     // Presence & Typing
     typingUsers,
     botTyping,
     sendTyping,
     handleTypingInput,
+    notifyBotMentioned,
 
     // Reactions
     sendReaction,

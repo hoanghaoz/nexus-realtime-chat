@@ -22,16 +22,20 @@ public class MessageService(
     /// <summary>
     ///     Retrieves messages from a conversation with cursor-based pagination.
     /// </summary>
-    public async Task<ErrorOr<List<MessageResponseDto>>> GetMessageInConversationAsync(MessageRequestDto dto,
+    public async Task<ErrorOr<MessageResultDto>> GetMessageInConversationAsync(GetMessageRequestDto dto,
         string fromUserId,
+        string? cursor,
         CancellationToken token)
     {
         var isValidUser = await conversationRepository.IsUserInConversationAsync(dto.ConversationId, fromUserId, token);
         if (!isValidUser) return Error.Unauthorized("User.Unauthorized", "You are not a member of this conversation.");
-        var messages = await messageRepository.GetMessageInConversationAsync(dto.ConversationId, dto.Cursor, token);
-        return messages
-            .Where(message => !message.IsPending || message.UserId == fromUserId)
-            .ToList();
+        var nextCursor = cursor.ConvertToCursor();
+        var response = await messageRepository.GetMessageInConversationAsync(dto.ConversationId,
+            nextCursor?.CreatedAt, nextCursor?.MessageId, fromUserId, token);
+        var result = new MessageResultDto(response, response.Count != 0
+            ? $"{response.LastOrDefault()?.CreatedAt:o}_{response.LastOrDefault()?.MessageId}".ConvertToBase64()
+            : null);
+        return result;
     }
 
     /// <summary>
@@ -65,7 +69,7 @@ public class MessageService(
         var updatedMessage = await messageRepository.GetByIdAsync(messageId, token);
         if (updatedMessage == null) return Error.NotFound("Message.NotFound", "The message was not found.");
         var existingReaction = updatedMessage.Reactions.FirstOrDefault(r => r.FromUserId == fromUserId);
-        
+
         if (existingReaction != null)
         {
             if (existingReaction.Emoji == dto.Emoji)
@@ -92,7 +96,7 @@ public class MessageService(
                 Emoji = dto.Emoji
             });
         }
-            
+
         await messageRepository.UpdateAsync(updatedMessage, token);
         await notify.NotifyMessageReactedAsync(updatedMessage.ConversationId, updatedMessage.Id, dto.Emoji, fromUserId,
             updatedMessage.FromUserId, token);
@@ -155,18 +159,29 @@ public class MessageService(
                     ChatBotRegex.MissionSummarize
                 ), token);
                 break;
+            case ChatBotRegex.MissionRemind:
+                await chatBotQueue.EnqueueAsync(new ChatBotRequestDto(
+                    message.ConversationId,
+                    fromUserId,
+                    message.Id,
+                    dto.Content,
+                    ChatBotRegex.MissionRemind
+                ), token);
+                break;
             default:
                 await chatBotQueue.EnqueueAsync(new ChatBotRequestDto(
                     message.ConversationId,
                     fromUserId,
                     message.Id,
                     dto.Content,
-                    string.Empty
+                    ChatBotRegex.MissionNone
                 ), token);
                 break;
         }
+
         return message.MapMessageDto();
     }
+
     public async Task<ErrorOr<MessageResponseDto>> CompletePendingMessageAsync(string messageId, string fromUserId,
         CancellationToken token)
     {
@@ -184,8 +199,8 @@ public class MessageService(
 
         return message.MapMessageDto();
     }
-    
-    
+
+
     /// <summary>
     ///     Searches messages in a conversation by keyword.
     ///     Validates conversation membership before querying MongoDB Text Index.

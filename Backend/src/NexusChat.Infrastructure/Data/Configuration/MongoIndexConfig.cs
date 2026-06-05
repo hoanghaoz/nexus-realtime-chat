@@ -5,8 +5,8 @@ using NexusChat.Domain.Entity.EmbeddedObject;
 namespace NexusChat.Infrastructure.Data.Configuration;
 
 /// <summary>
-/// Configure index to property for improving performance
-/// Index is set to follow E-S-R rule (Equality - Sort - Range)
+///     Configure index to property for improving performance
+///     Index is set to follow E-S-R rule (Equality - Sort - Range)
 /// </summary>
 public static class MongoIndexConfig
 {
@@ -16,38 +16,43 @@ public static class MongoIndexConfig
         var conversation = database.GetCollection<Conversation>("Conversation");
         var conversationIndexKeys = Builders<Conversation>.IndexKeys
             .Descending(cv => cv.CreatedAt);
-        var indexConversationOptions = new CreateIndexOptions 
-        { 
-            Background = true, 
-            Name = "idx_created_at_desc" 
+        var indexConversationOptions = new CreateIndexOptions
+        {
+            Background = true,
+            Name = "idx_created_at_desc"
         };
-        var conversationIndexModel = new CreateIndexModel<Conversation>(conversationIndexKeys,indexConversationOptions);
+        var conversationIndexModel =
+            new CreateIndexModel<Conversation>(conversationIndexKeys, indexConversationOptions);
         await conversation.Indexes.CreateOneAsync(conversationIndexModel);
-        
+
         // Schema Message index
         var message = database.GetCollection<Message>("Message");
-        
+
         var messageIndexKeys = Builders<Message>.IndexKeys
             .Ascending(ms => ms.ConversationId)
-            .Ascending(ms => ms.IsDeleted)
-            .Descending(ms => ms.CreatedAt);
-        
+            .Ascending(ms => ms.FromUserId)
+            .Descending(ms => ms.CreatedAt)
+            .Descending(ms => ms.Id);
+
         var parentMessageIndexKeys = Builders<Message>.IndexKeys
             .Ascending(ms => ms.ParentMessageId)
             .Descending(ms => ms.CreatedAt);
-            
+
         var messageTextIndexKeys = Builders<Message>.IndexKeys.Text(ms => ms.Content);
-        
+
         var messageReplyIndexKeys = Builders<Message>.IndexKeys
             .Ascending(ms => ms.ReplyToMessageId)
             .Ascending(ms => ms.ConversationId)
             .Ascending(ms => ms.IsDeleted)
             .Ascending(ms => ms.CreatedAt);
 
-        var indexMessageOptions = new CreateIndexOptions { Background = true, Name = "idx_conversationId_CreatedAt_IsDeleted" };
-        var indexParentMessageOptions = new CreateIndexOptions { Background = true, Name = "idx_parentMessageId_CreatedAt" };
+        var indexMessageOptions = new CreateIndexOptions
+            { Background = true, Name = "idx_conversationId_Id_CreatedAt_IsDeleted" };
+        var indexParentMessageOptions = new CreateIndexOptions
+            { Background = true, Name = "idx_parentMessageId_CreatedAt" };
         var messageTextIndexOptions = new CreateIndexOptions { Background = true, Name = "idx_message_content_text" };
-        var messageReplyIndexOptions = new CreateIndexOptions { Background = true, Name = "idx_replyToMessageId_conversationId_isDeleted_createdAt" };
+        var messageReplyIndexOptions = new CreateIndexOptions
+            { Background = true, Name = "idx_replyToMessageId_conversationId_isDeleted_createdAt" };
 
         var messageIndexModel = new CreateIndexModel<Message>(messageIndexKeys, indexMessageOptions);
         var parentMessageIndexModel = new CreateIndexModel<Message>(parentMessageIndexKeys, indexParentMessageOptions);
@@ -55,7 +60,7 @@ public static class MongoIndexConfig
         var messageReplyIndexModel = new CreateIndexModel<Message>(messageReplyIndexKeys, messageReplyIndexOptions);
 
         await message.Indexes.CreateManyAsync([
-            messageIndexModel, 
+            messageIndexModel,
             parentMessageIndexModel,
             messageTextIndexModel,
             messageReplyIndexModel
@@ -69,15 +74,15 @@ public static class MongoIndexConfig
             Background = true,
             Name = "idx_createdAt"
         };
-        var userIndexModel = new CreateIndexModel<User>(userIndexKeys,indexUserOptions);
+        var userIndexModel = new CreateIndexModel<User>(userIndexKeys, indexUserOptions);
         await user.Indexes.CreateOneAsync(userIndexModel);
-        
+
         // FriendRequest index
         var friendRequest = database.GetCollection<FriendRequest>("FriendRequest");
         var friendRequestFromIndexKeys = Builders<FriendRequest>.IndexKeys
             .Ascending(ms => ms.FromUserId)
             .Descending(ms => ms.CreatedAt);
-        
+
         var friendRequestToIndexKeys = Builders<FriendRequest>.IndexKeys
             .Ascending(ms => ms.ToUserId)
             .Descending(ms => ms.CreatedAt);
@@ -87,16 +92,18 @@ public static class MongoIndexConfig
             Background = true,
             Name = "idx_ToUserId_createdAt"
         };
-        
+
         var indexFriendRequestFromOption = new CreateIndexOptions
         {
             Background = true,
             Name = "idx_FromUserId_createdAt"
         };
-        var friendRequestToIndexModel = new CreateIndexModel<FriendRequest>(friendRequestToIndexKeys,indexFriendRequestToOption);
-        var friendRequestFromIndexModel = new CreateIndexModel<FriendRequest>(friendRequestFromIndexKeys,indexFriendRequestFromOption);
-        await friendRequest.Indexes.CreateManyAsync([friendRequestToIndexModel,friendRequestFromIndexModel]);
-        
+        var friendRequestToIndexModel =
+            new CreateIndexModel<FriendRequest>(friendRequestToIndexKeys, indexFriendRequestToOption);
+        var friendRequestFromIndexModel =
+            new CreateIndexModel<FriendRequest>(friendRequestFromIndexKeys, indexFriendRequestFromOption);
+        await friendRequest.Indexes.CreateManyAsync([friendRequestToIndexModel, friendRequestFromIndexModel]);
+
         // Participants index
         var participant = database.GetCollection<Participant>("Participant");
         var participantIndexKeys = Builders<Participant>.IndexKeys
@@ -107,9 +114,9 @@ public static class MongoIndexConfig
             Background = true,
             Name = "idx_UserId_joinedAt"
         };
-        var indexParticipantModel = new CreateIndexModel<Participant>(participantIndexKeys,indexParticipantOptions);
+        var indexParticipantModel = new CreateIndexModel<Participant>(participantIndexKeys, indexParticipantOptions);
         await participant.Indexes.CreateOneAsync(indexParticipantModel);
-        
+
         // Reminder index
         var reminder = database.GetCollection<Reminder>("Reminder");
         var reminderIndexKeys = Builders<Reminder>.IndexKeys
@@ -121,7 +128,7 @@ public static class MongoIndexConfig
             Background = true,
             Name = "idx_ConversationId_CreatedAt"
         };
-        var indexReminderModel = new CreateIndexModel<Reminder>(reminderIndexKeys,indexReminderOptions);
+        var indexReminderModel = new CreateIndexModel<Reminder>(reminderIndexKeys, indexReminderOptions);
         await reminder.Indexes.CreateOneAsync(indexReminderModel);
     }
 }

@@ -9,6 +9,7 @@ export interface AuthState {
 
   setAccessToken: (accessToken: string) => void;
   setUser: (user: User | null) => void;
+  updateProfile: (data: any) => Promise<void>;
   fetchProfile: () => Promise<void>;
   /** Đăng ký – Nexus chỉ cần username + password */
   signUp: (username: string, password: string) => Promise<void>;
@@ -57,4 +58,11 @@ export interface ChatState {
   recallMessageInStore: (messageId: string) => void;
   /** Cập nhật reactions của một message (react realtime) */
   updateMessageReactions: (messageId: string, emoji: string, fromUserId: string) => void;
+  /** Reset unread count khi user mở conversation */
+  markConversationRead: (conversationId: string) => void;
+  /** Xóa optimistic pending message (prefix 'pending-') khi server echo về */
+  removePendingMessage: (conversationId: string) => void;
+  /** Cập nhật link preview của một message (từ SignalR UpdateLinkPreview) */
+  updateMessageLinkPreview: (messageId: string, preview: import('./chat').LinkPreview) => void;
 }
+

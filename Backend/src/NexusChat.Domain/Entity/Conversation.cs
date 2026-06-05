@@ -6,6 +6,7 @@ namespace NexusChat.Domain.Entity;
 
 public class Conversation : Entity<string>
 {
+    public string? Avatar { get; set; }
     public RoomType RoomType { get; set; }
     
     public required string Name { get; set; }
