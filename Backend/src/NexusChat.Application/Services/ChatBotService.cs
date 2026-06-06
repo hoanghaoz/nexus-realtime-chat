@@ -5,7 +5,6 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using Microsoft.SemanticKernel;
 using Microsoft.SemanticKernel.ChatCompletion;
-using Microsoft.SemanticKernel.Connectors.Google;
 using NexusChat.Application.Constant;
 using NexusChat.Application.DTOs.ChatBot;
 using NexusChat.Application.Interfaces.ChatBot;
@@ -28,7 +27,7 @@ public class ChatBotService(
         var conversationDetail = await conversationService.GetConversationDetailAsync(conversationId, userId, token);
         if (conversationDetail.IsError)
             return conversationDetail.Errors;
-        
+
         var messages = await messageRepository.GetMessagesForBotDataAsync(conversationId, 25, token);
 
         var executionSettings = BuildSetting();
@@ -59,15 +58,16 @@ public class ChatBotService(
                 }).ToList();
 
                 var attachmentsString = attachments.Count > 0 ? $", {string.Join(", ", attachments)}" : "";
-                
+
                 var textContent = string.IsNullOrWhiteSpace(m.Content) ? "[Chỉ đính kèm tệp]" : m.Content;
                 content.AppendLine($"[{m.CreatedAt:HH:mm}] {senderName}: {textContent}{attachmentsString}");
             }
 
             content.AppendLine("--- KẾT THÚC LỊCH SỬ TRÒ CHUYỆN ---");
             chat.AddUserMessage(content.ToString());
-            logger.LogInformation("Send to AI: \n{Prompt}",content.ToString());
+            logger.LogInformation("Send to AI: \n{Prompt}", content.ToString());
         }
+
         return await chatCompletionService.GetChatMessageContentAsync(chat, executionSettings,
             cancellationToken: token);
     }
@@ -101,12 +101,12 @@ public class ChatBotService(
 
         var chat = new ChatHistory();
         chat.AddUserMessage(contentBuilder.ToString());
-        logger.LogInformation("Send to AI: \n{Prompt}",contentBuilder.ToString());
+        logger.LogInformation("Send to AI: \n{Prompt}", contentBuilder.ToString());
         var response =
             await chatCompletionService.GetChatMessageContentAsync(chat, executionSettings, cancellationToken: token);
 
         var jsonString = response.Content ?? "[]";
-        
+
         if (jsonString.StartsWith("```json", StringComparison.OrdinalIgnoreCase))
             jsonString = jsonString.Replace("```json", "", StringComparison.OrdinalIgnoreCase)
                 .Replace("```", "")
@@ -165,26 +165,32 @@ public class ChatBotService(
 
         var chat = new ChatHistory();
         chat.AddUserMessage(content.ToString());
-        logger.LogInformation("Send to AI: \n{Prompt}",content.ToString());
+        logger.LogInformation("Send to AI: \n{Prompt}", content.ToString());
         return await chatCompletionService.GetChatMessageContentAsync(chat, executionSettings,
             cancellationToken: token);
     }
 
-    private static GeminiPromptExecutionSettings BuildSetting()
+    private static PromptExecutionSettings BuildSetting()
     {
-        return new GeminiPromptExecutionSettings
+        return new PromptExecutionSettings
         {
-            MaxTokens = 500,
-            Temperature = 0.7 // adjust llm creativity
+            ExtensionData = new Dictionary<string, object>
+            {
+                { "temperature", 0.7 },
+                { "max_tokens", 500 }
+            }
         };
     }
 
-    private static GeminiPromptExecutionSettings BuildRemindSetting()
+    private static PromptExecutionSettings BuildRemindSetting()
     {
-        return new GeminiPromptExecutionSettings
+        return new PromptExecutionSettings
         {
-            MaxTokens = 500,
-            Temperature = 0 // adjust llm creativity
+            ExtensionData = new Dictionary<string, object>
+            {
+                { "temperature", 0 },
+                { "max_tokens", 500 }
+            }
         };
     }
 }

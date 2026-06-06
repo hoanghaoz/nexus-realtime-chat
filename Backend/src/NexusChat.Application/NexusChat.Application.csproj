@@ -17,12 +17,6 @@
         <Folder Include="DTOs\Hubs\"/>
     </ItemGroup>
 
-    <ItemGroup>
-        <Reference Include="Microsoft.SemanticKernel.Connectors.Google">
-            <HintPath>..\..\..\..\..\..\.nuget\packages\microsoft.semantickernel.connectors.google\1.75.0-alpha\lib\net10.0\Microsoft.SemanticKernel.Connectors.Google.dll</HintPath>
-        </Reference>
-    </ItemGroup>
-
     <PropertyGroup>
         <TargetFramework>net10.0</TargetFramework>
         <ImplicitUsings>enable</ImplicitUsings>
