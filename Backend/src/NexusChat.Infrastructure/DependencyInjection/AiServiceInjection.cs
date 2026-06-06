@@ -41,6 +41,14 @@ public static class AiServiceInjection
                                   $"GroqUrl configuration for provider '{provider}' is missing.");
                 services.AddOpenAIChatCompletion(model, apiKey: apiKey, endpoint: new Uri(groqUrl));
                 break;
+            
+            case "ChatGPT":
+                var gptUrl = configuration[$"Chatbot:{provider}:Url"] ?? throw new InvalidOperationException(
+                    $"ChatGPT Url configuration for provider '{provider}' is missing.");
+                var token = configuration[$"Chatbot:{provider}:Token"] ?? throw new InvalidOperationException(
+                    $"ChatGPT Token configuration for provider '{provider}' is missing.");
+                services.AddOpenAIChatCompletion(modelId: model, apiKey: token, endpoint: new Uri(gptUrl));
+                break;
             default:
                 var defaultUrl = configuration[$"Chatbot:{provider}:Url"] ??
                                  throw new InvalidOperationException(
