@@ -4,6 +4,8 @@ import type { ChatState } from "@/types/store";
 import type { Conversation, Message } from "@/types/chat";
 import type { FriendResponseDto } from "@/services/friendService";
 import { toast } from "sonner";
+import { useAuthStore } from "./useAuthStore";
+
 
 /**
  * useChatStore – quản lý state conversations và messages.
@@ -28,6 +30,8 @@ export const useChatStore = create<ChatState>()(
         set({ activeConversationId: id });
         if (id) {
           get().fetchConversationDetail(id);
+          // Reset unread count khi user mở conversation
+          get().markConversationRead(id);
         }
       },
 
@@ -41,11 +45,42 @@ export const useChatStore = create<ChatState>()(
           loading: false,
         }),
 
-      /** Lấy chi tiết conversation để load danh sách member (đặc biệt cho nhóm) */
-      fetchConversationDetail: async (conversationId: string) => {
+      /** Reset unread count khi mở conversation */
+      markConversationRead: (conversationId: string) => {
+        const userId = (useAuthStore as any)?.getState?.()?.user?._id;
+        if (!userId) return;
+        set((state) => ({
+          conversations: state.conversations.map((c) =>
+            c._id === conversationId
+              ? { ...c, unreadCounts: { ...c.unreadCounts, [userId]: 0 } }
+              : c
+          ),
+        }));
+      },
+
+      /** Lấy chi tiết conversation để load danh sách member và lastMessage */
+      fetchConversationDetail: async (conversationId: string): Promise<void> => {
         try {
-          const conversation = await conversationService.fetchConversationDetail(conversationId);
-          get().updateConversation(conversation);
+          const res = await conversationService.fetchConversationDetail(conversationId);
+          // Merge vào store: giữ nguyên type từ list (không bị ghi đè)
+          // chỉ cập nhật participants, lastMessage, group name
+          set((state) => ({
+            conversations: state.conversations.map((c) => {
+              if (c._id !== conversationId) return c;
+              return {
+                ...c,
+                type: res.type, // Update type in case it's a fallback direct chat
+                directUserId: res.directUserId || c.directUserId,
+                participants: res.participants.length > 0 ? res.participants : c.participants,
+                lastMessage: res.lastMessage ?? c.lastMessage,
+                lastMessageAt: res.lastMessageAt || c.lastMessageAt,
+                group: {
+                  ...c.group,
+                  name: res.group?.name || c.group?.name || "",
+                },
+              };
+            }),
+          }));
         } catch (error) {
           console.error("Lỗi khi fetchConversationDetail:", error);
         }
@@ -55,8 +90,37 @@ export const useChatStore = create<ChatState>()(
       fetchConversations: async () => {
         try {
           set({ convoLoading: true });
-          const conversations = await conversationService.fetchConversations();
-          set({ conversations }); // Overwrite with fresh data from API
+          const newConversations = await conversationService.fetchConversations();
+          
+          set((state) => {
+            const oldMap = new Map(state.conversations.map(c => [c._id, c]));
+            const merged = newConversations.map(c => {
+               const old = oldMap.get(c._id);
+               // Preserve "direct" type, directUserId, and participants from previous fetchConversationDetail
+               if (old && old.type === "direct") {
+                 return { 
+                   ...c, 
+                   type: "direct" as "direct", 
+                   directUserId: old.directUserId, 
+                   participants: old.participants.length > 0 ? old.participants : c.participants
+                 };
+               }
+               // Keep old participants if the new one doesn't have them
+               if (old && c.participants.length === 0 && old.participants.length > 0) {
+                 return { ...c, participants: old.participants };
+               }
+               return c;
+            });
+            return { conversations: merged };
+          });
+
+          // Fetch detail cho những conversation chưa có thông tin participants (mới e.g. từ SignalR)
+          const { conversations, fetchConversationDetail } = get();
+          for (const conv of conversations) {
+            if (conv.type === "group" && (!conv.participants || conv.participants.length === 0)) {
+              fetchConversationDetail(conv._id).catch(console.error);
+            }
+          }
         } catch (error) {
           console.error("Lỗi khi fetchConversations:", error);
         } finally {
@@ -64,20 +128,16 @@ export const useChatStore = create<ChatState>()(
         }
       },
 
-      /** Mở hoặc tạo hội thoại riêng với bạn bè */
+      /** Mở hoặc tạo hội thoại riêng với bạn bè (không tạo trùng) */
       startDirectChat: async (friend: FriendResponseDto) => {
+        // Kiểm tra bằng directUserId (chính xác nhất)
         const existingConvo = get().conversations.find(
           (c) =>
-            c.type === "direct" &&
-            (c.directUserId === friend.id ||
-              c.participants.some((p) => p._id === friend.id) ||
-              c.participants.some(
-                (p) =>
-                  p.displayName === friend.displayName ||
-                  p.displayName === friend.username
-              ) ||
-              c.group?.name === friend.displayName ||
-              c.group?.name === friend.username)
+            (c.type === "direct" || (c.type === "group" && c.participants.length === 2)) &&
+            (
+              c.directUserId === friend.id ||
+              c.participants.some((p) => p._id === friend.id)
+            )
         );
 
         if (existingConvo) {
@@ -87,9 +147,16 @@ export const useChatStore = create<ChatState>()(
 
         try {
           set({ convoLoading: true });
-          const conversation =
-            await conversationService.createDirectConversation(friend);
-          get().addConversation(conversation);
+          const conversation = await conversationService.createDirectConversation(friend);
+
+          // Backend có thể trả về conversation đã tồn tại (idempotent)
+          // Nếu đã có trong store rồi thì chỉ cần active lên, không thêm mới
+          const alreadyInStore = get().conversations.find((c) => c._id === conversation._id);
+          if (alreadyInStore) {
+            set({ activeConversationId: conversation._id });
+          } else {
+            get().addConversation(conversation);
+          }
         } catch (error) {
           console.error("Lỗi khi startDirectChat:", error);
           toast.error("Không thể mở hội thoại riêng. Vui lòng thử lại!");
@@ -131,6 +198,53 @@ export const useChatStore = create<ChatState>()(
               },
             };
           });
+
+          // Backend hardcode Take(20) nên lần đầu mở conversation ta tự load thêm 2 trang nữa
+          // để có ít nhất ~60 tin nhắn, đảm bảo trải nghiệm không bị cụt
+          const isFirstLoad = !current; // current === undefined nghĩa là chưa load lần nào
+          if (isFirstLoad && cursor) {
+            // Load trang 2
+            const page2 = await conversationService.fetchMessages(convoId, cursor);
+            set((state) => {
+              const existing = state.messages[convoId]?.items ?? [];
+              const combined = [...page2.messages, ...existing];
+              const merged = combined
+                .filter((m, idx, arr) => arr.findIndex((x) => x._id === m._id) === idx)
+                .sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime());
+              return {
+                messages: {
+                  ...state.messages,
+                  [convoId]: {
+                    items: merged,
+                    hasMore: !!page2.nextCursor,
+                    nextCursor: page2.nextCursor ?? null,
+                  },
+                },
+              };
+            });
+
+            // Load trang 3 nếu vẫn còn
+            if (page2.nextCursor) {
+              const page3 = await conversationService.fetchMessages(convoId, page2.nextCursor);
+              set((state) => {
+                const existing = state.messages[convoId]?.items ?? [];
+                const combined = [...page3.messages, ...existing];
+                const merged = combined
+                  .filter((m, idx, arr) => arr.findIndex((x) => x._id === m._id) === idx)
+                  .sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime());
+                return {
+                  messages: {
+                    ...state.messages,
+                    [convoId]: {
+                      items: merged,
+                      hasMore: !!page3.nextCursor,
+                      nextCursor: page3.nextCursor ?? null,
+                    },
+                  },
+                };
+              });
+            }
+          }
         } catch (error) {
           console.error("Lỗi khi fetchMessages:", error);
         } finally {
@@ -141,11 +255,41 @@ export const useChatStore = create<ChatState>()(
       /** Thêm message mới vào store (gọi từ SignalR handler) */
       addMessage: (message: Message) => {
         const convoId = message.conversationId;
+        const currentUserId = (useAuthStore as any)?.getState?.()?.user?._id;
+        const isFromMe = message.senderId === currentUserId;
+        // Không cập nhật lastMessage/unread khi là optimistic pending message
+        const isPending = message._id.startsWith("pending-");
+
         set((state) => {
           const convoMessages = state.messages[convoId];
           const currentItems = convoMessages?.items ?? [];
           // Tránh duplicate
           if (currentItems.some((m) => m._id === message._id)) return state;
+
+          const isActive = state.activeConversationId === convoId;
+
+          // Cập nhật conversations (lastMessage + unread) – bỏ qua nếu là optimistic pending
+          const updatedConversations = isPending
+            ? state.conversations
+            : state.conversations.map((c) => {
+                if (c._id !== convoId) return c;
+                const newUnread =
+                  !isActive && !isFromMe && currentUserId
+                    ? { ...c.unreadCounts, [currentUserId]: (c.unreadCounts?.[currentUserId] ?? 0) + 1 }
+                    : c.unreadCounts;
+                return {
+                  ...c,
+                  lastMessageAt: message.createdAt,
+                  lastMessage: {
+                    _id: message._id,
+                    content: message.content ?? "",
+                    createdAt: message.createdAt,
+                    sender: { _id: message.senderId, displayName: "" },
+                  },
+                  unreadCounts: newUnread,
+                };
+              });
+
           return {
             messages: {
               ...state.messages,
@@ -155,26 +299,12 @@ export const useChatStore = create<ChatState>()(
                 nextCursor: convoMessages?.nextCursor ?? null,
               },
             },
+            conversations: updatedConversations,
           };
         });
-        // Cập nhật lastMessage với nội dung thực (không để null)
-        set((state) => ({
-          conversations: state.conversations.map((c) =>
-            c._id === convoId
-              ? {
-                  ...c,
-                  lastMessageAt: message.createdAt,
-                  lastMessage: {
-                    _id: message._id,
-                    content: message.content ?? "",
-                    createdAt: message.createdAt,
-                    sender: { _id: message.senderId, displayName: "" },
-                  },
-                }
-              : c
-          ),
-        }));
       },
+
+
 
 
       /** Cập nhật conversation (gọi từ SignalR handler) */
@@ -200,6 +330,8 @@ export const useChatStore = create<ChatState>()(
                   ? {
                       ...c,
                       ...conversation,
+                      // Bảo vệ type: "direct" nếu nó đã là direct chat, tránh bị fallback đè lên
+                      type: existing.type === "direct" ? "direct" : conversation.type,
                       participants: shouldKeepExistingParticipants
                         ? existing.participants
                         : conversation.participants,
@@ -314,6 +446,47 @@ export const useChatStore = create<ChatState>()(
               ...convoData,
               items: convoData.items.map((m, i) =>
                 i === idx ? { ...m, reactions: newReactions } : m
+              ),
+            };
+            break;
+          }
+          return { messages: updatedMessages };
+        });
+      },
+
+      /** Xóa optimistic pending message (prefix 'pending-') khi server echo về */
+      removePendingMessage: (conversationId: string) => {
+        set((state) => {
+          const convoMessages = state.messages[conversationId];
+          if (!convoMessages) return state;
+          // Tìm message pending mới nhất (prefix 'pending-') trong conversation
+          const pendingIdx = convoMessages.items.findLastIndex((m) =>
+            m._id.startsWith("pending-")
+          );
+          if (pendingIdx === -1) return state;
+          return {
+            messages: {
+              ...state.messages,
+              [conversationId]: {
+                ...convoMessages,
+                items: convoMessages.items.filter((_, i) => i !== pendingIdx),
+              },
+            },
+          };
+        });
+      },
+
+      /** Cập nhật link preview từ SignalR UpdateLinkPreview */
+      updateMessageLinkPreview: (messageId, preview) => {
+        set((state) => {
+          const updatedMessages = { ...state.messages };
+          for (const [convoId, convoData] of Object.entries(updatedMessages)) {
+            const idx = convoData.items.findIndex((m) => m._id === messageId);
+            if (idx === -1) continue;
+            updatedMessages[convoId] = {
+              ...convoData,
+              items: convoData.items.map((m, i) =>
+                i === idx ? { ...m, linkPreview: preview } : m
               ),
             };
             break;

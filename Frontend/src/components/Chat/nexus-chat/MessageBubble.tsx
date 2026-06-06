@@ -1,7 +1,9 @@
 // Frontend/src/components/Chat/nexus-chat/MessageBubble.tsx
+import { useState, useMemo } from "react";
 import type { Message } from "@/types/chat";
 import { useAuthStore } from "@/stores/useAuthStore";
 import { MessageActionBar } from "./MessageActionBar";
+import { Dialog, DialogContent } from "@/components/ui/dialog";
 
 const BOT_ID = "15c5232d-1bd9-4bbd-98e0-1ea7308e80bb";
 
@@ -23,6 +25,8 @@ interface Props {
   isNew?: boolean;
   isGroup?: boolean;
   conversationId?: string;
+  /** Danh sách participants để resolve tên mention multi-word */
+  participants?: Array<{ _id: string; displayName: string }>;
   onReact?: (messageId: string, type: string) => void;
   onDelete?: (messageId: string, conversationId: string) => void;
   onRecall?: (messageId: string) => void;
@@ -84,7 +88,6 @@ function getTombstoneText(message: Message, isOwn: boolean, senderName?: string)
   if (message.deletedText && message.deletedText !== "Tin nhắn đã bị xóa") {
     return message.deletedText;
   }
-
   return isOwn ? "Bạn đã thu hồi tin nhắn" : `${senderName || "Người dùng"} đã thu hồi tin nhắn`;
 }
 
@@ -92,7 +95,6 @@ function getTombstoneClass(isOwn: boolean) {
   if (isOwn) {
     return "bg-slate-200 dark:bg-slate-700 text-slate-400 dark:text-slate-500 rounded-br-sm";
   }
-
   return "bg-slate-100 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 text-slate-400 dark:text-slate-500 rounded-bl-sm";
 }
 
@@ -101,7 +103,6 @@ function getTextBubbleClass(isOwn: boolean, isBot: boolean) {
   if (isBot) {
     return "border rounded-2xl rounded-bl-sm shadow-sm bg-violet-50 border-violet-200 text-violet-900 dark:bg-violet-950/40 dark:border-violet-800 dark:text-violet-100";
   }
-
   return "border rounded-2xl rounded-bl-sm shadow-sm bg-slate-100 border-slate-200 text-slate-800 dark:bg-slate-800 dark:border-slate-700 dark:text-slate-100";
 }
 
@@ -120,7 +121,6 @@ function SenderLabel({
       </span>
     );
   }
-
   return senderName;
 }
 
@@ -176,30 +176,196 @@ function FileAttachmentCard({
   );
 }
 
+// ─── Link Preview Card ────────────────────────────────────────────────────────
+function LinkPreviewCard({
+  message,
+  isOwn,
+}: Readonly<{
+  message: Message;
+  isOwn: boolean;
+}>) {
+  if (!message.linkPreview) return null;
+  const { url, title, description, imageUrl, siteName } = message.linkPreview;
+
+  return (
+    <a
+      href={url}
+      target="_blank"
+      rel="noopener noreferrer"
+      className={`flex flex-col overflow-hidden rounded-xl border shadow-sm max-w-64 hover:opacity-90 transition-opacity ${
+        isOwn
+          ? "bg-blue-700 border-blue-500 text-white"
+          : "bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700"
+      }`}
+    >
+      {imageUrl && (
+        <img src={imageUrl} alt={title ?? "preview"} className="w-full h-32 object-cover" loading="lazy" />
+      )}
+      <div className="px-3 py-2.5 flex flex-col gap-0.5">
+        {siteName && (
+          <span className={`text-[10px] font-semibold uppercase tracking-wide ${isOwn ? "text-blue-200" : "text-blue-500 dark:text-blue-400"}`}>
+            {siteName}
+          </span>
+        )}
+        {title && (
+          <p className={`text-[12px] font-bold leading-snug line-clamp-2 ${isOwn ? "text-white" : "text-slate-800 dark:text-slate-100"}`}>
+            {title}
+          </p>
+        )}
+        {description && (
+          <p className={`text-[11px] leading-snug line-clamp-2 ${isOwn ? "text-blue-100" : "text-slate-500 dark:text-slate-400"}`}>
+            {description}
+          </p>
+        )}
+      </div>
+    </a>
+  );
+}
+
+// Escape special regex chars
+const escapeRegex = (s: string) => s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+
+function MentionText({
+  content,
+  participants,
+}: Readonly<{
+  content: string;
+  participants?: Array<{ _id: string; displayName: string }>;
+}>) {
+  // Memoize regex để tránh tạo lại mỗi lần render (tránh SonarCloud performance smell)
+  const combined = useMemo(() => {
+    const knownNames = Array.from(new Set([
+      "Bot AI",
+      "mọi người",
+      ...(participants ?? []).map(p => p.displayName).filter(Boolean),
+    ])).sort((a, b) => b.length - a.length);
+
+    const knownPattern = knownNames.map(escapeRegex).join("|");
+    return new RegExp(`(https?://[^\\s]+)|@(${knownPattern})|(@\\S+)`, "gi");
+  }, [participants]);
+
+  const parts: React.ReactNode[] = [];
+  let lastIndex = 0;
+  let match: RegExpExecArray | null;
+  let keyIdx = 0;
+
+  while ((match = combined.exec(content)) !== null) {
+    if (match.index > lastIndex) {
+      parts.push(<span key={keyIdx++}>{content.slice(lastIndex, match.index)}</span>);
+    }
+
+    if (match[1]) {
+      // URL
+      parts.push(
+        <a key={keyIdx++} href={match[1]} target="_blank" rel="noopener noreferrer"
+          className="text-blue-500 hover:underline break-all">
+          {match[1]}
+        </a>
+      );
+    } else if (match[2]) {
+      // @{KnownName} – multi-word mention
+      const name = match[2];
+      const isBot = name.toLowerCase() === "bot ai";
+      parts.push(
+        <span key={keyIdx++}
+          className={`font-semibold rounded px-0.5 ${
+            isBot
+              ? "text-violet-600 dark:text-violet-300 bg-violet-100 dark:bg-violet-900/40"
+              : "text-blue-600 dark:text-blue-300 bg-blue-50 dark:bg-blue-900/30"
+          }`}>
+          @{name}
+        </span>
+      );
+    } else if (match[3]) {
+      // @fallback (single-word, unknown)
+      const raw = match[3]; // includes @
+      const isBot = raw.toLowerCase() === "@bot";
+      parts.push(
+        <span key={keyIdx++}
+          className={`font-semibold rounded px-0.5 ${
+            isBot
+              ? "text-violet-600 dark:text-violet-300 bg-violet-100 dark:bg-violet-900/40"
+              : "text-blue-600 dark:text-blue-300 bg-blue-50 dark:bg-blue-900/30"
+          }`}>
+          {raw}
+        </span>
+      );
+    }
+
+    lastIndex = combined.lastIndex;
+  }
+
+  if (lastIndex < content.length) {
+    parts.push(<span key={keyIdx}>{content.slice(lastIndex)}</span>);
+  }
+
+  return <>{parts}</>;
+}
+
 function MessageContent({
   message,
   isOwn,
   isBot,
+  participants,
 }: Readonly<{
   message: Message;
   isOwn: boolean;
   isBot: boolean;
+  participants?: Array<{ _id: string; displayName: string }>;
 }>) {
+  const [lightboxOpen, setLightboxOpen] = useState(false);
+
   return (
     <>
       {message.imgUrl && (
-        <a href={message.imgUrl} target="_blank" rel="noopener noreferrer">
-          <img
-            src={message.imgUrl}
-            alt="attachment"
-            className={`max-w-48 rounded-xl object-cover shadow-sm cursor-pointer hover:opacity-90 transition-opacity ${isOwn ? "rounded-br-sm" : "rounded-bl-sm"}`}
-          />
-        </a>
+        <>
+          <button
+            type="button"
+            onClick={() => setLightboxOpen(true)}
+            className={`block max-w-48 rounded-xl overflow-hidden shadow-sm hover:opacity-90 transition-opacity cursor-zoom-in ${
+              isOwn ? "rounded-br-sm" : "rounded-bl-sm"
+            }`}
+          >
+            <img src={message.imgUrl} alt="attachment" className="w-full object-cover" />
+          </button>
+          {lightboxOpen && (
+            <Dialog open onOpenChange={(v) => !v && setLightboxOpen(false)}>
+              <DialogContent className="max-w-[90vw] max-h-[90vh] p-0 border-0 bg-transparent shadow-none flex items-center justify-center overflow-hidden">
+                <div className="relative flex items-center justify-center">
+                  <img
+                    src={message.imgUrl}
+                    alt="attachment"
+                    className="max-w-[88vw] max-h-[85vh] object-contain rounded-xl shadow-2xl"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setLightboxOpen(false)}
+                    aria-label="Đóng"
+                    className="absolute top-2 right-2 w-9 h-9 rounded-full bg-black/50 hover:bg-black/70 text-white flex items-center justify-center transition-colors"
+                  >
+                    <span className="material-symbols-outlined text-[18px]">close</span>
+                  </button>
+                  <a
+                    href={message.imgUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    download
+                    className="absolute bottom-2 right-2 w-9 h-9 rounded-full bg-black/50 hover:bg-black/70 text-white flex items-center justify-center transition-colors"
+                    title="Tải xuống"
+                  >
+                    <span className="material-symbols-outlined text-[18px]">download</span>
+                  </a>
+                </div>
+              </DialogContent>
+            </Dialog>
+          )}
+        </>
       )}
       <FileAttachmentCard message={message} isOwn={isOwn} />
+      <LinkPreviewCard message={message} isOwn={isOwn} />
       {message.content && (
         <div className={`font-chat-msg text-chat-msg px-4 py-2.5 leading-relaxed relative ${getTextBubbleClass(isOwn, isBot)}`}>
-          {message.content}
+          <MentionText content={message.content} participants={participants} />
         </div>
       )}
     </>
@@ -265,7 +431,6 @@ function AvatarSlot({
   if (!showAvatar) {
     return <div className="w-8 h-8" />;
   }
-
   return (
     <SenderAvatar
       senderId={message.senderId}
@@ -286,7 +451,6 @@ function ThreadReplyButton({
   onOpenThread?: (messageId: string) => void;
 }>) {
   if ((message.threadReplyCount ?? 0) === 0) return null;
-
   return (
     <button
       type="button"
@@ -323,6 +487,7 @@ export default function MessageBubble({
   isNew = false,
   isGroup = false,
   conversationId,
+  participants = [],
   onReact,
   onDelete,
   onRecall,
@@ -394,16 +559,16 @@ export default function MessageBubble({
             </span>
           )}
 
-          {/* ── Tombstone (message đã bị xóa/thu hồi) ── */}
+          {/* Tombstone (message đã bị xóa/thu hồi) */}
           {isDeleted ? (
             <DeletedMessage message={message} isOwn={isOwn} senderName={senderName} />
           ) : (
             <>
-              <MessageContent message={message} isOwn={isOwn} isBot={isBot} />
+              <MessageContent message={message} isOwn={isOwn} isBot={isBot} participants={participants} />
 
               <ThreadReplyButton message={message} isOwn={isOwn} onOpenThread={onOpenThread} />
 
-              {/* ── Reaction badge – fixed dưới bubble, KHÔNG đè lên tên người sau ── */}
+              {/* Reaction badge */}
               {hasReactions && (
                 <ReactionBadge topReactionTypes={topReactionTypes} totalReactionCount={totalReactionCount} />
               )}

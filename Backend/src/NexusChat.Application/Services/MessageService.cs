@@ -146,7 +146,7 @@ public class MessageService(
             await linkPreviewService.EnqueueAsync(linkRequest, token);
         }
 
-        if (dto.Content == null || !dto.Content.Contains("@Bot")) return message.MapMessageDto();
+        if (dto.Content == null || !dto.Content.Contains("@Bot", StringComparison.OrdinalIgnoreCase)) return message.MapMessageDto();
         var mission = dto.Content.DetectBotMission();
         switch (mission)
         {

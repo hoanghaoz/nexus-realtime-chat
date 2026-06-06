@@ -1,5 +1,5 @@
 // Frontend/src/components/Chat/nexus-chat/MessageList.tsx
-import { useEffect, useRef, useCallback } from "react";
+import { useEffect, useRef, useCallback, useState } from "react";
 import MessageBubble from "./MessageBubble";
 import { useChatStore } from "@/stores/useChatStore";
 import { useAuthStore } from "@/stores/useAuthStore";
@@ -50,19 +50,31 @@ export default function MessageList({
   const bottomRef = useRef<HTMLDivElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const prevLengthRef = useRef(0);
+  const [prevScrollHeight, setPrevScrollHeight] = useState(0);
 
   const convoId = conversation?._id;
   const convoMessages = convoId ? (messages[convoId]?.items ?? []) : [];
   const hasMore = convoId ? (messages[convoId]?.hasMore ?? false) : false;
 
-  // Auto-scroll đến cuối chỉ khi có tin nhắn MỚI đến (không scroll khi load thêm trang cũ)
+  // Auto-scroll hoặc giữ scroll position
   useEffect(() => {
-    const isNewMessage = convoMessages.length > prevLengthRef.current;
-    prevLengthRef.current = convoMessages.length;
-    if (isNewMessage) {
-      bottomRef.current?.scrollIntoView({ behavior: "smooth" });
+    const el = containerRef.current;
+    if (!el) return;
+
+    if (prevScrollHeight > 0 && convoMessages.length > prevLengthRef.current) {
+      // Khi load thêm tin nhắn cũ (prepend), phục hồi vị trí scroll
+      const newScrollHeight = el.scrollHeight;
+      el.scrollTop = el.scrollTop + (newScrollHeight - prevScrollHeight);
+      setPrevScrollHeight(0);
+    } else {
+      // Khi có tin nhắn mới (append), cuộn xuống cuối
+      const isNewMessage = convoMessages.length > prevLengthRef.current;
+      if (isNewMessage) {
+        bottomRef.current?.scrollIntoView({ behavior: "smooth" });
+      }
     }
-  }, [convoMessages.length]);
+    prevLengthRef.current = convoMessages.length;
+  }, [convoMessages.length, prevScrollHeight]);
 
   // Scroll xuống cuối ngay khi đổi conversation
   useEffect(() => {
@@ -85,6 +97,7 @@ export default function MessageList({
     const el = containerRef.current;
     if (!el || !hasMore || messageLoading) return;
     if (el.scrollTop < 80) {
+      setPrevScrollHeight(el.scrollHeight);
       fetchMessages(convoId ?? undefined);
     }
   }, [hasMore, messageLoading, convoId]);
@@ -187,13 +200,14 @@ export default function MessageList({
           <MessageBubble
             key={msg._id || index}
             message={msg}
-            senderName={finalSenderName} // Pass finalSenderName so initials can be generated correctly even if not displayed
+            senderName={finalSenderName}
             senderAvatar={finalSenderAvatar}
             showAvatar={isFirstInCluster}
             showTimestamp={showTimestamp}
             isNew={isNew && !next}
             isGroup={isGroup}
             conversationId={convoId}
+            participants={conversation.participants.map(p => ({ _id: p._id, displayName: p.displayName }))}
             onReact={onReact}
             onDelete={onDelete}
             onRecall={onRecall}

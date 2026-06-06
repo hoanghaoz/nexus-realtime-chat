@@ -1,5 +1,6 @@
 import type { FriendResponseDto } from "@/services/friendService";
 import { useChatStore } from "@/stores/useChatStore";
+import { useSignalRStore } from "@/stores/useSignalRStore";
 import { useState } from "react";
 
 interface Props {
@@ -8,7 +9,14 @@ interface Props {
 
 export default function FriendItem({ friend }: Readonly<Props>) {
   const { startDirectChat } = useChatStore();
+  const { onlineUsers } = useSignalRStore();
   const [opening, setOpening] = useState(false);
+
+  // Ưu tiên dùng realtime onlineUsers từ PresenceHub;
+  // fallback sang friend.isOnline nếu PresenceHub chưa kết nối (onlineUsers rỗng)
+  const isOnline = onlineUsers.length > 0
+    ? onlineUsers.includes(friend.id)
+    : (friend.isOnline ?? false);
 
   const handleOpenChat = async () => {
     if (opening) return;
@@ -52,7 +60,7 @@ export default function FriendItem({ friend }: Readonly<Props>) {
           )}
           <div
             className={`absolute bottom-0 right-0 w-3 h-3 rounded-full border-2 border-white dark:border-slate-800 ${
-              friend.isOnline ? "bg-green-500" : "bg-slate-400"
+              isOnline ? "bg-green-500" : "bg-slate-400"
             }`}
           />
         </div>
@@ -60,8 +68,8 @@ export default function FriendItem({ friend }: Readonly<Props>) {
           <span className="font-bold text-slate-800 dark:text-slate-100 text-[15px] leading-tight">
             {friend.displayName || friend.username}
           </span>
-          <span className={`text-[12px] font-medium ${friend.isOnline ? "text-green-500" : "text-slate-400"}`}>
-            {friend.isOnline ? "Đang hoạt động" : "Offline"}
+          <span className={`text-[12px] font-medium ${isOnline ? "text-green-500" : "text-slate-400"}`}>
+            {isOnline ? "Đang hoạt động" : "Offline"}
           </span>
         </div>
       </div>

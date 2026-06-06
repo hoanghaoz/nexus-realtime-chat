@@ -1,5 +1,6 @@
 using ErrorOr;
 using NexusChat.Application.DTOs.Conversation;
+using NexusChat.Application.DTOs.Rooms;
 
 namespace NexusChat.Application.Interfaces.ConversationService;
 
@@ -11,4 +12,6 @@ public interface IConversationService
         CancellationToken token);
     
     Task<ErrorOr<ConversationDetailResponse>> GetConversationDetailAsync(string conversationId,string currentUserId,CancellationToken token);
+
+    Task<ErrorOr<GroupResponseDto>> CreateDirectConversationAsync(string creatorId, string targetUserId, CancellationToken token);
 }

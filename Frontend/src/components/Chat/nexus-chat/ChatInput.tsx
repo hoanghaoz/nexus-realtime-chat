@@ -1,5 +1,5 @@
 // Frontend/src/components/Chat/nexus-chat/ChatInput.tsx
-import { useRef, useState, useCallback } from "react";
+import { useRef, useState, useCallback, useMemo } from "react";
 import type { Dispatch, SetStateAction } from "react";
 import { useChatStore } from "@/stores/useChatStore";
 import { useSignalRStore } from "@/stores/useSignalRStore";
@@ -49,9 +49,9 @@ function getUploadStatusIcon(status: UploadItem["status"]) {
 }
 
 export default function ChatInput() {
-  const { activeConversationId } = useChatStore();
+  const { activeConversationId, conversations } = useChatStore();
   const { sendMessage, completePendingMessage } = useSignalRStore();
-  const { handleTypingInput } = useChatHub();
+  const { handleTypingInput, notifyBotMentioned } = useChatHub();
   const { user } = useAuthStore();
 
   const [text, setText] = useState("");
@@ -59,6 +59,29 @@ export default function ChatInput() {
   const [uploadQueue, setUploadQueue] = useState<UploadItem[]>([]);
   const [showEmoji, setShowEmoji] = useState(false);
   const [showAttachMenu, setShowAttachMenu] = useState(false);
+
+  // --- @Mention state ---
+  const BOT_ID_MENTION = "15c5232d-1bd9-4bbd-98e0-1ea7308e80bb";
+  const [mentionQuery, setMentionQuery] = useState<string | null>(null);
+  const [mentionedUsersId, setMentionedUsersId] = useState<string[]>([]);
+
+  const activeConversation = useMemo(
+    () => conversations.find((c) => c._id === activeConversationId),
+    [conversations, activeConversationId]
+  );
+  const mentionCandidates = useMemo(() => {
+    const bot = { id: BOT_ID_MENTION, displayName: "Bot AI", isBot: true };
+    const all = { id: "ALL", displayName: "Mọi người", isBot: false };
+    const participants = (activeConversation?.participants ?? [])
+      .filter((p) => p._id !== user?._id)
+      .map((p) => ({ id: p._id, displayName: p.displayName, isBot: false }));
+    return [bot, all, ...participants];
+  }, [activeConversation, user?._id]);
+  const filteredMentions = useMemo(() => {
+    if (mentionQuery === null) return [];
+    const q = mentionQuery.toLowerCase();
+    return mentionCandidates.filter((c) => c.displayName.toLowerCase().includes(q));
+  }, [mentionQuery, mentionCandidates]);
 
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const imageInputRef = useRef<HTMLInputElement>(null);
@@ -74,29 +97,51 @@ export default function ChatInput() {
     setSending(true);
     setText("");
     if (textareaRef.current) textareaRef.current.style.height = "auto";
+    setMentionedUsersId([]);
+    // Neu co mention @Bot: set botTyping = true truoc khi gui
+    const hasBotMention = mentionedUsersId.includes("15c5232d-1bd9-4bbd-98e0-1ea7308e80bb") || /@bot/i.test(content);
+    if (hasBotMention) notifyBotMentioned();
     try {
-      await sendMessage({ conversationId: activeConversationId, content });
+      await sendMessage({
+        conversationId: activeConversationId,
+        content,
+        mentionedUsersId: mentionedUsersId.filter(id => id !== BOT_ID_MENTION).length > 0
+          ? mentionedUsersId.filter(id => id !== BOT_ID_MENTION)
+          : undefined,
+      });
     } finally {
       setSending(false);
     }
-  }, [text, activeConversationId, sending, sendMessage]);
+  }, [text, activeConversationId, sending, sendMessage, mentionedUsersId]);
 
   const handleInput = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
-    setText(e.target.value);
+    const val = e.target.value;
+    setText(val);
     const el = e.target;
     el.style.height = "auto";
     el.style.height = `${Math.min(el.scrollHeight, 128)}px`;
     handleTypingInput();
+    // Detect @mention trigger khi nguoi dung go @ (ho tro tieng Viet)
+    const pos = el.selectionStart ?? val.length;
+    const before = val.slice(0, pos);
+    const atMatch = /@([\p{L}\p{N}_ ]*)$/u.exec(before);
+    if (atMatch !== null) { setMentionQuery(atMatch[1]); } else { setMentionQuery(null); }
   };
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+    // Escape: dong mention dropdown
+    if (e.key === "Escape" && mentionQuery !== null) {
+      e.preventDefault();
+      setMentionQuery(null);
+      return;
+    }
     if (e.key === "Enter" && !e.shiftKey) {
       e.preventDefault();
       handleSend();
     }
   };
 
-  const handleEmojiSelect = (emoji: any) => {
+  const handleEmojiSelect = (emoji: { native: string }) => {
     setText((prev) => prev + emoji.native);
     textareaRef.current?.focus();
     setShowEmoji(false);
@@ -144,13 +189,15 @@ export default function ChatInput() {
         const { messageId, fileUrl } = res.data?.data ?? res.data ?? {};
         if (!messageId) throw new Error("Backend không trả về messageId");
 
-        // Render optimistic message ngay lập tức
+        // Phan biet anh vs file de render optimistic message dung
+        const isImage = file.type.startsWith("image/");
         useChatStore.getState().addMessage({
           _id: messageId,
           conversationId: activeConversationId,
           senderId: user?._id ?? "",
           content: null,
-          imgUrl: fileUrl,
+          imgUrl: isImage ? fileUrl : null,
+          fileAttachment: !isImage ? { url: fileUrl ?? "", name: file.name, size: file.size, type: file.type } : undefined,
           createdAt: new Date().toISOString(),
           reactions: [],
         });
@@ -162,11 +209,12 @@ export default function ChatInput() {
 
         // Dọn sạch sau 2s
         setTimeout(() => removeUploadItem(setUploadQueue, uploadId), 2000);
-      } catch (err: any) {
+      } catch (err: unknown) {
         console.error("[ChatInput] uploadFile error:", err);
         updateUploadItem(setUploadQueue, uploadId, { status: "error" });
+        const e = err as { response?: { status?: number } };
         const msg =
-          err?.response?.status === 400
+          e?.response?.status === 400
             ? `File "${file.name}" không được hỗ trợ hoặc quá lớn.`
             : `Upload "${file.name}" thất bại. Vui lòng thử lại!`;
         toast.error(msg);
@@ -185,9 +233,55 @@ export default function ChatInput() {
       await uploadFile(file);
     }
   };
+  // Chon mention candidate
+  const handleSelectMention = (candidate: { id: string; displayName: string }) => {
+    const pos = textareaRef.current?.selectionStart ?? text.length;
+    const before = text.slice(0, pos);
+    const after = text.slice(pos);
+    const newBefore = before.replace(/@[\p{L}\p{N}_ ]*$/u, `@${candidate.displayName} `);
+    const newText = newBefore + after;
+    setText(newText);
+    setMentionQuery(null);
+    setMentionedUsersId((prev) => {
+      if (candidate.id === "ALL") {
+        const allIds = (activeConversation?.participants ?? [])
+          .filter(p => p._id !== user?._id)
+          .map(p => p._id);
+        return Array.from(new Set([...prev, ...allIds]));
+      }
+      return prev.includes(candidate.id) ? prev : [...prev, candidate.id];
+    });
+    setTimeout(() => {
+      if (textareaRef.current) {
+        textareaRef.current.focus();
+        textareaRef.current.selectionStart = textareaRef.current.selectionEnd = newBefore.length;
+      }
+    }, 0);
+  };
 
   return (
     <div className="px-4 pb-6 pt-2">
+      {/* @Mention Dropdown */}
+      {mentionQuery !== null && filteredMentions.length > 0 && (
+        <div className="mb-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl shadow-xl overflow-hidden">
+          <p className="text-[10px] text-slate-400 font-semibold uppercase tracking-wide px-3 pt-2 pb-1">Nhac den</p>
+          {filteredMentions.map((c) => (
+            <button key={c.id} type="button"
+              onMouseDown={(e) => { e.preventDefault(); handleSelectMention(c); }}
+              className="w-full flex items-center gap-2.5 px-3 py-2 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors text-left"
+            >
+              <div className={`w-7 h-7 rounded-full flex items-center justify-center text-white text-xs font-bold shrink-0 ${c.isBot ? "bg-gradient-to-br from-violet-600 to-purple-500" : "bg-gradient-to-br from-blue-500 to-cyan-400"}`}>
+                {c.isBot ? <span className="material-symbols-outlined text-[14px]">smart_toy</span> : c.displayName[0]?.toUpperCase()}
+              </div>
+              <div>
+                <p className="text-sm font-semibold text-slate-800 dark:text-slate-100">{c.displayName}</p>
+                {c.isBot && <p className="text-[10px] text-violet-500">Bot AI</p>}
+              </div>
+            </button>
+          ))}
+        </div>
+      )}
+
       {/* ── Upload progress bar khu vực ── */}
       {uploadQueue.length > 0 && (
         <div className="mb-2 flex flex-col gap-1.5">
@@ -355,7 +449,7 @@ export default function ChatInput() {
         multiple
         className="hidden"
         onChange={(e) => handleFilesSelected(e.target.files)}
-        {...({ webkitdirectory: "", directory: "" } as any)}
+        {...( { webkitdirectory: "", directory: "" } as React.InputHTMLAttributes<HTMLInputElement> )}
       />
 
       {/* Click outside để đóng attach menu */}

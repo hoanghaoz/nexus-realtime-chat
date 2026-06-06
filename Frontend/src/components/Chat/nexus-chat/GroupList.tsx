@@ -12,14 +12,18 @@ export default function GroupList() {
       new Date(a.lastMessageAt ?? a.updatedAt).getTime()
   );
 
+  const directConvos = sorted.filter((c) => c.type === "direct");
+  const groupConvos = sorted.filter((c) => c.type === "group");
+
   return (
-    <div className="mt-4 flex flex-col">
+    <div className="mt-4 flex flex-col gap-1">
+      {/* ── Hội thoại nhóm ─────────────────────────────── */}
       <div className="px-5 py-2 flex items-center justify-between">
         <h3 className="text-[13px] font-bold text-slate-500 uppercase tracking-wide">
-          HỘI THOẠI
-          {sorted.length > 0 && (
+          Hội thoại nhóm
+          {groupConvos.length > 0 && (
             <span className="ml-1.5 text-[11px] font-semibold text-slate-400 normal-case">
-              ({sorted.length})
+              ({groupConvos.length})
             </span>
           )}
         </h3>
@@ -35,11 +39,37 @@ export default function GroupList() {
           </div>
         )}
 
-        {!convoLoading && sorted.length === 0 && (
-          <div className="flex flex-col items-center gap-2 py-6 text-slate-400">
-            <span className="material-symbols-outlined text-3xl">chat_bubble_outline</span>
+        {!convoLoading && groupConvos.length === 0 && (
+          <div className="flex flex-col items-center gap-2 py-4 text-slate-400">
+            <span className="material-symbols-outlined text-2xl">group</span>
+            <p className="text-xs text-center">Chưa có nhóm nào.</p>
+          </div>
+        )}
+
+        {!convoLoading &&
+          groupConvos.map((convo) => (
+            <GroupItem key={convo._id} conversation={convo} />
+          ))}
+      </div>
+
+      {/* ── Hội thoại riêng ────────────────────────────── */}
+      <div className="px-5 py-2 flex items-center justify-between mt-2">
+        <h3 className="text-[13px] font-bold text-slate-500 uppercase tracking-wide">
+          Hội thoại riêng
+          {directConvos.length > 0 && (
+            <span className="ml-1.5 text-[11px] font-semibold text-slate-400 normal-case">
+              ({directConvos.length})
+            </span>
+          )}
+        </h3>
+      </div>
+
+      <div className="flex flex-col gap-2.5 px-4 pb-4">
+        {!convoLoading && directConvos.length === 0 && (
+          <div className="flex flex-col items-center gap-2 py-4 text-slate-400">
+            <span className="material-symbols-outlined text-2xl">chat_bubble_outline</span>
             <p className="text-xs text-center">
-              Chưa có hội thoại nào.
+              Chưa có hội thoại riêng.
               <br />
               Nhắn tin với bạn bè để bắt đầu!
             </p>
@@ -47,7 +77,7 @@ export default function GroupList() {
         )}
 
         {!convoLoading &&
-          sorted.map((convo) => (
+          directConvos.map((convo) => (
             <GroupItem key={convo._id} conversation={convo} />
           ))}
       </div>

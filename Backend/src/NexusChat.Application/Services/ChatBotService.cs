@@ -114,7 +114,7 @@ public class ChatBotService(
         
         var chat = new ChatHistory(systemPrompt);
         var content = message.Content ?? "";
-        var botId = configuration["Chatbot:BotId"];
+        var botId = configuration["Chatbot:BotId"] ?? "15c5232d-1bd9-4bbd-98e0-1ea7308e80bb";
         foreach (var item in historyChat)
         {
             if(string.IsNullOrWhiteSpace(item.Content)) continue;

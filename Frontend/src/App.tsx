@@ -14,35 +14,39 @@ import { useChatStore } from "./stores/useChatStore";
 function App() {
   const { isDark, setTheme } = useThemeStore();
   const { accessToken } = useAuthStore();
-  const { connectChat, disconnectChat } = useSignalRStore();
+  const { connectChat, disconnectChat, connectPresence, disconnectPresence } = useSignalRStore();
   const { fetchConversations } = useChatStore();
 
   useEffect(() => {
     setTheme(isDark);
   }, [isDark]);
 
-  // Kết nối SignalR ChatHub khi user đăng nhập, ngắt khi đăng xuất
-  // Tuân thủ pattern của Moji App.tsx (connectSocket / disconnectSocket)
+  // Kết nối SignalR ChatHub + PresenceHub khi user đăng nhập, ngắt khi đăng xuất
   useEffect(() => {
     if (accessToken) {
       useAuthStore.getState().fetchProfile().catch(console.error);
-      
+
+      // Kết nối ChatHub
       connectChat().then(() => {
         // Fetch conversations sau khi kết nối thành công
         fetchConversations().then(() => {
-          const { conversations } = useChatStore.getState();
+          const { conversations, fetchConversationDetail } = useChatStore.getState();
           const { chatConnection } = useSignalRStore.getState();
-          if (chatConnection) {
-            for (const conv of conversations) {
-              chatConnection.invoke("JoinGroup", conv._id).catch(console.error);
-            }
+          // Join SignalR groups + fetch chi tiết (members, lastMessage) cho mọi conversation
+          for (const conv of conversations) {
+            chatConnection?.invoke("JoinGroup", conv._id).catch(console.error);
+            fetchConversationDetail(conv._id).catch(console.error);
           }
         });
       });
+
+      // Kết nối PresenceHub (song song)
+      connectPresence().catch(console.error);
     }
 
     return () => {
       disconnectChat();
+      disconnectPresence();
     };
   }, [accessToken]);
 
