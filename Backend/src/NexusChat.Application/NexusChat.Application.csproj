@@ -1,26 +1,32 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
-  <ItemGroup>
-    <ProjectReference Include="..\NexusChat.Domain\NexusChat.Domain.csproj" />
-  </ItemGroup>
+    <ItemGroup>
+        <ProjectReference Include="..\NexusChat.Domain\NexusChat.Domain.csproj"/>
+    </ItemGroup>
 
-  <ItemGroup>
-    <PackageReference Include="FluentValidation.DependencyInjectionExtensions" Version="12.1.1" />
-    <PackageReference Include="Microsoft.Extensions.Caching.Hybrid" Version="10.4.0" />
-    <PackageReference Include="Microsoft.Extensions.Configuration.Abstractions" Version="10.0.8" />
-    <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="10.0.8" />
-    <PackageReference Include="Microsoft.SemanticKernel.Abstractions" Version="1.77.0" />
-    <PackageReference Include="Microsoft.SemanticKernel.Connectors.OpenAI" Version="1.75.0" />
-  </ItemGroup>
+    <ItemGroup>
+        <PackageReference Include="FluentValidation.DependencyInjectionExtensions" Version="12.1.1"/>
+        <PackageReference Include="Microsoft.Extensions.Caching.Hybrid" Version="10.4.0"/>
+        <PackageReference Include="Microsoft.Extensions.Configuration.Abstractions" Version="10.0.8"/>
+        <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="10.0.8"/>
+        <PackageReference Include="Microsoft.SemanticKernel.Abstractions" Version="1.77.0"/>
+        <PackageReference Include="Microsoft.SemanticKernel.Connectors.OpenAI" Version="1.75.0"/>
+    </ItemGroup>
 
-  <ItemGroup>
-    <Folder Include="DTOs\Hubs\" />
-  </ItemGroup>
+    <ItemGroup>
+        <Folder Include="DTOs\Hubs\"/>
+    </ItemGroup>
 
-  <PropertyGroup>
-    <TargetFramework>net10.0</TargetFramework>
-    <ImplicitUsings>enable</ImplicitUsings>
-    <Nullable>enable</Nullable>
-  </PropertyGroup>
+    <ItemGroup>
+        <Reference Include="Microsoft.SemanticKernel.Connectors.Google">
+            <HintPath>..\..\..\..\..\..\.nuget\packages\microsoft.semantickernel.connectors.google\1.75.0-alpha\lib\net10.0\Microsoft.SemanticKernel.Connectors.Google.dll</HintPath>
+        </Reference>
+    </ItemGroup>
+
+    <PropertyGroup>
+        <TargetFramework>net10.0</TargetFramework>
+        <ImplicitUsings>enable</ImplicitUsings>
+        <Nullable>enable</Nullable>
+    </PropertyGroup>
 
 </Project>
