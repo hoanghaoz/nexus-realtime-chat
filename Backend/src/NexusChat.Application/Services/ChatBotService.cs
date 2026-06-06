@@ -68,8 +68,16 @@ public class ChatBotService(
             logger.LogInformation("Send to AI: \n{Prompt}", content.ToString());
         }
 
-        return await chatCompletionService.GetChatMessageContentAsync(chat, executionSettings,
-            cancellationToken: token);
+        try
+        {
+            return await chatCompletionService.GetChatMessageContentAsync(chat, executionSettings,
+                cancellationToken: token);
+        }
+        catch (HttpOperationException ex)
+        {
+            logger.LogError("API google response: {Error}", ex.ResponseContent);
+            throw;
+        }
     }
 
     public async Task<ErrorOr<RemindDataDto>> RemindInConversationAsync(string conversationId, string parentMessageId,
@@ -166,8 +174,16 @@ public class ChatBotService(
         var chat = new ChatHistory();
         chat.AddUserMessage(content.ToString());
         logger.LogInformation("Send to AI: \n{Prompt}", content.ToString());
-        return await chatCompletionService.GetChatMessageContentAsync(chat, executionSettings,
-            cancellationToken: token);
+        try
+        {
+            return await chatCompletionService.GetChatMessageContentAsync(chat, executionSettings,
+                cancellationToken: token);
+        }
+        catch (HttpOperationException ex)
+        {
+            logger.LogError("API google response: {Error}", ex.ResponseContent);
+            throw;
+        }
     }
 
     private static PromptExecutionSettings BuildSetting()
