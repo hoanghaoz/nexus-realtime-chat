@@ -2,9 +2,9 @@ using System.Text;
 using System.Text.Json;
 using ErrorOr;
 using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Logging;
 using Microsoft.SemanticKernel;
 using Microsoft.SemanticKernel.ChatCompletion;
-using Microsoft.SemanticKernel.Connectors.OpenAI;
 using NexusChat.Application.Constant;
 using NexusChat.Application.DTOs.ChatBot;
 using NexusChat.Application.Interfaces.ChatBot;
@@ -18,7 +18,8 @@ public class ChatBotService(
     IChatCompletionService chatCompletionService,
     IMessageRepository messageRepository,
     IConversationService conversationService,
-    IConfiguration configuration) : IChatBotService
+    IConfiguration configuration,
+    ILogger<ChatBotService> logger) : IChatBotService
 {
     public async Task<ErrorOr<ChatMessageContent>> SummarizeMessageInConversationAsync(string conversationId,
         string userId, CancellationToken token)
@@ -27,115 +28,104 @@ public class ChatBotService(
         if (conversationDetail.IsError)
             return conversationDetail.Errors;
 
-        var messages = await messageRepository.GetMessagesForBotDataAsync(conversationId,25 ,token);
+        var messages = await messageRepository.GetMessagesForBotDataAsync(conversationId, 25, token);
 
         var executionSettings = BuildSetting();
-        ChatMessageContent response;
+        var chat = new ChatHistory();
 
-        // generate data and system prompt for bot in 2 case: empty chat and non-empty chat, then call openAI to get summary result
         if (messages.Count == 0)
         {
             var systemPrompt = SystemPrompt.SummaryMessagePromptWhenEmptyChat();
-            var emptyChatHistory = new ChatHistory(systemPrompt);
-            response = await chatCompletionService.GetChatMessageContentAsync(
-                emptyChatHistory,
-                executionSettings,
-                cancellationToken: token);
+            chat.AddUserMessage(
+                $"{systemPrompt}\n\n[Hệ thống]: Phòng chat này chưa có dữ liệu, hãy phản hồi ngắn gọn.");
         }
         else
         {
-            var messageData = messages.Select(m =>
+            var systemPrompt = SystemPrompt.SummaryMessagePrompt();
+            var content = new StringBuilder();
+            content.AppendLine(systemPrompt);
+            content.AppendLine("\n--- BẮT ĐẦU LỊCH SỬ TRÒ CHUYỆN ---");
+
+            foreach (var m in messages)
             {
                 var senderName = conversationDetail.Value.Participants.FirstOrDefault(p => p.UserId == m.FromUserId)
                     ?.DisplayName ?? "Unknown";
-                return new MessageDataDto(
-                    senderName,
-                    m.Content,
-                    m.CreatedAt,
-                    m.Attachments.Select(ob => ob switch
-                    {
-                        FileAttachment file => $"[File Attachment] Name: {file.FileName}, Type: {file.FileType}",
-                        LinkPreviewAttachment link => $"[Link Preview] Title: {link.Title}",
-                        _ => "[Unknown Attachment]"
-                    }).ToList(),
-                    m.ParentMessageId);
-            }).ToList();
-            var systemPrompt = SystemPrompt.SummaryMessagePrompt();
-            var chat = new ChatHistory(systemPrompt);
+                var attachments = m.Attachments.Select(ob => ob switch
+                {
+                    FileAttachment file => $"[File Attachment] Name: {file.FileName}, Type: {file.FileType}",
+                    LinkPreviewAttachment link => $"[Link Preview] Title: {link.Title}",
+                    _ => "[Unknown Attachment]"
+                }).ToList();
 
-            // make a chat history reducer to control the token count of the message sent to openAI, we only keep 25 messages and will trigger reducer when the message count exceed 30
-            var reducer = new ChatHistoryTruncationReducer(25, 30);
-            var content = new StringBuilder();
-            foreach (var message in messageData)
-            {
-                var attachments = message.AttachmentData;
-                if (attachments.Count == 0)
-                {
-                    content.Append($"[{message.CreatedAt:HH:mm}]: {message.SenderName}: {message.Content} \n");
-                }
-                else
-                {
-                    var attachmentsString = string.Join(", ", attachments);
-                    content.Append(
-                        $"[{message.CreatedAt:HH:mm}]: {message.SenderName}: {message.Content},{attachmentsString} \n");
-                }
+                var attachmentsString = attachments.Count > 0 ? $", {string.Join(", ", attachments)}" : "";
+
+                var textContent = string.IsNullOrWhiteSpace(m.Content) ? "[Chỉ đính kèm tệp]" : m.Content;
+                content.AppendLine($"[{m.CreatedAt:HH:mm}] {senderName}: {textContent}{attachmentsString}");
             }
 
+            content.AppendLine("--- KẾT THÚC LỊCH SỬ TRÒ CHUYỆN ---");
             chat.AddUserMessage(content.ToString());
-            var reducerMessage = await reducer.ReduceAsync(chat, token);
-
-            if (reducerMessage != null) chat = new ChatHistory(reducerMessage);
-
-            response = await chatCompletionService.GetChatMessageContentAsync(
-                chat,
-                executionSettings,
-                cancellationToken: token);
+            logger.LogInformation("Send to AI: \n{Prompt}", content.ToString());
         }
 
-        return response;
+        try
+        {
+            return await chatCompletionService.GetChatMessageContentAsync(chat, executionSettings,
+                cancellationToken: token);
+        }
+        catch (HttpOperationException ex)
+        {
+            logger.LogError("API google response: {Error}", ex.ResponseContent);
+            throw;
+        }
     }
 
-    /// <summary>
-    ///     This method handle the response llm model reply and parse to JSON  for feature remind user's tasks
-    ///     Return RemindDataDto for background worker continues to handle query
-    /// </summary>
-    /// <param name="conversationId"></param>
-    /// <param name="parentMessageId"></param>
-    /// <param name="token"></param>
-    /// <returns></returns>
     public async Task<ErrorOr<RemindDataDto>> RemindInConversationAsync(string conversationId, string parentMessageId,
         CancellationToken token)
     {
         var message = await messageRepository.GetByIdAsync(parentMessageId, token);
         if (message == null) return Error.NotFound("Message.NotFound", "The message was not found.");
-        var systemPrompt = SystemPrompt.RemindMessagePrompt(DateTime.UtcNow);
-        var executionSettings = BuildRemindSetting();
+
         var historyChat = await messageRepository.GetMessagesForBotDataAsync(conversationId, 5, token);
-        
-        var chat = new ChatHistory(systemPrompt);
-        var content = message.Content ?? "";
+        var executionSettings = BuildRemindSetting();
+
+        var systemPrompt = SystemPrompt.RemindMessagePrompt(DateTime.UtcNow);
+        var contentBuilder = new StringBuilder();
+
+        contentBuilder.AppendLine(systemPrompt);
+        contentBuilder.AppendLine("\n--- BẮT ĐẦU LỊCH SỬ TRÒ CHUYỆN ---");
+
         var botId = configuration["Chatbot:BotId"] ?? "15c5232d-1bd9-4bbd-98e0-1ea7308e80bb";
+
         foreach (var item in historyChat)
         {
-            if(string.IsNullOrWhiteSpace(item.Content)) continue;
-            if(item.FromUserId == botId) chat.AddAssistantMessage(item.Content ?? "");
-            else chat.AddUserMessage(item.Content ?? " ");
+            if (string.IsNullOrWhiteSpace(item.Content)) continue;
+            var sender = item.FromUserId == botId ? "Assistant" : "User";
+            contentBuilder.AppendLine($"[{sender}]: {item.Content}");
         }
-        chat.AddUserMessage(content);
 
-        var response = await chatCompletionService.GetChatMessageContentAsync(
-            chat,
-            executionSettings,
-            cancellationToken: token);
+        contentBuilder.AppendLine($"[User]: {message.Content}");
+        contentBuilder.AppendLine("--- KẾT THÚC LỊCH SỬ TRÒ CHUYỆN ---");
+
+        var chat = new ChatHistory();
+        chat.AddUserMessage(contentBuilder.ToString());
+        logger.LogInformation("Send to AI: \n{Prompt}", contentBuilder.ToString());
+        var response =
+            await chatCompletionService.GetChatMessageContentAsync(chat, executionSettings, cancellationToken: token);
 
         var jsonString = response.Content ?? "[]";
+
+        if (jsonString.StartsWith("```json", StringComparison.OrdinalIgnoreCase))
+            jsonString = jsonString.Replace("```json", "", StringComparison.OrdinalIgnoreCase)
+                .Replace("```", "")
+                .Trim();
+
         try
         {
             var extractReminder = JsonSerializer.Deserialize<List<RemindExtractionDto>>(jsonString);
             var mentionUserId = message.MentionedUsersId.Count == 0 ? [] : message.MentionedUsersId;
             var remindTasks = extractReminder ?? [];
-            var remindData = new RemindDataDto(remindTasks, mentionUserId);
-            return remindData;
+            return new RemindDataDto(remindTasks, mentionUserId);
         }
         catch (JsonException ex)
         {
@@ -144,68 +134,79 @@ public class ChatBotService(
         }
     }
 
-    public async Task<ErrorOr<ChatMessageContent>> AnswerMessageInConversationAsync(string conversationId, string userId, CancellationToken token)
+    public async Task<ErrorOr<ChatMessageContent>> AnswerMessageInConversationAsync(string conversationId,
+        string userId, CancellationToken token)
     {
         var conversationDetail = await conversationService.GetConversationDetailAsync(conversationId, userId, token);
         if (conversationDetail.IsError)
             return conversationDetail.Errors;
 
         var messages = await messageRepository.GetMessagesForBotDataAsync(conversationId, 25, token);
-
         var executionSettings = BuildSetting();
 
         var systemPrompt = SystemPrompt.GeneralAssistantPrompt();
-        var chat = new ChatHistory(systemPrompt);
-
         var content = new StringBuilder();
-        foreach (var message in messages)
+
+        content.AppendLine(systemPrompt);
+        content.AppendLine("\n--- BẮT ĐẦU LỊCH SỬ TRÒ CHUYỆN ---");
+
+        foreach (var m in messages)
         {
-            var senderName = conversationDetail.Value.Participants.FirstOrDefault(p => p.UserId == message.FromUserId)
+            if (string.IsNullOrWhiteSpace(m.Content) && m.Attachments.Count == 0) continue;
+
+            var senderName = conversationDetail.Value.Participants.FirstOrDefault(p => p.UserId == m.FromUserId)
                 ?.DisplayName ?? "Unknown";
-            var attachments = message.Attachments.Select(ob => ob switch
+            var attachments = m.Attachments.Select(ob => ob switch
             {
                 FileAttachment file => $"[File Attachment] Name: {file.FileName}, Type: {file.FileType}",
                 LinkPreviewAttachment link => $"[Link Preview] Title: {link.Title}",
                 _ => "[Unknown Attachment]"
             }).ToList();
 
-            if (attachments.Count == 0)
-            {
-                content.Append($"[{message.CreatedAt:HH:mm}]: {senderName}: {message.Content} \n");
-            }
-            else
-            {
-                var attachmentsString = string.Join(", ", attachments);
-                content.Append(
-                    $"[{message.CreatedAt:HH:mm}]: {senderName}: {message.Content},{attachmentsString} \n");
-            }
+            var attachmentsString = attachments.Count > 0 ? $", {string.Join(", ", attachments)}" : "";
+            var textContent = string.IsNullOrWhiteSpace(m.Content) ? "[Chỉ đính kèm tệp]" : m.Content;
+
+            content.AppendLine($"[{m.CreatedAt:HH:mm}] {senderName}: {textContent}{attachmentsString}");
         }
 
+        content.AppendLine("--- KẾT THÚC LỊCH SỬ TRÒ CHUYỆN ---");
+
+        var chat = new ChatHistory();
         chat.AddUserMessage(content.ToString());
-
-        var response = await chatCompletionService.GetChatMessageContentAsync(
-            chat,
-            executionSettings,
-            cancellationToken: token);
-
-        return response;
+        logger.LogInformation("Send to AI: \n{Prompt}", content.ToString());
+        try
+        {
+            return await chatCompletionService.GetChatMessageContentAsync(chat, executionSettings,
+                cancellationToken: token);
+        }
+        catch (HttpOperationException ex)
+        {
+            logger.LogError("API google response: {Error}", ex.ResponseContent);
+            throw;
+        }
     }
 
-    private static OpenAIPromptExecutionSettings BuildSetting()
+    private static PromptExecutionSettings BuildSetting()
     {
-        return new OpenAIPromptExecutionSettings
+        return new PromptExecutionSettings
         {
-            MaxTokens = 500,
-            Temperature = 0.7 // adjust llm creativity
+            ExtensionData = new Dictionary<string, object>
+            {
+                { "temperature", 0.7 },
+                { "max_tokens", 500 }
+            }
         };
     }
 
-    private static OpenAIPromptExecutionSettings BuildRemindSetting()
+    private static PromptExecutionSettings BuildRemindSetting()
     {
-        return new OpenAIPromptExecutionSettings
+        return new PromptExecutionSettings
         {
-            MaxTokens = 500,
-            Temperature = 0 // adjust llm creativity
+            ExtensionData = new Dictionary<string, object>
+            {
+                { "temperature", 0 },
+                { "max_tokens", 500 }
+            }
         };
     }
 }

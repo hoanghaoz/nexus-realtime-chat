@@ -301,6 +301,10 @@ export const useSignalRStore = create<SignalRState>((set, get) => ({
       });
       connection.on("ReceiveErrorMessage", (error: string) => {
         console.error("[SignalR] Server error:", error);
+        toast.error("Hệ thống", {
+          description: error || "Có lỗi xảy ra từ máy chủ",
+          duration: 4000,
+        });
       });
       connection.on("ReceiveToastNotification", handleToastNotification);
       connection.on("MessageUpdateNotify", (conversationId: string, messageId: string, newContent: string) => {
@@ -310,6 +314,30 @@ export const useSignalRStore = create<SignalRState>((set, get) => ({
         useChatStore.getState().removeMessage(conversationId, messageId);
       });
       connection.on("MessageReactNotify", handleMessageReact);
+      // UserGotTaggedNotify – thông báo khi được mention/@tag trong tin nhắn
+      connection.on("UserGotTaggedNotify", (rawMessage: Record<string, unknown>) => {
+        try {
+          const message = parseRawMessage(rawMessage);
+          const currentUserId = useAuthStore?.getState?.()?.user?._id;
+          // Bỏ qua nếu chính mình là người gửi (mình tự mention mình)
+          if (message.senderId === currentUserId) return;
+          const { conversations } = useChatStore.getState();
+          const convoName = resolveConvoName(
+            conversations.find(c => c._id === message.conversationId),
+            currentUserId
+          );
+          toast(`🔔 Bạn được nhắc đến trong "${convoName}"`, {
+            description: buildMessagePreview(message.content),
+            duration: 6000,
+            action: {
+              label: "Xem ngay",
+              onClick: () => useChatStore.getState().setActiveConversation(message.conversationId),
+            },
+          });
+        } catch (err) {
+          console.error("[SignalR] UserGotTaggedNotify parse error:", err);
+        }
+      });
       // Feature 2: Link Preview – backend gửi 1 object { MessageId, Attachment: { previewLinkUrl, title, description, imageUrl, siteName } }
       connection.on(
         "UpdateLinkPreview",

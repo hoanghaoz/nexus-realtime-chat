@@ -1,4 +1,5 @@
 using ErrorOr;
+using Microsoft.Extensions.Logging;
 using NexusChat.Application.DTOs.ChatBot;
 using NexusChat.Application.DTOs.Media;
 using NexusChat.Application.DTOs.Message;
@@ -17,7 +18,8 @@ public class MessageService(
     IRealtimeNotification notify,
     IConversationRepository conversationRepository,
     ILinkPreviewService linkPreviewService,
-    IChatBotQueue chatBotQueue) : IMessageService
+    IChatBotQueue chatBotQueue,
+    ILogger<MessageService> logger) : IMessageService
 {
     /// <summary>
     ///     Retrieves messages from a conversation with cursor-based pagination.
@@ -146,8 +148,12 @@ public class MessageService(
             await linkPreviewService.EnqueueAsync(linkRequest, token);
         }
 
-        if (dto.Content == null || !dto.Content.Contains("@Bot")) return message.MapMessageDto();
+        if (dto.Content == null || !dto.Content.Contains("@Bot", StringComparison.OrdinalIgnoreCase))
+            return message.MapMessageDto();
         var mission = dto.Content.DetectBotMission();
+        logger.LogInformation(
+            "Message {MessageId} in conversation {ConversationId} triggered bot mission: {Mission} with {Content}",
+            message.Id, message.ConversationId, mission, dto.Content);
         switch (mission)
         {
             case ChatBotRegex.MissionSummarize:

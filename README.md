@@ -34,7 +34,7 @@ Navigate to `http://localhost:<port>/scalar/v1` to see the **API Docs (Scalar)**
 ### 2. ⚛️ Deploy Frontend (ReactJS Web App)
 The nexus team deploy the website on [vercel](https://vercel.com)
 
-You can visit via this link: [Nexus Chat](https://nexus-realtime-chat-yayj-14xmmod7b-quangha-s-projects.vercel.app/sign-in)
+You can visit via this link: [Nexus Chat](https://nexus-realtime-chat-yayj.vercel.app/)
 
 
 ## 📚 Documentation
