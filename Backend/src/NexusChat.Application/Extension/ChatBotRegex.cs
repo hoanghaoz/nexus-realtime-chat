@@ -21,7 +21,7 @@ public static partial class ChatBotRegex
         RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, 5000)]
     private static partial Regex SummaryRegex();
 
-    [GeneratedRegex(@"(nhắc|báo|gọi|remind|ping)\s+(tao|mình|anh em|mọi người|@\w+)\s+(lúc|vào|sau|chiều nay|mai)",
+    [GeneratedRegex(@"(nhắc|báo|gọi|remind|ping)\b.*?(tao|mình|anh em|mọi người|@\w+)",
         RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, 5000)]
     private static partial Regex RemindRegex();
 }
