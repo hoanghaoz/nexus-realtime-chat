@@ -32,10 +32,15 @@ api.interceptors.response.use(
   (res) => res,
   (err) => {
     if (err?.response?.status === 401) {
-      // token expired or unauthorized -> clear and redirect to sign-in
-      globalThis.localStorage?.removeItem("accessToken");
-      globalThis.localStorage?.removeItem("auth-storage");
-      if (globalThis.location) globalThis.location.href = "/sign-in";
+      const url = err.config?.url || "";
+      const isAuthEndpoint = url.includes("/auth/") || url.endsWith("/auth");
+      
+      if (!isAuthEndpoint) {
+        // token expired or unauthorized -> clear and redirect to sign-in
+        globalThis.localStorage?.removeItem("accessToken");
+        globalThis.localStorage?.removeItem("auth-storage");
+        if (globalThis.location) globalThis.location.href = "/sign-in";
+      }
     }
     return Promise.reject(err);
   }

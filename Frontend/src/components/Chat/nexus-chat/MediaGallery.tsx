@@ -39,7 +39,7 @@ function ImageLightbox({
 }) {
   return (
     <Dialog open onOpenChange={(v) => !v && onClose()}>
-      <DialogContent className="max-w-[90vw] max-h-[90vh] p-0 border-0 bg-transparent shadow-none flex items-center justify-center overflow-hidden">
+      <DialogContent className="max-w-[90vw] sm:max-w-[90vw] max-h-[90vh] p-0 border-0 bg-transparent shadow-none flex items-center justify-center overflow-hidden">
         <div className="relative flex items-center justify-center">
           <img
             src={src}
