@@ -301,6 +301,7 @@ export const useSignalRStore = create<SignalRState>((set, get) => ({
       });
       connection.on("ReceiveErrorMessage", (error: string) => {
         console.error("[SignalR] Server error:", error);
+        if (error === "The message is already completed.") return;
         toast.error("Hệ thống", {
           description: error || "Có lỗi xảy ra từ máy chủ",
           duration: 4000,
