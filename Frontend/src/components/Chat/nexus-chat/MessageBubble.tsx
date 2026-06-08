@@ -1,7 +1,10 @@
 // Frontend/src/components/Chat/nexus-chat/MessageBubble.tsx
 import { useState, useMemo } from "react";
+import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
 import type { Message } from "@/types/chat";
 import { useAuthStore } from "@/stores/useAuthStore";
+import { useChatStore } from "@/stores/useChatStore";
 import { MessageActionBar } from "./MessageActionBar";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 
@@ -32,6 +35,7 @@ interface Props {
   onRecall?: (messageId: string) => void;
   onCopy?: (content: string) => void;
   onOpenThread?: (messageId: string) => void;
+  onForward?: (message: Message) => void;
 }
 
 function formatTime(iso: string) {
@@ -373,7 +377,23 @@ function MessageContent({
       <LinkPreviewCard message={message} isOwn={isOwn} />
       {message.content && (
         <div className={`font-chat-msg text-chat-msg px-4 py-2.5 leading-relaxed relative ${getTextBubbleClass(isOwn, isBot)}`}>
-          <MentionText content={message.content} participants={participants} />
+          {isBot ? (
+            <div className="prose dark:prose-invert prose-sm max-w-none break-words
+                         prose-p:leading-relaxed prose-p:my-1
+                         prose-a:text-blue-500 hover:prose-a:text-blue-600 prose-a:no-underline
+                         prose-strong:text-violet-800 dark:prose-strong:text-violet-200
+                         prose-code:text-violet-600 dark:prose-code:text-violet-300 prose-code:bg-violet-100/50 dark:prose-code:bg-violet-900/30 prose-code:px-1 prose-code:py-0.5 prose-code:rounded
+                         prose-pre:bg-slate-800 prose-pre:text-slate-100 prose-pre:p-3 prose-pre:rounded-xl prose-pre:my-2
+                         prose-ul:my-1 prose-ul:pl-5
+                         prose-ol:my-1 prose-ol:pl-5
+                         prose-li:my-0.5">
+              <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                {message.content}
+              </ReactMarkdown>
+            </div>
+          ) : (
+            <MentionText content={message.content} participants={participants} />
+          )}
         </div>
       )}
     </>
@@ -460,14 +480,29 @@ function ThreadReplyButton({
 }>) {
   if ((message.threadReplyCount ?? 0) === 0) return null;
   return (
-    <button
-      type="button"
-      onClick={() => onOpenThread?.(message._id)}
-      className={`flex items-center gap-1 text-[11px] font-medium text-blue-500 hover:text-blue-600 mt-0.5 transition-colors ${isOwn ? "self-end" : "self-start"}`}
-    >
-      <span className="material-symbols-outlined text-[13px]">forum</span>
-      {message.threadReplyCount} phản hồi
-    </button>
+    <div className={`mt-1.5 flex items-center ${isOwn ? "justify-end" : "justify-start"}`}>
+      <button
+        type="button"
+        onClick={() => onOpenThread?.(message._id)}
+        className="group flex items-center gap-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 shadow-sm rounded-full pl-1.5 pr-3 py-1 hover:border-purple-300 dark:hover:border-purple-700 hover:shadow-md transition-all"
+      >
+        <div className="flex -space-x-1.5">
+          {/* Fake 2-3 avatars for UI as seen in the screenshot until backend supports it */}
+          <div className="w-5 h-5 rounded-full bg-gradient-to-br from-purple-400 to-indigo-500 flex items-center justify-center text-[8px] text-white font-bold ring-2 ring-white dark:ring-slate-800 z-20">?</div>
+          {message.threadReplyCount! > 1 && (
+            <div className="w-5 h-5 rounded-full bg-gradient-to-br from-blue-400 to-cyan-500 flex items-center justify-center text-[8px] text-white font-bold ring-2 ring-white dark:ring-slate-800 z-10">?</div>
+          )}
+        </div>
+        <div className="flex flex-col items-start leading-none">
+          <span className="text-[11px] font-semibold text-purple-600 dark:text-purple-400 group-hover:text-purple-700 dark:group-hover:text-purple-300">
+            {message.threadReplyCount} replies
+          </span>
+          <span className="text-[9px] text-slate-400">
+            Click to view thread
+          </span>
+        </div>
+      </button>
+    </div>
   );
 }
 
@@ -482,6 +517,57 @@ function HoverTimestamp({
     <div className={`flex items-center gap-1 px-1 opacity-0 group-hover:opacity-100 transition-opacity duration-150 ${isOwn ? "flex-row-reverse" : ""}`}>
       <span className="text-[10px] text-slate-400">{formatTime(message.createdAt)}</span>
       {isOwn && <span className="material-symbols-outlined text-[12px] text-slate-400">done_all</span>}
+    </div>
+  );
+}
+
+function ReplyPreview({
+  parentMessage,
+  isOwn,
+  participants,
+}: Readonly<{
+  parentMessage: Message;
+  isOwn: boolean;
+  participants: Array<{ _id: string; displayName: string; avatarUrl?: string | null }>;
+}>) {
+  const senderName =
+    parentMessage.senderId === BOT_ID
+      ? "Bot"
+      : participants.find((p) => p._id === parentMessage.senderId)?.displayName ||
+        parentMessage.senderId;
+
+  return (
+    <div
+      className={`relative flex items-center gap-2 mb-1 opacity-80 hover:opacity-100 cursor-pointer transition-opacity text-[12px] ${
+        isOwn ? "justify-end pr-2" : "justify-start pl-2"
+      }`}
+      onClick={() => {
+        const el = document.getElementById(`message-${parentMessage._id}`);
+        if (el) {
+          el.scrollIntoView({ behavior: "smooth", block: "center" });
+          el.classList.add("ring-2", "ring-purple-500", "ring-offset-2");
+          setTimeout(() => {
+            el.classList.remove("ring-2", "ring-purple-500", "ring-offset-2");
+          }, 2000);
+        }
+      }}
+    >
+      <div className={`w-0.5 h-full absolute top-0 ${isOwn ? "right-0 bg-blue-400" : "left-0 bg-slate-400"} rounded-full`}></div>
+      {parentMessage.imgUrl && (
+        <img
+          src={parentMessage.imgUrl}
+          alt="reply-attachment"
+          className="w-8 h-8 rounded object-cover shrink-0"
+        />
+      )}
+      <div className={`flex flex-col max-w-[200px] sm:max-w-[300px] truncate ${isOwn ? "items-end" : "items-start"}`}>
+        <span className="font-semibold text-[10px] text-slate-500 dark:text-slate-400">
+          Đang trả lời {senderName}
+        </span>
+        <span className="truncate w-full text-slate-600 dark:text-slate-300">
+          {parentMessage.content || (parentMessage.imgUrl ? "[Hình ảnh]" : "[Tệp đính kèm]")}
+        </span>
+      </div>
     </div>
   );
 }
@@ -501,6 +587,7 @@ export default function MessageBubble({
   onRecall,
   onCopy,
   onOpenThread,
+  onForward,
 }: Readonly<Props>) {
   const { user } = useAuthStore();
   const isOwn = message.senderId === user?._id;
@@ -508,6 +595,12 @@ export default function MessageBubble({
   const isDeleted = message.isDeleted === true;
 
   const initials = (senderName ?? "?").split(" ").map((w) => w[0] || "").join("").slice(0, 2).toUpperCase() || "?";
+
+  const { messages } = useChatStore();
+  const convoMessages = conversationId ? messages[conversationId]?.items || [] : [];
+  const parentMessage = message.replyToMessageId
+    ? convoMessages.find((m) => m._id === message.replyToMessageId)
+    : null;
 
   const reactions = isDeleted ? [] : (message.reactions || []);
   const hasReactions = reactions.length > 0;
@@ -543,6 +636,7 @@ export default function MessageBubble({
             onRecall={onRecall}
             onCopy={onCopy}
             onOpenThread={onOpenThread}
+            onForward={() => onForward?.(message)}
           />
         )}
 
@@ -572,6 +666,9 @@ export default function MessageBubble({
             <DeletedMessage message={message} isOwn={isOwn} senderName={senderName} />
           ) : (
             <>
+              {parentMessage && (
+                <ReplyPreview parentMessage={parentMessage} isOwn={isOwn} participants={participants} />
+              )}
               <MessageContent message={message} isOwn={isOwn} isBot={isBot} participants={participants} />
 
               <ThreadReplyButton message={message} isOwn={isOwn} onOpenThread={onOpenThread} />

@@ -15,7 +15,8 @@ public sealed record MessageResponseDto(
     string? ReplyToMessageId,
     DateTime? ReplyAt,
     DateTime? DeletedAt,
-    DateTime? EditedAt);
+    DateTime? EditedAt,
+    int ReplyCount = 0);
 
 
 public sealed record MessageResultDto(

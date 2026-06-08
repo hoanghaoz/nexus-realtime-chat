@@ -290,11 +290,23 @@ export const useChatStore = create<ChatState>()(
                 };
               });
 
+          let updatedItems = [...currentItems, message];
+          
+          // Tự động tăng số lượng reply của tin nhắn gốc nếu đây là tin reply
+          // Lưu ý: Chỉ tăng khi nhận được tin nhắn thật (!isPending) để tránh bị cộng đúp (do addMessage được gọi 2 lần: pending và real)
+          if (message.replyToMessageId && !isPending) {
+            updatedItems = updatedItems.map(m => 
+              m._id === message.replyToMessageId 
+                ? { ...m, threadReplyCount: (m.threadReplyCount ?? 0) + 1 }
+                : m
+            );
+          }
+
           return {
             messages: {
               ...state.messages,
               [convoId]: {
-                items: [...currentItems, message],
+                items: updatedItems,
                 hasMore: convoMessages?.hasMore ?? false,
                 nextCursor: convoMessages?.nextCursor ?? null,
               },

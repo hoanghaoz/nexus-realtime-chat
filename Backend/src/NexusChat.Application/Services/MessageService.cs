@@ -136,6 +136,19 @@ public class MessageService(
 
         var message = dto.MapToEntity(fromUserId);
         await messageRepository.AddAsync(message, token);
+
+        // Increment parent message's ReplyCount
+        if (!string.IsNullOrEmpty(dto.ReplyToMessageId))
+        {
+            var parentMessage = await messageRepository.GetByIdAsync(dto.ReplyToMessageId, token);
+            if (parentMessage != null)
+            {
+                parentMessage.ReplyCount += 1;
+                await messageRepository.UpdateAsync(parentMessage, token);
+                // Broadcast MessageUpdated notify ? Or just let it be, the UI can optimistically update
+            }
+        }
+
         // handle link preview if content had
         var link = dto.Content.GetFirstLink();
         if (link != null)
