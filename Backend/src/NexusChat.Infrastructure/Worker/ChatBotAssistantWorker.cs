@@ -180,6 +180,7 @@ public class ChatBotAssistantWorker(
                 content.Append(data);
                 var reminder = new Reminder
                 {
+                    Id = Guid.NewGuid().ToString(),
                     ConversationId = requestBot.ConversationId,
                     Task = remindTask.Task,
                     ExecuteAt = remindTask.ExecuteAt.Value,
