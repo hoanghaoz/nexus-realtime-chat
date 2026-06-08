@@ -1,4 +1,4 @@
-﻿// Frontend/src/hooks/useChatHub.ts
+// Frontend/src/hooks/useChatHub.ts
 import { useState, useEffect, useCallback, useRef } from "react";
 import { useSignalRStore } from "@/stores/useSignalRStore";
 import { useChatStore } from "@/stores/useChatStore";
@@ -29,7 +29,7 @@ function getNextTypingUsers(prev: string[], userId: string, isTyping: boolean) {
 export function useChatHub() {
   const { chatConnection, sendTypingIndicator, joinConversation, leaveConversation } =
     useSignalRStore();
-  const { activeConversationId, updateMessageReactions, removeMessage, recallMessageInStore } = useChatStore();
+  const { activeConversationId, updateMessageReactions, removeMessage, recallMessageInStore, messages } = useChatStore();
   const { user } = useAuthStore();
 
   // ─── Presence & Typing ───────────────────────────────────────────────────
@@ -240,6 +240,45 @@ export function useChatHub() {
       setThreadLoading(false);
     }
   }, []);
+
+  const convoMessages = activeConversationId ? messages[activeConversationId]?.items : [];
+
+  // Lắng nghe store messages để tự động update threadData khi có tin nhắn mới / bị xoá / react
+  useEffect(() => {
+    if (!activeThreadMessageId || !activeConversationId || !threadData || !convoMessages) return;
+    
+    // Lấy tất cả các tin nhắn từ store mà có replyToMessageId trùng khớp
+    const recentReplies = convoMessages.filter(m => m.replyToMessageId === activeThreadMessageId);
+    
+    if (recentReplies.length === 0) return;
+
+    let updated = false;
+    const newReplies = [...threadData.replies];
+    
+    for (const reply of recentReplies) {
+      const existingIdx = newReplies.findIndex(r => r._id === reply._id);
+      if (existingIdx === -1) {
+        newReplies.push(reply);
+        updated = true;
+      } else {
+        // Cập nhật content / reactions / deleted status
+        const existing = newReplies[existingIdx];
+        if (
+          existing.content !== reply.content ||
+          existing.isDeleted !== reply.isDeleted ||
+          JSON.stringify(existing.reactions) !== JSON.stringify(reply.reactions)
+        ) {
+          newReplies[existingIdx] = reply;
+          updated = true;
+        }
+      }
+    }
+    
+    if (updated) {
+      newReplies.sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime());
+      setThreadData({ ...threadData, replies: newReplies });
+    }
+  }, [convoMessages, activeThreadMessageId]);
 
   const openThread = useCallback(
     (messageId: string) => {

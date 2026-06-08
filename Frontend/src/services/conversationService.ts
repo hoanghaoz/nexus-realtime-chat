@@ -474,6 +474,7 @@ export const conversationService = {
         updatedAt: item.editedAt ?? null,
         createdAt: item.createdAt,
         replyToMessageId: item.replyToMessageId ?? null,
+        threadReplyCount: item.threadReplyCount ?? item.replyCount ?? 0,
         reactions: Array.isArray(item.reactions)
           ? item.reactions.map((r: any) => ({
               userId: r.fromUserId || r.userId || "",

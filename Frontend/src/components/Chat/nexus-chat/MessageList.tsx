@@ -15,6 +15,7 @@ interface Props {
   onRecall?: (messageId: string) => void;
   onCopy?: (content: string) => void;
   onOpenThread?: (messageId: string) => void;
+  onForward?: (message: import("@/types/chat").Message) => void;
 }
 
 type MessageWithSenderName = {
@@ -43,6 +44,7 @@ export default function MessageList({
   onRecall,
   onCopy,
   onOpenThread,
+  onForward,
 }: Readonly<Props>) {
   const { messages, fetchMessages, messageLoading } = useChatStore();
   const { user } = useAuthStore();
@@ -207,12 +209,13 @@ export default function MessageList({
             isNew={isNew && !next}
             isGroup={isGroup}
             conversationId={convoId}
-            participants={conversation.participants.map(p => ({ _id: p._id, displayName: p.displayName }))}
+            participants={conversation.participants.map(p => ({ _id: p._id, displayName: p.displayName, avatarUrl: p.avatarUrl }))}
             onReact={onReact}
             onDelete={onDelete}
             onRecall={onRecall}
             onCopy={onCopy}
             onOpenThread={onOpenThread}
+            onForward={onForward}
           />
         );
       })}

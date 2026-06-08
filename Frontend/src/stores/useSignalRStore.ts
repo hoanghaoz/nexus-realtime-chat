@@ -134,6 +134,8 @@ function parseRawMessage(rawMessage: Record<string, unknown>): Message {
     content,
     imgUrl,
     fileAttachment,
+    replyToMessageId: typeof rawMessage.replyToMessageId === "string" ? rawMessage.replyToMessageId : null,
+    threadReplyCount: typeof rawMessage.threadReplyCount === "number" ? rawMessage.threadReplyCount : (typeof rawMessage.replyCount === "number" ? rawMessage.replyCount : 0),
     updatedAt,
     createdAt,
   };

@@ -20,6 +20,7 @@ interface ActionBarProps {
   onRecall?: (messageId: string) => void;
   onCopy?: (content: string) => void;
   onOpenThread?: (messageId: string) => void;
+  onForward?: () => void;
 }
 
 export const MessageActionBar = ({
@@ -32,6 +33,7 @@ export const MessageActionBar = ({
   onRecall,
   onCopy,
   onOpenThread,
+  onForward,
 }: ActionBarProps) => {
   return (
     <div
@@ -72,6 +74,7 @@ export const MessageActionBar = ({
           className="hover:text-blue-500 hover:bg-gray-100 dark:hover:bg-gray-700 p-1 rounded-full"
           title="Chuyển tiếp"
           type="button"
+          onClick={onForward}
         >
           <Forward size={15} />
         </button>

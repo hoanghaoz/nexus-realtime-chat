@@ -6,8 +6,10 @@ import MessageList from "./MessageList";
 import GroupInfoPanel from "./GroupInfoPanel";
 import { SearchSidebar } from "./SearchSidebar";
 import ThreadDrawer from "./ThreadDrawer";
+import { ForwardMessageModal } from "./ForwardMessageModal";
 import { useChatStore } from "@/stores/useChatStore";
 import { useChatHub } from "@/hooks/useChatHub";
+import type { Message } from "@/types/chat";
 
 export default function ChatArea() {
   const { conversations, activeConversationId, messages } = useChatStore();
@@ -29,6 +31,7 @@ export default function ChatArea() {
 
   const [showInfo, setShowInfo] = useState(false);
   const [showSearch, setShowSearch] = useState(false);
+  const [forwardMessage, setForwardMessage] = useState<Message | null>(null);
 
   const activeConversation =
     conversations.find((c) => c._id === activeConversationId) ?? null;
@@ -65,6 +68,7 @@ export default function ChatArea() {
           onRecall={recallMessage}
           onCopy={copyMessage}
           onOpenThread={openThread}
+          onForward={(msg) => setForwardMessage(msg)}
         />
         <ChatInput />
       </div>
@@ -112,6 +116,13 @@ export default function ChatArea() {
         onClose={closeThread}
         threadData={threadData}
         threadLoading={threadLoading}
+      />
+
+      {/* Forward Modal */}
+      <ForwardMessageModal
+        open={forwardMessage !== null}
+        onClose={() => setForwardMessage(null)}
+        message={forwardMessage}
       />
     </main>
   );
