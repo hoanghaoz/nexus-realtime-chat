@@ -37,8 +37,8 @@ export function SignInForm({
     const nextErrors: SignInErrors = {};
 
     if (!username) nextErrors.username = "Username không được để trống";
-    if (password.length < 8) {
-      nextErrors.password = "Mật khẩu phải có ít nhất 8 kí tự.";
+    if (password.length < 6) {
+      nextErrors.password = "Mật khẩu phải có ít nhất 6 kí tự.";
     }
 
     setErrors(nextErrors);
@@ -66,7 +66,12 @@ export function SignInForm({
             <FieldGroup className="gap-6">
               <Field>
                 <FieldLabel htmlFor="username">Username</FieldLabel>
-                <Input id="username" name="username" type="text" autoComplete="username" />
+                <Input
+                  id="username"
+                  name="username"
+                  type="text"
+                  autoComplete="username"
+                />
                 {errors.username && (
                   <p className="text-sm font-medium text-destructive">
                     {errors.username}
