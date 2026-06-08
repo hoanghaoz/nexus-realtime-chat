@@ -26,7 +26,7 @@ interface Props {
   isGroup?: boolean;
   conversationId?: string;
   /** Danh sách participants để resolve tên mention multi-word */
-  participants?: Array<{ _id: string; displayName: string }>;
+  participants?: Array<{ _id: string; displayName: string; avatarUrl?: string | null }>;
   onReact?: (messageId: string, type: string) => void;
   onDelete?: (messageId: string, conversationId: string) => void;
   onRecall?: (messageId: string) => void;
@@ -230,7 +230,7 @@ function MentionText({
   participants,
 }: Readonly<{
   content: string;
-  participants?: Array<{ _id: string; displayName: string }>;
+  participants?: Array<{ _id: string; displayName: string; avatarUrl?: string | null }>;
 }>) {
   // Memoize regex để tránh tạo lại mỗi lần render (tránh SonarCloud performance smell)
   const combined = useMemo(() => {
@@ -266,14 +266,22 @@ function MentionText({
       // @{KnownName} – multi-word mention
       const name = match[2];
       const isBot = name.toLowerCase() === "bot ai";
+      const user = participants?.find(p => p.displayName === name);
       parts.push(
         <span key={keyIdx++}
-          className={`font-semibold rounded px-0.5 ${
+          className={`font-semibold rounded px-1.5 py-0.5 inline-flex items-center gap-1 align-middle -translate-y-px ${
             isBot
               ? "text-violet-600 dark:text-violet-300 bg-violet-100 dark:bg-violet-900/40"
               : "text-blue-600 dark:text-blue-300 bg-blue-50 dark:bg-blue-900/30"
           }`}>
-          @{name}
+          {isBot ? (
+            <span className="material-symbols-outlined text-[13px] leading-none shrink-0">smart_toy</span>
+          ) : user?.avatarUrl ? (
+            <img src={user.avatarUrl} alt={name} className="w-4 h-4 rounded-full object-cover shrink-0" />
+          ) : (
+            <span className="material-symbols-outlined text-[13px] leading-none shrink-0">person</span>
+          )}
+          <span>@{name}</span>
         </span>
       );
     } else if (match[3]) {
@@ -311,7 +319,7 @@ function MessageContent({
   message: Message;
   isOwn: boolean;
   isBot: boolean;
-  participants?: Array<{ _id: string; displayName: string }>;
+  participants?: Array<{ _id: string; displayName: string; avatarUrl?: string | null }>;
 }>) {
   const [lightboxOpen, setLightboxOpen] = useState(false);
 

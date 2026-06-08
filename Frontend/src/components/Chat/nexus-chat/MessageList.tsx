@@ -207,7 +207,7 @@ export default function MessageList({
             isNew={isNew && !next}
             isGroup={isGroup}
             conversationId={convoId}
-            participants={conversation.participants.map(p => ({ _id: p._id, displayName: p.displayName }))}
+            participants={conversation.participants.map(p => ({ _id: p._id, displayName: p.displayName, avatarUrl: p.avatarUrl }))}
             onReact={onReact}
             onDelete={onDelete}
             onRecall={onRecall}
