@@ -11,7 +11,7 @@ export { default as GroupItem } from "./GroupItem";
 export { default as GroupList } from "./GroupList";
 export { default as MessageBubble } from "./MessageBubble";
 export { default as MessageList } from "./MessageList";
-export { default as NewMessageButton } from "./NewMessageButton";
+
 export { default as PendingRequestsDialog } from "./PendingRequestsDialog";
 export { default as Sidebar } from "./Sidebar";
 export { default as SidebarHeader } from "./SidebarHeader";
